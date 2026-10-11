@@ -1,0 +1,368 @@
+--!strict
+-- HUD do topo: dinheiro, nível + XP e progresso do dia. Também mostra o "+$" ao entregar.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local Fusion = require(ReplicatedStorage.Packages.Fusion)
+local Progression = require(ReplicatedStorage.Shared.Progression)
+local Recipes = require(ReplicatedStorage.Shared.Recipes)
+local PixelArt = require(script.Parent.Parent.Art.PixelArt)
+local Sprites = require(script.Parent.Parent.Art.Sprites)
+local State = require(script.Parent.Parent.State)
+local Theme = require(script.Parent.Theme)
+
+local Children, OnEvent = Fusion.Children, Fusion.OnEvent
+
+local Hud = {}
+
+local gui: ScreenGui
+local moneyPill: Frame
+local moneyPop: UIScale
+
+local function pill(scope: any, name: string, width: number, order: number, children: { any }): Frame
+	return scope:New("Frame")({
+		Name = name,
+		LayoutOrder = order,
+		BackgroundColor3 = Theme.Paper,
+		Size = UDim2.new(0, width, 1, 0),
+		[Children] = {
+			scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
+			scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink }),
+			children,
+		},
+	})
+end
+
+Hud.onOpenBook = nil :: (() -> ())?
+
+function Hud.new(playerGui: PlayerGui)
+	local scope = State.scope
+
+	local shownMoney = scope:Spring(State.Money, 8, 1)
+	moneyPop = scope:New("UIScale")({ Scale = 1 }) :: UIScale
+
+	local coin = PixelArt.draw(Sprites.Coin)
+	coin.AnchorPoint = Vector2.new(0, 0.5)
+	coin.Position = UDim2.new(0, 8, 0.5, 0)
+	coin.Size = UDim2.fromScale(0.7, 0.7)
+	coin.SizeConstraint = Enum.SizeConstraint.RelativeYY
+
+	moneyPill = pill(scope, "Money", 160, 1, {
+		moneyPop,
+		coin,
+		scope:New("TextLabel")({
+			BackgroundTransparency = 1,
+			Position = UDim2.new(0, 52, 0.18, 0),
+			Size = UDim2.new(1, -64, 0.64, 0),
+			Font = Theme.Font,
+			TextScaled = true,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextColor3 = Theme.Ink,
+			Text = scope:Computed(function(use)
+				return `${math.floor(use(shownMoney) + 0.5)}`
+			end),
+		}),
+	})
+
+	local xpFill = scope:Spring(
+		scope:Computed(function(use)
+			return math.clamp(use(State.XP) / Progression.xpToNext(use(State.Level)), 0, 1)
+		end),
+		10,
+		1
+	)
+
+	local levelPill = pill(scope, "Level", 200, 2, {
+		scope:New("Frame")({
+			Name = "Badge",
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, -4, 0.5, 0),
+			Size = UDim2.fromScale(1.25, 1.25),
+			SizeConstraint = Enum.SizeConstraint.RelativeYY,
+			BackgroundColor3 = Theme.Mustard,
+			ZIndex = 2,
+			[Children] = {
+				scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
+				scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink }),
+				scope:New("TextLabel")({
+					BackgroundTransparency = 1,
+					Position = UDim2.fromScale(0.15, 0.2),
+					Size = UDim2.fromScale(0.7, 0.6),
+					Font = Theme.Font,
+					TextScaled = true,
+					TextColor3 = Theme.Ink,
+					ZIndex = 3,
+					Text = scope:Computed(function(use)
+						return tostring(use(State.Level))
+					end),
+				}),
+			},
+		}),
+		scope:New("TextLabel")({
+			BackgroundTransparency = 1,
+			Position = UDim2.new(0, 72, 0.1, 0),
+			Size = UDim2.new(1, -86, 0.38, 0),
+			Font = Theme.Font,
+			TextScaled = true,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextColor3 = Theme.Ink,
+			Text = scope:Computed(function(use)
+				return `Nível {use(State.Level)}`
+			end),
+		}),
+		scope:New("Frame")({
+			Name = "XPBar",
+			Position = UDim2.new(0, 72, 0.56, 0),
+			Size = UDim2.new(1, -88, 0.24, 0),
+			BackgroundColor3 = Theme.PaperShade,
+			[Children] = {
+				scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
+				scope:New("UIStroke")({ Thickness = 2, Color = Theme.Ink }),
+				scope:New("Frame")({
+					BorderSizePixel = 0,
+					BackgroundColor3 = Theme.Sage,
+					Size = scope:Computed(function(use)
+						return UDim2.fromScale(math.max(use(xpFill), 0.04), 1)
+					end),
+					[Children] = scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
+				}),
+			},
+		}),
+	})
+
+	-- bolinhas de progresso do dia
+	local dots = scope:Computed(function(use)
+		local list = {}
+		for i = 1, use(State.PerDay) do
+			list[i] = i <= use(State.Served)
+		end
+		return list
+	end)
+
+	local dayPill = pill(scope, "Day", 230, 3, {
+		scope:New("TextLabel")({
+			BackgroundTransparency = 1,
+			Position = UDim2.new(0, 14, 0.1, 0),
+			Size = UDim2.new(1, -28, 0.38, 0),
+			Font = Theme.Font,
+			TextScaled = true,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextColor3 = Theme.Ink,
+			Text = scope:Computed(function(use)
+				return `Dia {use(State.Day)}  ·  {use(State.Served)}/{use(State.PerDay)} clientes`
+			end),
+		}),
+		scope:New("Frame")({
+			Name = "Dots",
+			BackgroundTransparency = 1,
+			Position = UDim2.new(0, 14, 0.56, 0),
+			Size = UDim2.new(1, -28, 0.26, 0),
+			[Children] = {
+				scope:New("UIListLayout")({
+					FillDirection = Enum.FillDirection.Horizontal,
+					Padding = UDim.new(0, 4),
+					SortOrder = Enum.SortOrder.LayoutOrder,
+				}),
+				scope:ForPairs(dots, function(use, dotScope, i: number, filled: boolean)
+					return i,
+						dotScope:New("Frame")({
+							LayoutOrder = i,
+							Size = UDim2.fromScale(1, 1),
+							SizeConstraint = Enum.SizeConstraint.RelativeYY,
+							BackgroundColor3 = if filled then Theme.Mustard else Theme.PaperShade,
+							[Children] = {
+								dotScope:New("UICorner")({ CornerRadius = UDim.new(0.3, 0) }),
+								dotScope:New("UIStroke")({ Thickness = 2, Color = Theme.Ink }),
+							},
+						})
+				end),
+			},
+		}),
+	})
+
+	-- botão do livro de receitas
+	local bookArt = PixelArt.draw(Sprites.Book)
+	bookArt.Size = UDim2.fromScale(0.7, 0.7)
+	local bookButton = scope:New("TextButton")({
+		Name = "Book",
+		LayoutOrder = 4,
+		Text = "",
+		AutoButtonColor = true,
+		BackgroundColor3 = Theme.Paper,
+		Size = UDim2.fromScale(1, 1),
+		SizeConstraint = Enum.SizeConstraint.RelativeYY,
+		[Children] = {
+			scope:New("UICorner")({ CornerRadius = UDim.new(0.3, 0) }),
+			scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+			bookArt,
+			-- bolinha de alerta: tem recompensa de maestria para coletar
+			scope:New("Frame")({
+				Name = "Alert",
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.9, 0.1),
+				Size = UDim2.fromScale(0.36, 0.36),
+				BackgroundColor3 = Theme.Rose,
+				ZIndex = 3,
+				Visible = scope:Computed(function(use)
+					local stats, mastered = use(State.Stats), use(State.Mastered)
+					for id in Recipes.Drinks do
+						if not mastered[id] and (stats[id] or 0) >= Recipes.masteryTarget(id) then
+							return true
+						end
+					end
+					return false
+				end),
+				[Children] = {
+					scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
+					scope:New("UIStroke")({ Thickness = 2, Color = Theme.Ink }),
+					scope:New("TextLabel")({
+						BackgroundTransparency = 1,
+						Size = UDim2.fromScale(1, 1),
+						Font = Theme.Font,
+						TextScaled = true,
+						TextColor3 = Theme.Paper,
+						Text = "!",
+						ZIndex = 4,
+					}),
+				},
+			}),
+		},
+		[OnEvent("Activated")] = function()
+			if Hud.onOpenBook then
+				Hud.onOpenBook()
+			end
+		end,
+	})
+
+	gui = scope:New("ScreenGui")({
+		Name = "CafeHud",
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		DisplayOrder = 2,
+		Parent = playerGui,
+		[Children] = {
+			scope:New("Frame")({
+				Name = "Top",
+				BackgroundTransparency = 1,
+				Position = UDim2.fromOffset(20, 18),
+				Size = UDim2.new(1, 0, 0, 52),
+				Visible = State.Loaded,
+				[Children] = {
+					scope:New("UIListLayout")({
+						FillDirection = Enum.FillDirection.Horizontal,
+						Padding = UDim.new(0, 14),
+						SortOrder = Enum.SortOrder.LayoutOrder,
+						VerticalAlignment = Enum.VerticalAlignment.Center,
+					}),
+					moneyPill,
+					levelPill,
+					dayPill,
+					bookButton,
+				},
+			}),
+		},
+	}) :: ScreenGui
+end
+
+-- "+$18 Relâmpago!" subindo e moedinhas voando até o contador
+function Hud.payout(earned: number, tier: number, tip: number?)
+	local rng = Random.new()
+	local origin = UDim2.fromScale(0.31, 0.36)
+
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Position = origin
+	label.Size = UDim2.fromOffset(260, 64)
+	label.Font = Theme.Font
+	label.TextScaled = true
+	label.Text = `+${earned + (tip or 0)}`
+	label.TextColor3 = Theme.Mustard
+	label.ZIndex = 10
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 4
+	stroke.Color = Theme.Ink
+	stroke.Parent = label
+	local scale = Instance.new("UIScale")
+	scale.Scale = 0
+	scale.Parent = label
+	label.Parent = gui
+
+	local sub = label:Clone()
+	sub.Text = (Progression.TierNames[tier] or "") .. (if tip and tip > 0 then `  +${tip} gorjeta` else "")
+	sub.TextColor3 = Theme.Paper
+	sub.Size = UDim2.fromOffset(300, 34)
+	sub.Position = origin + UDim2.fromOffset(0, 48)
+	sub.Parent = gui
+
+	for _, l in { label, sub } do
+		local s = l:FindFirstChildOfClass("UIScale") :: UIScale
+		TweenService:Create(s, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+		task.delay(1.1, function()
+			local t = TweenService:Create(l, TweenInfo.new(0.5), {
+				Position = l.Position - UDim2.fromOffset(0, 40),
+				TextTransparency = 1,
+			})
+			TweenService:Create(l:FindFirstChildOfClass("UIStroke") :: UIStroke, TweenInfo.new(0.5), { Transparency = 1 }):Play()
+			t.Completed:Once(function()
+				l:Destroy()
+			end)
+			t:Play()
+		end)
+	end
+
+	-- moedas voando até a pílula de dinheiro
+	local target = moneyPill.AbsolutePosition + Vector2.new(24, moneyPill.AbsoluteSize.Y / 2)
+	local count = math.clamp(math.floor((earned + (tip or 0)) / 4), 3, 10)
+	for i = 1, count do
+		task.delay(0.25 + i * 0.06, function()
+			local c = PixelArt.draw(Sprites.Coin, 11)
+			c.AnchorPoint = Vector2.new(0.5, 0.5)
+			c.Size = UDim2.fromOffset(26, 26)
+			c.Position = origin + UDim2.fromOffset(rng:NextInteger(-60, 60), rng:NextInteger(-20, 30))
+			c.Parent = gui
+			local t = TweenService:Create(c, TweenInfo.new(0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				Position = UDim2.fromOffset(target.X, target.Y),
+				Size = UDim2.fromOffset(16, 16),
+			})
+			t.Completed:Once(function()
+				c:Destroy()
+				moneyPop.Scale = 1.12
+				TweenService:Create(moneyPop, TweenInfo.new(0.2), { Scale = 1 }):Play()
+			end)
+			t:Play()
+		end)
+	end
+end
+
+-- Mensagem rápida no meio-topo da tela ("O cliente desistiu...")
+function Hud.toast(text: string, color: Color3?)
+	local label = Theme.label(text, color or Theme.Paper)
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Position = UDim2.fromScale(0.31, 0.3)
+	label.Size = UDim2.fromOffset(420, 40)
+	label.ZIndex = 10
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 4
+	stroke.Color = Theme.Ink
+	stroke.Parent = label
+	label.Parent = gui
+	local t = TweenService:Create(label, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 1.4), {
+		Position = label.Position - UDim2.fromOffset(0, 30),
+		TextTransparency = 1,
+	})
+	TweenService:Create(stroke, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 1.4), { Transparency = 1 }):Play()
+	t.Completed:Once(function()
+		label:Destroy()
+	end)
+	t:Play()
+end
+
+function Hud.setVisible(visible: boolean)
+	if gui then
+		gui.Enabled = visible
+	end
+end
+
+return Hud
