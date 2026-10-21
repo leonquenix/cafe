@@ -17,7 +17,6 @@ local Glass = require(script.Parent.Parent.Art.Glass)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
 local State = require(script.Parent.Parent.State)
-local Oven = require(script.Parent.Oven)
 local Theme = require(script.Parent.Theme)
 
 local Children, OnEvent, peek = Fusion.Children, Fusion.OnEvent, Fusion.peek
@@ -48,23 +47,52 @@ local function inside(gui: GuiObject, p: Vector2): boolean
 	return p.X >= a.X and p.Y >= a.Y and p.X <= a.X + s.X and p.Y <= a.Y + s.Y
 end
 
--- Segue um ponteiro (mouse ou toque) até soltar.
-local function trackPointer(input: InputObject, onMove: (Vector2) -> (), onEnd: (Vector2) -> ())
+-- Segue um ponteiro (mouse ou toque) até soltar. Retorna uma função que encerra o rastreio.
+-- No toque escuta também o próprio InputObject e os eventos Touch*, porque no celular
+-- nem sempre o InputChanged/InputEnded chega (e um rastreio "esquecido" ficava mexendo o copo).
+local function trackPointer(input: InputObject, onMove: (Vector2) -> (), onEnd: (Vector2) -> ()): () -> ()
+	local touch = input.UserInputType == Enum.UserInputType.Touch
 	local last = pointerPosition(input)
-	local moveConn, endConn
-	moveConn = UserInputService.InputChanged:Connect(function(i)
-		if i.UserInputType == Enum.UserInputType.MouseMovement or i == input then
+	local finished = false
+	local conns: { RBXScriptConnection } = {}
+	local function move(i: InputObject)
+		if not finished and i.UserInputState ~= Enum.UserInputState.End and i.UserInputState ~= Enum.UserInputState.Cancel then
 			last = pointerPosition(i)
 			onMove(last)
 		end
-	end)
-	endConn = UserInputService.InputEnded:Connect(function(i)
-		if i.UserInputType == Enum.UserInputType.MouseButton1 or i == input then
-			moveConn:Disconnect()
-			endConn:Disconnect()
-			onEnd(last)
+	end
+	local function stop()
+		if finished then
+			return
 		end
-	end)
+		finished = true
+		for _, c in conns do
+			c:Disconnect()
+		end
+		onEnd(last)
+	end
+	table.insert(conns, UserInputService.InputChanged:Connect(function(i)
+		if i == input or (if touch then i.UserInputType == Enum.UserInputType.Touch else i.UserInputType == Enum.UserInputType.MouseMovement) then
+			move(i)
+		end
+	end))
+	table.insert(conns, UserInputService.InputEnded:Connect(function(i)
+		if i == input or i.UserInputType == (if touch then Enum.UserInputType.Touch else Enum.UserInputType.MouseButton1) then
+			stop()
+		end
+	end))
+	if touch then
+		table.insert(conns, UserInputService.TouchMoved:Connect(move))
+		table.insert(conns, UserInputService.TouchEnded:Connect(stop))
+		table.insert(conns, input.Changed:Connect(function(prop)
+			if prop == "Position" then
+				move(input)
+			elseif prop == "UserInputState" and input.UserInputState ~= Enum.UserInputState.Begin and input.UserInputState ~= Enum.UserInputState.Change then
+				stop()
+			end
+		end))
+	end
+	return stop
 end
 
 local function isPress(input: InputObject): boolean
@@ -273,15 +301,6 @@ function Minigame.new(playerGui: PlayerGui)
 		end),
 		22,
 		0.78
-	)
-	local waiting = scope:Value(false)
-	self.waiting = waiting
-	local idleTransparency = scope:Spring(
-		scope:Computed(function(use)
-			return if use(open) or not use(waiting) then 1 else 0
-		end),
-		14,
-		1
 	)
 	local serveScale = scope:Value(1)
 	-- Servir fica sempre à mão; se estiver errado o cliente leva, mas não paga
@@ -719,43 +738,13 @@ function Minigame.new(playerGui: PlayerGui)
 		},
 	})
 
-	local oven = Oven.new(scope, pastryId, pastryQuality, phase)
-	self.oven = oven
-
-	local idlePill = scope:New("Frame")({
-		Name = "Waiting",
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.31, 0, 0, 96),
-		Size = UDim2.fromOffset(280, 44),
-		BackgroundColor3 = Theme.Paper,
-		BackgroundTransparency = idleTransparency,
-		[Children] = {
-			scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
-			scope:New("UIStroke")({
-				Thickness = 3,
-				Color = Theme.Ink,
-				Transparency = idleTransparency,
-			}),
-			scope:New("TextLabel")({
-				BackgroundTransparency = 1,
-				Size = UDim2.fromScale(1, 0.6),
-				Position = UDim2.fromScale(0, 0.2),
-				Font = Theme.Font,
-				TextScaled = true,
-				TextColor3 = Theme.Ink,
-				TextTransparency = idleTransparency,
-				Text = "Esperando clientes...",
-			}),
-		},
-	})
-
 	scope:New("ScreenGui")({
 		Name = "CafeUI",
 		ResetOnSpawn = false,
 		IgnoreGuiInset = true,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		Parent = playerGui,
-		[Children] = { bench, bar, idlePill, oven.Root },
+		[Children] = { bench, bar },
 	})
 
 	self.dragGui = scope:New("ScreenGui")({
@@ -916,6 +905,10 @@ function Minigame._beginDrag(self: any, id: string, input: InputObject, slot: Gu
 	end
 	self.draggingIngredient = true
 	dragging:set(true)
+	-- arrastar ingrediente nunca mexe o copo: encerra qualquer mexida em andamento
+	if self.stopStir then
+		self.stopStir()
+	end
 
 	local ghost = Instance.new("Frame")
 	ghost.Name = "Ghost"
@@ -1028,8 +1021,11 @@ function Minigame._addIngredient(self: any, id: string)
 end
 
 function Minigame._beginStir(self: any, input: InputObject)
-	if not peek(self.canStir) or self.busy then
+	if not peek(self.canStir) or self.busy or self.draggingIngredient then
 		return
+	end
+	if self.stopStir then
+		self.stopStir()
 	end
 	local glass = self.glass
 	local root = glass.Root :: Frame
@@ -1042,8 +1038,9 @@ function Minigame._beginStir(self: any, input: InputObject)
 	end
 
 	lastAngle = angleAt(pointerPosition(input))
-	trackPointer(input, function(p)
-		if not peek(self.canStir) then
+	local stop
+	stop = trackPointer(input, function(p)
+		if not peek(self.canStir) or self.draggingIngredient then
 			return
 		end
 		local a = angleAt(p)
@@ -1060,7 +1057,12 @@ function Minigame._beginStir(self: any, input: InputObject)
 		glass:setMix(progress, self.swirl)
 		glass:setSpoon(true, self.swirl)
 		self.mix:set(progress)
-	end, function() end)
+	end, function()
+		if self.stopStir == stop then
+			self.stopStir = nil
+		end
+	end)
+	self.stopStir = stop
 end
 
 function Minigame._trash(self: any)
@@ -1154,7 +1156,6 @@ function Minigame.open(self: any, order: Order)
 	self.modifierId:set(order.modifier)
 	self.pastryId:set(order.pastry)
 	self.pastryQuality:set(0)
-	self.oven:reset()
 	self.portions:set({})
 	self.mix:set(0)
 	local glass = self.glass
@@ -1163,9 +1164,15 @@ function Minigame.open(self: any, order: Order)
 	glass:setMix(0, 0)
 	glass:setSpoon(false)
 	glass:setStream(nil)
-	self.glassHolder.Position = UDim2.fromScale(0.5, 0.5)
+	-- o copo só aparece quando o pedido começa: cai de cima depois que o painel entra
+	self.glassHolder.Position = UDim2.fromScale(0.5, -0.6)
 	self.glassHolder.Rotation = 0
 	self.glassScale.Scale = 1
+	task.delay(0.2, function()
+		if self.order == order then
+			tween(self.glassHolder, 0.45, { Position = UDim2.fromScale(0.5, 0.5) }, Enum.EasingStyle.Back)
+		end
+	end)
 	self.openedAt = os.clock()
 	self.elapsed:set(0)
 	self.phase:set("Making")
@@ -1221,7 +1228,6 @@ function Minigame.openFree(self: any)
 	self.modifierId:set("")
 	self.pastryId:set("")
 	self.pastryQuality:set(0)
-	self.oven:reset()
 	resetGlass(self)
 	self.phase:set("Making")
 end
@@ -1267,10 +1273,19 @@ function Minigame.serveDone(self: any, correct: boolean)
 	if not correct then
 		self:_shake()
 	end
+	local order = self.order
 	tween(holder, 0.35, { Position = UDim2.fromScale(-0.8, 0.3), Rotation = -15 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-	task.delay(0.4, function()
-		self.order = nil
-		self.phase:set("Idle")
+	-- depois de entregar, o copo sobe e sai da tela (no último pedido do dia ele ficava parado à vista)
+	task.delay(0.35, function()
+		if self.order == order then
+			tween(holder, 0.4, { Position = UDim2.fromScale(-0.8, -1.6), Rotation = 0 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+		end
+	end)
+	task.delay(0.8, function()
+		if self.order == order then
+			self.order = nil
+			self.phase:set("Idle")
+		end
 	end)
 end
 

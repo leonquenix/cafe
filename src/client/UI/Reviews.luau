@@ -7,7 +7,16 @@ local Characters = require(ReplicatedStorage.Shared.Characters)
 local Recipes = require(ReplicatedStorage.Shared.Recipes)
 
 export type Review = { Name: string, Text: string, Stars: number, Tag: string? }
-export type DeliveredOrder = { drink: string, tier: number, earned: number, kind: number?, wrong: boolean?, problem: string? }
+export type DeliveredOrder = {
+	drink: string,
+	tier: number,
+	earned: number,
+	kind: number?,
+	wrong: boolean?,
+	problem: string?,
+	pastry: string?,
+	pastryOk: boolean?,
+}
 
 local NAMES = {
 	"Dona Cida",

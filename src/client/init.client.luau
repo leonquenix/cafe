@@ -18,6 +18,7 @@ local DaySummary = require(script.UI.DaySummary)
 local FreeCelebration = require(script.UI.FreeCelebration)
 local Hud = require(script.UI.Hud)
 local Minigame = require(script.UI.Minigame)
+local PastryPopup = require(script.UI.PastryPopup)
 local PrepScreen = require(script.UI.PrepScreen)
 local RecipeBook = require(script.UI.RecipeBook)
 local Theme = require(script.UI.Theme)
@@ -50,6 +51,7 @@ DaySummary.init(playerGui)
 PrepScreen.init(playerGui)
 RecipeBook.init(playerGui)
 Hud.new(playerGui)
+PastryPopup.init(playerGui)
 Hud.setVisible(false)
 
 -- Cmdr (comandos de admin): F2 abre o console
@@ -61,6 +63,9 @@ end)
 local minigame = Minigame.new(playerGui)
 local currentOrder = nil
 local currentCustomer = nil
+local pendingRetry: { orderId: number, done: (boolean) -> () }? = nil
+-- tempo com o balão do pedido na tela antes do pop-up do forno (dá pra ver qual doce é)
+local PASTRY_POPUP_DELAY = 1.7
 local dayActive = false
 local startingDay = false
 local dayPlan = {}
@@ -214,7 +219,6 @@ local showTitle: () -> ()
 local function enterFreeMode()
 	CameraController.release(2.8)
 	task.delay(2.9, function()
-		minigame.waiting:set(false)
 		minigame:openFree()
 		BackButton.show(function()
 			minigame:close()
@@ -251,11 +255,9 @@ Net.PlayerState.listen(function(state)
 		-- o dia começou
 		dayActive = true
 		startingDay = false
-		minigame.waiting:set(true)
 		Customers.beginDay(dayPlan, state.served)
 	elseif not state.dayActive then
 		dayActive = false
-		minigame.waiting:set(false)
 		-- primeira carga: a tela de início já está esperando o PLAY
 	end
 
@@ -296,20 +298,47 @@ Net.OrderAssigned.listen(function(order)
 		tag = tag,
 		tagColor = tagColor,
 	})
-	task.delay(0.6, function()
-		if currentOrder == order then
-			minigame:open(order)
+	-- o doce vem primeiro (pop-up do forno); a bebida só abre depois
+	local drinkOnly = table.clone(order)
+	drinkOnly.pastry = ""
+	task.delay(if order.pastry ~= "" then PASTRY_POPUP_DELAY else 0.6, function()
+		if currentOrder ~= order then
+			return
 		end
+		if order.pastry == "" then
+			minigame:open(drinkOnly)
+			return
+		end
+		PastryPopup.open(order.pastry, function(quality)
+			if currentOrder ~= order then
+				return
+			end
+			Net.PastryDone.send({ orderId = order.orderId, quality = quality })
+			if quality == Catalog.PastryQuality.Skipped then
+				Hud.toast("Sem o doce: o cliente vai pagar só a bebida", Theme.Mustard)
+			end
+			minigame:open(drinkOnly)
+		end, function(done)
+			pendingRetry = { orderId = order.orderId, done = done }
+			Net.PastryRetry.send(order.orderId)
+		end)
 	end)
 end)
 
-minigame.onServe = function(orderId, ingredients, mixed, stirred, pastryQuality)
+Net.PastryRetryResult.listen(function(result)
+	local pending = pendingRetry
+	if pending and pending.orderId == result.orderId then
+		pendingRetry = nil
+		pending.done(result.ok)
+	end
+end)
+
+minigame.onServe = function(orderId, ingredients, mixed, stirred)
 	Net.SubmitDrink.send({
 		orderId = orderId,
 		ingredients = ingredients,
 		mixed = mixed,
 		stirred = stirred,
-		pastryQuality = pastryQuality,
 	})
 end
 
@@ -331,7 +360,12 @@ Net.OrderResult.listen(function(result)
 	currentOrder = nil
 	currentCustomer = nil
 	minigame:serveDone(result.success)
-	if result.success then
+	if result.success and (result.problem == "RawPastry" or result.problem == "BurntPastry") then
+		-- doce cru/queimado: paga menos e sai insatisfeito
+		Customers.serveFront(color, if result.problem == "RawPastry" then "Tá cru..." else "Queimado?!", false)
+		Hud.payout(result.earned, result.tier, result.tip)
+		Hud.toast(if result.problem == "RawPastry" then "Doce cru: pagou só a bebida" else "Doce queimado: pagou só a bebida", Theme.Rose)
+	elseif result.success then
 		Customers.serveFront(color, if customer then thanksFor(customer, result.tier) else nil, true)
 		Hud.payout(result.earned, result.tier, result.tip)
 	else
@@ -340,8 +374,12 @@ Net.OrderResult.listen(function(result)
 			complaint, toast = "Nem mexeu!", "Faltou misturar: sem pagamento"
 		elseif result.problem == "Stirred" then
 			complaint, toast = "Pedi SEM mexer!", "Era sem mexer: sem pagamento"
-		elseif result.problem == "Pastry" then
-			complaint, toast = "Cadê meu doce?", "Faltou o doce: sem pagamento"
+		end
+		if result.earned > 0 then
+			-- bebida errada, mas o doce veio: paga só o doce
+			complaint ..= " Mas o doce tá bom."
+			toast = string.gsub(toast, "sem pagamento", "pagou só o doce")
+			Hud.payout(result.earned, -1, 0) -- sem selo de velocidade: a bebida não contou
 		end
 		Customers.serveFront(color, complaint, false)
 		Hud.toast(toast, Theme.Rose)
@@ -350,8 +388,9 @@ end)
 
 Net.DayEnded.listen(function(summary)
 	Customers.endDay()
-	minigame.waiting:set(false)
 	-- fim de dia forçado (comando endDay): fecha o preparo e despacha a fila
+	PastryPopup.dismiss()
+	pendingRetry = nil
 	if currentOrder then
 		currentOrder = nil
 		currentCustomer = nil

@@ -34,7 +34,24 @@ return ByteNet.defineNamespace("Cafe", function()
 				ingredients = ByteNet.array(ByteNet.string),
 				mixed = ByteNet.bool, -- mistura completa
 				stirred = ByteNet.bool, -- mexeu pelo menos um pouco
-				pastryQuality = ByteNet.uint8, -- 0 = sem doce, 1 = ok, 2 = perfeito
+			}),
+		}),
+		-- cliente -> servidor: pop-up do forno terminou (Catalog.PastryQuality); a bebida começa a contar daqui
+		PastryDone = ByteNet.definePacket({
+			value = ByteNet.struct({
+				orderId = ByteNet.uint16,
+				quality = ByteNet.uint8,
+			}),
+		}),
+		-- cliente -> servidor: pagar para assar o doce de novo (orderId)
+		PastryRetry = ByteNet.definePacket({
+			value = ByteNet.uint16,
+		}),
+		-- servidor -> cliente: resposta do PastryRetry
+		PastryRetryResult = ByteNet.definePacket({
+			value = ByteNet.struct({
+				orderId = ByteNet.uint16,
+				ok = ByteNet.bool,
 			}),
 		}),
 		-- servidor -> cliente: resultado da entrega
@@ -42,7 +59,7 @@ return ByteNet.defineNamespace("Cafe", function()
 			value = ByteNet.struct({
 				orderId = ByteNet.uint16,
 				success = ByteNet.bool, -- false = servido errado (o cliente leva, mas não paga)
-				problem = ByteNet.string, -- o que estava errado (ver Recipes.orderProblem; "Pastry" = faltou o doce)
+				problem = ByteNet.string, -- o que estava errado (ver Recipes.orderProblem); com success: "NoPastry" | "RawPastry" | "BurntPastry"
 				earned = ByteNet.uint16,
 				tip = ByteNet.uint16,
 				tier = ByteNet.uint8,
@@ -99,6 +116,8 @@ return ByteNet.defineNamespace("Cafe", function()
 					kind = ByteNet.uint8,
 					wrong = ByteNet.bool,
 					problem = ByteNet.string,
+					pastry = ByteNet.string, -- "" = pedido sem doce
+					pastryOk = ByteNet.bool,
 				})),
 				xpGained = ByteNet.uint32,
 				levelBefore = ByteNet.uint8,

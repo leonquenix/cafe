@@ -97,6 +97,35 @@ Catalog.Decor = {
 
 Catalog.CozyBonus = 0.02 -- cada ponto de aconchego: +2% em todos os pagamentos
 
+-- Resultado do pop-up do forno (o cliente manda; o servidor paga de acordo)
+Catalog.PastryQuality = { Skipped = 0, Ok = 1, Perfect = 2, Raw = 3, Burnt = 4 }
+Catalog.PerfectPastryBonus = 1.25
+Catalog.BadPastryFactor = 0 -- cru ou queimado conta como item errado: o cliente leva, mas não paga o doce
+Catalog.RetryPastryFactor = 0.7 -- assar de novo custa 70% do preço do doce
+
+function Catalog.isBadPastry(quality: number): boolean
+	return quality == Catalog.PastryQuality.Raw or quality == Catalog.PastryQuality.Burnt
+end
+
+-- Quanto o doce rende no pedido (antes de aconchego/maestria/tipo de cliente)
+function Catalog.pastryValue(id: string, quality: number): number
+	local pastry = Catalog.Pastries[id]
+	if not pastry or quality == Catalog.PastryQuality.Skipped then
+		return 0
+	elseif quality == Catalog.PastryQuality.Perfect then
+		return pastry.Price * Catalog.PerfectPastryBonus
+	elseif Catalog.isBadPastry(quality) then
+		return pastry.Price * Catalog.BadPastryFactor
+	end
+	return pastry.Price
+end
+
+-- Custo de assar de novo: 70% do preço do doce (pelo menos $1)
+function Catalog.retryCost(id: string): number
+	local price = Catalog.Pastries[id].Price
+	return math.clamp(math.floor(price * Catalog.RetryPastryFactor + 0.5), 1, price)
+end
+
 function Catalog.upgradeCost(id: string, currentLevel: number): number?
 	return Catalog.Upgrades[id].Costs[currentLevel + 1]
 end

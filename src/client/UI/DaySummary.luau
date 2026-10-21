@@ -13,10 +13,11 @@ local Recipes = require(ReplicatedStorage.Shared.Recipes)
 local Glass = require(script.Parent.Parent.Art.Glass)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
+local State = require(script.Parent.Parent.State)
 local Reviews = require(script.Parent.Reviews)
 local Theme = require(script.Parent.Theme)
 
-local Children, OnEvent = Fusion.Children, Fusion.OnEvent
+local Children, OnEvent, peek = Fusion.Children, Fusion.OnEvent, Fusion.peek
 
 export type Summary = {
 	day: number,
@@ -70,15 +71,96 @@ local function starsRow(count: number, height: UDim2, align: Enum.HorizontalAlig
 	list.HorizontalAlignment = align or Enum.HorizontalAlignment.Left
 	list.Parent = row
 	for i = 1, 5 do
+		-- quadrado que cabe tanto na altura quanto na largura da linha (5 estrelas nunca vazam)
 		local holder = Instance.new("Frame")
 		holder.BackgroundTransparency = 1
-		holder.Size = UDim2.fromScale(1, 1)
-		holder.SizeConstraint = Enum.SizeConstraint.RelativeYY
+		holder.Size = UDim2.fromScale(0.18, 1)
 		holder.LayoutOrder = i
+		local square = Instance.new("UIAspectRatioConstraint")
+		square.AspectRatio = 1
+		square.Parent = holder
 		PixelArt.draw(if i <= count then Sprites.Star else Sprites.StarOff).Parent = holder
 		holder.Parent = row
 	end
 	return row
+end
+
+-- Xícara de XP: só o contorno, com o nível dentro; o verde enche conforme o XP,
+-- com a superfície balançando como líquido (colunas finas seguindo uma onda).
+local WAVE_COLUMNS = 28
+local function xpCup(scope: any, fill: any, level: any, scale: UIScale): Frame
+	local liquid = {}
+	for i = 1, WAVE_COLUMNS do
+		local col = Instance.new("Frame")
+		col.BorderSizePixel = 0
+		col.BackgroundColor3 = Theme.Sage
+		col.AnchorPoint = Vector2.new(0, 1)
+		col.Position = UDim2.fromScale((i - 1) / WAVE_COLUMNS, 1)
+		liquid[i] = col
+	end
+	local body = scope:New("Frame")({
+		Name = "Body",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromScale(0.04, 0.1),
+		Size = UDim2.fromScale(0.7, 0.84),
+		ClipsDescendants = true,
+		ZIndex = 2,
+		[Children] = {
+			scope:New("UICorner")({ CornerRadius = UDim.new(0.14, 0) }),
+			scope:New("UIStroke")({ Thickness = 4, Color = Theme.Ink }),
+			liquid,
+		},
+	})
+	table.insert(
+		scope,
+		RunService.RenderStepped:Connect(function()
+			local f = math.clamp(peek(fill) :: number, 0, 1)
+			-- onda mais forte no meio do copo, quase parada vazio ou cheio
+			local amp = 0.05 * math.sin(math.pi * f)
+			local t = os.clock()
+			for i, col in liquid do
+				local h = if f <= 0.001 then 0 else math.clamp(f + amp * math.sin(t * 3.2 + i * 0.45), 0, 1)
+				col.Size = UDim2.new(1 / WAVE_COLUMNS, 1, h, 0)
+			end
+		end)
+	)
+	return scope:New("Frame")({
+		Name = "Cup",
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.fromScale(0.03, 0.5),
+		Size = UDim2.fromScale(1.1, 0.86),
+		SizeConstraint = Enum.SizeConstraint.RelativeYY,
+		[Children] = {
+			scale,
+			body,
+			-- asa
+			scope:New("Frame")({
+				Name = "Handle",
+				BackgroundTransparency = 1,
+				Position = UDim2.fromScale(0.74, 0.3),
+				Size = UDim2.fromScale(0.22, 0.38),
+				[Children] = {
+					scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
+					scope:New("UIStroke")({ Thickness = 4, Color = Theme.Ink }),
+				},
+			}),
+			scope:New("TextLabel")({
+				Name = "Level",
+				BackgroundTransparency = 1,
+				Position = UDim2.fromScale(0.12, 0.3),
+				Size = UDim2.fromScale(0.54, 0.5),
+				ZIndex = 3,
+				Font = Theme.Font,
+				TextScaled = true,
+				TextColor3 = Theme.Ink,
+				Text = scope:Computed(function(use)
+					return tostring(use(level))
+				end),
+				[Children] = scope:New("UIStroke")({ Thickness = 2, Color = Theme.Paper }),
+			}),
+		},
+	})
 end
 
 local function panel(scope: any, props: { [string]: any }): Frame
@@ -367,13 +449,17 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 	local totalStars = 0
 	local drinkCounts: { [string]: number } = {}
 	local wrongCounts: { [string]: number } = {}
-	local served = 0
+	local pastryCounts: { [string]: number } = {}
+	local pastryWrong: { [string]: number } = {}
 	for _, o in summary.orders do
+		if o.pastry and o.pastry ~= "" then
+			local counts = if o.pastryOk then pastryCounts else pastryWrong
+			counts[o.pastry] = (counts[o.pastry] or 0) + 1
+		end
 		if o.wrong then
 			totalStars += 1 -- pedido errado vale 1 estrela
 			wrongCounts[o.drink] = (wrongCounts[o.drink] or 0) + 1
 		else
-			served += 1
 			totalStars += Reviews.stars(o.tier)
 			drinkCounts[o.drink] = (drinkCounts[o.drink] or 0) + 1
 		end
@@ -381,18 +467,23 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 	local rated = #summary.orders
 	local avgStars = if rated > 0 then math.floor(totalStars / rated + 0.5) else 0
 
-	local shownMoney = scope:Value(0)
+	-- saldo total: começa no que havia antes do dia e recebe vendas e gorjetas
+	local totalMoney = peek(State.Money) :: number
+	local moneyBefore = math.max(0, totalMoney - summary.earned)
+	local shownMoney = scope:Value(moneyBefore)
+	local gainText = scope:Value("")
+	local gainScale = scope:New("UIScale")({ Scale = 0 })
 	local xpLevel = scope:Value(summary.levelBefore)
 	local xpFill = scope:Value(summary.xpBefore / Progression.xpToNext(summary.levelBefore))
 	local xpText = scope:Value("")
 	local continueVisible = scope:Value(false)
 
-	-- bebidas entregues (as erradas/incompletas também, num card avermelhado logo depois)
+	-- bebidas e doces entregues (os errados/incompletos também, num card avermelhado logo depois)
 	local tiles = {}
 	local tileOrder = 0
 	local shownDrinks = table.clone(Recipes.DrinkOrder)
 	table.move(Recipes.SecretDrinkOrder, 1, #Recipes.SecretDrinkOrder, #shownDrinks + 1, shownDrinks)
-	local function addTile(id: string, n: number, wrong: boolean)
+	local function addTile(id: string, n: number, wrong: boolean, art: Frame, name: string)
 		tileOrder += 1
 		local tile = panel(scope, {
 			Name = if wrong then `{id}Wrong` else id,
@@ -403,7 +494,7 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 					BackgroundTransparency = 1,
 					Position = UDim2.fromScale(0.1, 0.04),
 					Size = UDim2.fromScale(0.8, 0.58),
-					[Children] = drinkGlass(id),
+					[Children] = art,
 				}),
 				label(scope, `x{n}`, {
 					AnchorPoint = Vector2.new(1, 0),
@@ -411,7 +502,7 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 					Size = UDim2.fromScale(0.45, 0.2),
 					TextColor3 = Theme.WoodDark,
 				}),
-				label(scope, Recipes.Drinks[id].Name, {
+				label(scope, name, {
 					Position = UDim2.fromScale(0.05, 0.64),
 					Size = UDim2.fromScale(0.9, 0.3),
 					TextWrapped = true,
@@ -423,10 +514,23 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 	end
 	for _, id in shownDrinks do
 		if drinkCounts[id] then
-			addTile(id, drinkCounts[id], false)
+			addTile(id, drinkCounts[id], false, drinkGlass(id), Recipes.Drinks[id].Name)
 		end
 		if wrongCounts[id] then
-			addTile(id, wrongCounts[id], true)
+			addTile(id, wrongCounts[id], true, drinkGlass(id), Recipes.Drinks[id].Name)
+		end
+	end
+	local function pastryArt(id: string): Frame
+		local art = PixelArt.draw((Sprites :: any)[Catalog.Pastries[id].Icon])
+		art.Size = UDim2.fromScale(0.85, 0.85)
+		return art
+	end
+	for _, id in Catalog.PastryOrder do
+		if pastryCounts[id] then
+			addTile(id, pastryCounts[id], false, pastryArt(id), Catalog.Pastries[id].Name)
+		end
+		if pastryWrong[id] then
+			addTile(id, pastryWrong[id], true, pastryArt(id), Catalog.Pastries[id].Name)
 		end
 	end
 
@@ -502,7 +606,7 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 			Name = title,
 			LayoutOrder = order,
 			BackgroundColor3 = Theme.Paper,
-			Size = UDim2.fromScale(0.31, 1),
+			Size = UDim2.fromScale(0.4825, 1),
 			[Children] = {
 				label(scope, title, {
 					Position = UDim2.fromScale(0.05, 0.1),
@@ -601,10 +705,12 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 									}),
 									stat("Faturamento", 1, {
 										coin,
-										label(scope, if summary.tips > 0 then `inclui ${summary.tips} de gorjeta` else "", {
+										-- o que está entrando agora: vendas, depois gorjetas
+										label(scope, gainText, {
 											Position = UDim2.fromScale(0.05, 0.84),
 											Size = UDim2.fromScale(0.9, 0.13),
-											TextColor3 = Theme.WoodDark,
+											TextColor3 = Theme.SageDark,
+											[Children] = gainScale,
 										}),
 										label(scope, scope:Computed(function(use)
 											return `${use(shownMoney)}`
@@ -614,23 +720,10 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 											TextXAlignment = Enum.TextXAlignment.Left,
 										}),
 									}),
-									stat("Clientes", 2, {
-										-- um label só, em duas linhas, pra ficarem sempre com o mesmo tamanho de fonte (dia sem erro: só os parabéns)
-										label(
-											scope,
-											if summary.wrong == 0
-												then "Parabéns,\nnenhum pedido incompleto!"
-												else `{served} {if served == 1 then "completo" else "completos"}\n{summary.wrong} {if summary.wrong == 1 then "incompleto" else "incompletos"}`,
-											{
-												Position = UDim2.fromScale(0.05, 0.4),
-												Size = UDim2.fromScale(0.9, 0.54),
-											}
-										),
-									}),
-									stat("Avaliação", 3, { ratingStars }),
+									stat("Avaliação", 2, { ratingStars }),
 								},
 							}),
-							label(scope, "Bebidas entregues", {
+							label(scope, "Bebidas e doces entregues", {
 								Position = UDim2.fromScale(0, 0.35),
 								Size = UDim2.fromScale(1, 0.08),
 								TextXAlignment = Enum.TextXAlignment.Left,
@@ -642,8 +735,9 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 								Size = UDim2.fromScale(1, 0.54),
 								[Children] = {
 									scope:New("UIGridLayout")({
-										CellSize = UDim2.fromScale(0.185, 0.47),
-										CellPadding = UDim2.fromScale(0.018, 0.04),
+										-- 7 por linha: cabem as bebidas e os doces do dia
+										CellSize = UDim2.fromScale(0.13, 0.47),
+										CellPadding = UDim2.fromScale(0.015, 0.04),
 										SortOrder = Enum.SortOrder.LayoutOrder,
 									}),
 									tiles,
@@ -687,58 +781,23 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 							panel(scope, {
 								Name = "XP",
 								BackgroundColor3 = Theme.Paper,
-								Size = UDim2.fromScale(0.66, 1),
+								AnchorPoint = Vector2.new(0, 0.5),
+								Position = UDim2.fromScale(0, 0.5),
+								Size = UDim2.fromScale(0.42, 1),
 								[Children] = {
-									scope:New("Frame")({
-										Name = "Badge",
-										AnchorPoint = Vector2.new(0, 0.5),
-										Position = UDim2.fromScale(0.02, 0.5),
-										Size = UDim2.fromScale(0.8, 0.8),
-										SizeConstraint = Enum.SizeConstraint.RelativeYY,
-										BackgroundColor3 = Theme.Mustard,
-										[Children] = {
-											levelBadgeScale,
-											scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
-											scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink }),
-											label(scope, scope:Computed(function(use)
-												return tostring(use(xpLevel))
-											end), {
-												Position = UDim2.fromScale(0.15, 0.2),
-												Size = UDim2.fromScale(0.7, 0.6),
-											}),
-										},
-									}),
+									xpCup(scope, xpFill, xpLevel, levelBadgeScale),
 									label(scope, scope:Computed(function(use)
 										return `Nível {use(xpLevel)}`
 									end), {
-										Position = UDim2.fromScale(0.16, 0.12),
-										Size = UDim2.fromScale(0.4, 0.34),
+										Position = UDim2.fromScale(0.36, 0.16),
+										Size = UDim2.fromScale(0.6, 0.36),
 										TextXAlignment = Enum.TextXAlignment.Left,
 									}),
 									label(scope, xpText, {
-										AnchorPoint = Vector2.new(1, 0),
-										Position = UDim2.fromScale(0.97, 0.14),
-										Size = UDim2.fromScale(0.4, 0.3),
-										TextXAlignment = Enum.TextXAlignment.Right,
+										Position = UDim2.fromScale(0.36, 0.56),
+										Size = UDim2.fromScale(0.6, 0.28),
+										TextXAlignment = Enum.TextXAlignment.Left,
 										TextColor3 = Theme.SageDark,
-									}),
-									scope:New("Frame")({
-										Name = "Bar",
-										Position = UDim2.fromScale(0.16, 0.56),
-										Size = UDim2.fromScale(0.81, 0.26),
-										BackgroundColor3 = Theme.PaperShade,
-										[Children] = {
-											scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
-											scope:New("UIStroke")({ Thickness = 2, Color = Theme.Ink }),
-											scope:New("Frame")({
-												BorderSizePixel = 0,
-												BackgroundColor3 = Theme.Sage,
-												Size = scope:Computed(function(use)
-													return UDim2.fromScale(math.clamp(use(xpFill), 0.03, 1), 1)
-												end),
-												[Children] = scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
-											}),
-										},
 									}),
 								},
 							}),
@@ -797,15 +856,26 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 		tween(card, 0.6, { Position = UDim2.fromScale(0.5, 0.5) }, Enum.EasingStyle.Back)
 		task.wait(0.6)
 
-		-- faturamento contando
-		local t0 = os.clock()
-		while true do
-			local a = math.min(1, (os.clock() - t0) / 1.2)
-			shownMoney:set(math.floor(summary.earned * (1 - (1 - a) ^ 3)))
-			if a >= 1 then
-				break
+		-- faturamento: o saldo recebe as vendas e depois as gorjetas
+		local function countUp(from: number, amount: number, text: string, duration: number)
+			gainText:set(text)
+			gainScale.Scale = 0
+			tween(gainScale, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
+			local t0 = os.clock()
+			while true do
+				local a = math.min(1, (os.clock() - t0) / duration)
+				shownMoney:set(from + math.floor(amount * (1 - (1 - a) ^ 3)))
+				if a >= 1 then
+					break
+				end
+				RunService.RenderStepped:Wait()
 			end
-			RunService.RenderStepped:Wait()
+			task.wait(0.35)
+		end
+		local sales = summary.earned - summary.tips
+		countUp(moneyBefore, sales, `+${sales} em vendas`, 1.2)
+		if summary.tips > 0 then
+			countUp(moneyBefore + sales, summary.tips, `+${summary.tips} em gorjetas`, 0.7)
 		end
 
 		for i, t in tiles do

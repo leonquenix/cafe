@@ -179,6 +179,19 @@ function TitleScreen.show(onPlay: () -> (), onFree: (() -> ())?)
 		[Children] = { gradient, title, playButton, freeButton, info },
 	}) :: ScreenGui
 
+	-- Em tela baixa (celular) os tamanhos mínimos fazem os botões se encostarem:
+	-- empilha "Modo Livre" e o texto de baixo a partir do PLAY
+	local function stack()
+		local h = gui.AbsoluteSize.Y
+		local playH = math.clamp(h * 0.13, 70, 120)
+		local freeH = math.clamp(h * 0.08, 46, 80)
+		local freeY = math.max(h * 0.75, h * 0.62 + playH / 2 + 14 + freeH / 2)
+		freeButton.Position = UDim2.new(0.5, 0, 0, freeY)
+		info.Position = UDim2.new(0.5, 0, 0, math.max(h * 0.83, freeY + freeH / 2 + 10))
+	end
+	stack()
+	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(stack)
+
 	tween(titleScale, 0.7, { Scale = 1 }, Enum.EasingStyle.Back)
 	task.delay(0.35, function()
 		tween(buttonScale, 0.5, { Scale = 1 }, Enum.EasingStyle.Back)

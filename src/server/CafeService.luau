@@ -24,8 +24,18 @@ type Order = {
 	pastry: string,
 	assignedAt: number,
 	kind: number,
+	pastryQuality: number, -- Catalog.PastryQuality; -1 = o pop-up do forno ainda está aberto
 }
-type Delivered = { drink: string, tier: number, earned: number, kind: number, wrong: boolean, problem: string }
+type Delivered = {
+	drink: string,
+	tier: number,
+	earned: number,
+	kind: number,
+	wrong: boolean,
+	problem: string,
+	pastry: string, -- "" = pedido sem doce
+	pastryOk: boolean, -- doce entregue ok/perfeito (cru, queimado ou não feito = false)
+}
 
 type Session = {
 	dayActive: boolean,
@@ -336,10 +346,13 @@ local function onRequestOrder(index: number, player: Player?)
 			customerId = index,
 			drink = drink,
 			modifier = chooseModifier(data, entry, drink),
-			pastry = choosePastry(data, entry),
+			pastry = "",
 			assignedAt = os.clock(),
 			kind = entry.kind,
+			pastryQuality = 0,
 		}
+		order.pastry = choosePastry(data, entry)
+		order.pastryQuality = if order.pastry ~= "" then -1 else 0
 		session.order = order
 	end
 	local o = order :: Order
@@ -352,19 +365,35 @@ local function onRequestOrder(index: number, player: Player?)
 	}, player)
 end
 
--- Paga uma entrega correta e registra no dia/perfil. Retorna (ganho, gorjeta, tier).
-local function grant(session: Session, data: DataService.Data, order: Order, mult: number, pastryQuality: number): (number, number, number)
+-- Como o doce saiu: "" (ok/perfeito ou sem doce no pedido) | "NoPastry" | "RawPastry" | "BurntPastry"
+local function pastryProblem(order: Order): string
+	if order.pastry == "" then
+		return ""
+	end
+	local q = order.pastryQuality
+	if q == Catalog.PastryQuality.Raw then
+		return "RawPastry"
+	elseif q == Catalog.PastryQuality.Burnt then
+		return "BurntPastry"
+	elseif q == Catalog.PastryQuality.Ok or q == Catalog.PastryQuality.Perfect then
+		return ""
+	end
+	return "NoPastry"
+end
+
+-- Paga uma entrega correta e registra no dia/perfil. Retorna (ganho, gorjeta, tier, problema do doce).
+local function grant(session: Session, data: DataService.Data, order: Order, mult: number): (number, number, number, string)
 	local d = Recipes.Drinks[order.drink]
 	local modifier = if order.modifier ~= "" then order.modifier else nil
 	local tier = Progression.tier(mult)
+	local problem = pastryProblem(order)
 
 	local value = d.Price * mult
 	if modifier then
 		value *= 1 + Recipes.Modifiers[modifier].Bonus
 	end
 	if order.pastry ~= "" then
-		local pastry = Catalog.Pastries[order.pastry]
-		value += pastry.Price * (if pastryQuality >= 2 then 1.25 else 1)
+		value += Catalog.pastryValue(order.pastry, math.max(order.pastryQuality, 0))
 	end
 	-- aconchego (decoração) e maestria da bebida
 	value *= 1 + cozy(data) * Catalog.CozyBonus
@@ -384,7 +413,7 @@ local function grant(session: Session, data: DataService.Data, order: Order, mul
 
 	local tip = 0
 	local jar = data.Upgrades.TipJar or 0
-	if tier == 3 and jar > 0 then
+	if tier == 3 and jar > 0 and problem == "" then
 		tip = math.floor(d.Price * 0.12 * jar) + jar
 	end
 
@@ -396,14 +425,23 @@ local function grant(session: Session, data: DataService.Data, order: Order, mul
 	session.earned += earned + tip
 	session.tips += tip
 	session.xp += xp
-	table.insert(session.delivered, { drink = order.drink, tier = tier, earned = earned, kind = order.kind, wrong = false, problem = "" })
+	table.insert(session.delivered, {
+		drink = order.drink,
+		tier = tier,
+		earned = earned,
+		kind = order.kind,
+		wrong = false,
+		problem = problem,
+		pastry = order.pastry,
+		pastryOk = order.pastry ~= "" and problem == "",
+	})
 
 	data.Money += earned + tip
 	data.TotalEarned += earned + tip
 	data.DrinksServed += 1
 	data.DrinkStats[order.drink] = (data.DrinkStats[order.drink] or 0) + 1
 
-	return earned, tip, tier
+	return earned, tip, tier, problem
 end
 
 local function onSubmit(payload: any, player: Player?)
@@ -420,30 +458,84 @@ local function onSubmit(payload: any, player: Player?)
 	local problem = if #payload.ingredients > Recipes.MaxPortions
 		then "Ingredients"
 		else Recipes.orderProblem(order.drink, modifier, payload.ingredients, payload.mixed, payload.stirred)
-	if problem == "" and order.pastry ~= "" and payload.pastryQuality <= 0 then
-		problem = "Pastry"
-	end
 
 	if problem ~= "" then
-		-- servido errado: o cliente leva mesmo assim, mas não paga
+		-- bebida errada: o cliente leva mesmo assim e não paga a bebida;
+		-- se o pedido tinha doce, o doce é pago normalmente (cru/queimado continua pagando menos)
 		session.order = nil
 		local entry = session.plan[order.customerId]
 		if entry then
 			entry.status = "wrong"
 		end
+		local earned = 0
+		if order.pastry ~= "" then
+			local value = Catalog.pastryValue(order.pastry, math.max(order.pastryQuality, 0))
+			value *= 1 + cozy(data) * Catalog.CozyBonus
+			if order.kind == Kind.Kid then
+				value *= 0.6
+			end
+			earned = if value > 0 then math.max(1, math.floor(value + 0.5)) else 0
+		end
 		session.wrong += 1
 		session.xp += 2
-		table.insert(session.delivered, { drink = order.drink, tier = 0, earned = 0, kind = order.kind, wrong = true, problem = problem })
-		Net.OrderResult.sendTo({ orderId = payload.orderId, success = false, problem = problem, earned = 0, tip = 0, tier = 0 }, player)
+		session.earned += earned
+		data.Money += earned
+		data.TotalEarned += earned
+		local q = order.pastryQuality
+		table.insert(session.delivered, {
+			drink = order.drink,
+			tier = 0,
+			earned = earned,
+			kind = order.kind,
+			wrong = true,
+			problem = problem,
+			pastry = order.pastry,
+			pastryOk = q == Catalog.PastryQuality.Ok or q == Catalog.PastryQuality.Perfect,
+		})
+		Net.OrderResult.sendTo({ orderId = payload.orderId, success = false, problem = problem, earned = earned, tip = 0, tier = 0 }, player)
 		resolve(player, session, data)
 		return
 	end
 
 	local elapsed = os.clock() - order.assignedAt - Progression.GraceTime
-	local earned, tip, tier = grant(session, data, order, Progression.multiplier(elapsed), payload.pastryQuality)
+	local earned, tip, tier, pastry = grant(session, data, order, Progression.multiplier(elapsed))
 
-	Net.OrderResult.sendTo({ orderId = payload.orderId, success = true, problem = "", earned = earned, tip = tip, tier = tier }, player)
+	Net.OrderResult.sendTo({ orderId = payload.orderId, success = true, problem = pastry, earned = earned, tip = tip, tier = tier }, player)
 	resolve(player, session, data)
+end
+
+-- Pop-up do forno fechou: guarda como o doce saiu e o relógio da bebida começa agora
+local function onPastryDone(payload: any, player: Player?)
+	if not player then
+		return
+	end
+	local session = sessions[player]
+	local order = session and session.order
+	if not order or order.orderId ~= payload.orderId or order.pastry == "" or order.pastryQuality ~= -1 then
+		return
+	end
+	order.pastryQuality = math.clamp(payload.quality, 0, Catalog.PastryQuality.Burnt)
+	order.assignedAt = os.clock()
+end
+
+local function onPastryRetry(orderId: number, player: Player?)
+	if not player then
+		return
+	end
+	local session = sessions[player]
+	local data = DataService.get(player)
+	local order = session and session.order
+	if not session or not data or not order or order.orderId ~= orderId or order.pastry == "" or order.pastryQuality ~= -1 then
+		return
+	end
+	local cost = Catalog.retryCost(order.pastry)
+	local ok = data.Money >= cost
+	if ok then
+		data.Money -= cost
+		session.earned = math.max(0, session.earned - cost)
+	end
+	Net.PastryRetryResult.sendTo({ orderId = orderId, ok = ok }, player)
+	sendState(player)
 end
 
 local function onClaimMastery(drink: string, player: Player?)
@@ -558,9 +650,13 @@ function CafeService.forceEndDay(player: Player): (boolean, string)
 					pastry = "",
 					assignedAt = os.clock(),
 					kind = entry.kind,
+					pastryQuality = 0,
 				}
 			end
-			grant(session, data, order, 1, 1)
+			if order.pastryQuality == -1 then
+				order.pastryQuality = Catalog.PastryQuality.Ok
+			end
+			grant(session, data, order, 1)
 			session.resolved += 1
 			count += 1
 		end
@@ -592,6 +688,8 @@ function CafeService.start()
 		Barista.setWalking(player, on and not session.dayActive)
 	end)
 	Net.SubmitDrink.listen(onSubmit)
+	Net.PastryDone.listen(onPastryDone)
+	Net.PastryRetry.listen(onPastryRetry)
 	Net.Buy.listen(onBuy)
 	Net.SetMenu.listen(onSetMenu)
 
