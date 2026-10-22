@@ -11,6 +11,7 @@ local Recipes = require(ReplicatedStorage.Shared.Recipes)
 local Glass = require(script.Parent.Parent.Art.Glass)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
+local Pause = require(script.Parent.Parent.Pause)
 local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
 
@@ -275,6 +276,10 @@ function RecipeBook.show()
 		return
 	end
 	isOpen = true
+	-- no meio do expediente o jogo pausa até o livro fechar
+	if peek(State.DayActive) then
+		Pause.set(true)
+	end
 	local scope = Fusion.scoped(Fusion)
 
 	local recipeCards = {}
@@ -400,6 +405,7 @@ function RecipeBook.show()
 			return
 		end
 		isOpen = false
+		Pause.set(false)
 		local t = TweenService:Create(card, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
 			Position = UDim2.fromScale(0.5, 1.6),
 		})

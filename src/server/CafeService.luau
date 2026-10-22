@@ -47,6 +47,7 @@ type Session = {
 	plan: { PlanEntry },
 	order: Order?,
 	wrong: number,
+	pausedAt: number?, -- livro de receitas aberto: o relógio do pedido está parado desde aqui
 }
 
 local sessions: { [Player]: Session } = {}
@@ -66,6 +67,7 @@ local function newSession(): Session
 		plan = {},
 		order = nil,
 		wrong = 0,
+		pausedAt = nil,
 	}
 end
 
@@ -256,6 +258,7 @@ end
 local function endDay(player: Player, session: Session, data: DataService.Data)
 	session.dayActive = false
 	session.order = nil
+	session.pausedAt = nil
 
 	local gained = session.xp + Progression.DayBonusXp
 	local levelBefore, xpBefore = data.Level, data.XP
@@ -497,7 +500,7 @@ local function onSubmit(payload: any, player: Player?)
 		return
 	end
 
-	local elapsed = os.clock() - order.assignedAt - Progression.GraceTime
+	local elapsed = (session.pausedAt or os.clock()) - order.assignedAt - Progression.GraceTime
 	local earned, tip, tier, pastry = grant(session, data, order, Progression.multiplier(elapsed))
 
 	Net.OrderResult.sendTo({ orderId = payload.orderId, success = true, problem = pastry, earned = earned, tip = tip, tier = tier }, player)
@@ -516,6 +519,25 @@ local function onPastryDone(payload: any, player: Player?)
 	end
 	order.pastryQuality = math.clamp(payload.quality, 0, Catalog.PastryQuality.Burnt)
 	order.assignedAt = os.clock()
+end
+
+-- Livro de receitas aberto/fechado no meio do dia: o tempo parado não conta para o pedido
+local function onPause(on: boolean, player: Player?)
+	local session = player and sessions[player]
+	if not session then
+		return
+	end
+	if on then
+		if session.dayActive and not session.pausedAt then
+			session.pausedAt = os.clock()
+		end
+	elseif session.pausedAt then
+		local stopped = os.clock() - session.pausedAt
+		session.pausedAt = nil
+		if session.order then
+			session.order.assignedAt += stopped
+		end
+	end
 end
 
 local function onPastryRetry(orderId: number, player: Player?)
@@ -690,6 +712,7 @@ function CafeService.start()
 	Net.SubmitDrink.listen(onSubmit)
 	Net.PastryDone.listen(onPastryDone)
 	Net.PastryRetry.listen(onPastryRetry)
+	Net.Pause.listen(onPause)
 	Net.Buy.listen(onBuy)
 	Net.SetMenu.listen(onSetMenu)
 

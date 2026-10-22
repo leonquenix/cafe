@@ -10,6 +10,7 @@ local TweenService = game:GetService("TweenService")
 local Characters = require(ReplicatedStorage.Shared.Characters)
 local Layout = require(ReplicatedStorage.Shared.Layout)
 local CustomerModel = require(script.Parent.Art.CustomerModel)
+local Pause = require(script.Parent.Pause)
 local Bubble = require(script.Parent.UI.Bubble)
 
 type Waypoint = { Position: Vector3, Tag: string? }
@@ -269,6 +270,9 @@ function Customers.start(frontReady: (Customer) -> ())
 	container.Parent = workspace
 
 	RunService.Heartbeat:Connect(function(dt)
+		if Pause.isPaused() then
+			return -- todo mundo congela no lugar
+		end
 		for _, c in all do
 			animate(c, dt)
 		end
@@ -277,12 +281,12 @@ function Customers.start(frontReady: (Customer) -> ())
 	-- cadência: fila curta enche rápido, fila cheia desacelera
 	task.spawn(function()
 		while true do
-			if dayRunning and nextIndex <= #plan and #queue < Layout.MaxQueue then
+			if dayRunning and not Pause.isPaused() and nextIndex <= #plan and #queue < Layout.MaxQueue then
 				spawnCustomer(nextIndex, plan[nextIndex])
 				nextIndex += 1
 				local n = #queue
 				local gap = if n <= 1 then rng:NextNumber(1, 1.6) elseif n == 2 then rng:NextNumber(2.2, 3.4) else rng:NextNumber(3.5, 5)
-				task.wait(gap)
+				Pause.wait(gap)
 			else
 				task.wait(0.25)
 			end

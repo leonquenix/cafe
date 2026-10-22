@@ -16,6 +16,7 @@ local Recipes = require(ReplicatedStorage.Shared.Recipes)
 local Glass = require(script.Parent.Parent.Art.Glass)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
+local Pause = require(script.Parent.Parent.Pause)
 local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
 
@@ -771,7 +772,7 @@ function Minigame.new(playerGui: PlayerGui)
 	RunService.RenderStepped:Connect(function()
 		local p = peek(phase)
 		if p == "Making" or p == "Ready" then
-			elapsed:set(os.clock() - self.openedAt)
+			elapsed:set(Pause.clock() - self.openedAt)
 		end
 		if p == "Ready" then
 			serveScale:set(1 + math.sin(os.clock() * 6) * 0.05)
@@ -1173,7 +1174,7 @@ function Minigame.open(self: any, order: Order)
 			tween(self.glassHolder, 0.45, { Position = UDim2.fromScale(0.5, 0.5) }, Enum.EasingStyle.Back)
 		end
 	end)
-	self.openedAt = os.clock()
+	self.openedAt = Pause.clock()
 	self.elapsed:set(0)
 	self.phase:set("Making")
 end

@@ -13,6 +13,10 @@ return ByteNet.defineNamespace("Cafe", function()
 		WalkMode = ByteNet.definePacket({
 			value = ByteNet.bool,
 		}),
+		-- cliente -> servidor: pausar/retomar o expediente (livro de receitas aberto); o relógio do pedido para
+		Pause = ByteNet.definePacket({
+			value = ByteNet.bool,
+		}),
 		-- cliente -> servidor: coletar a recompensa de maestria de uma bebida
 		ClaimMastery = ByteNet.definePacket({
 			value = ByteNet.string,

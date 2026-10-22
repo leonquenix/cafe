@@ -15,6 +15,7 @@ local Fusion = require(ReplicatedStorage.Packages.Fusion)
 local Catalog = require(ReplicatedStorage.Shared.Catalog)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
+local Pause = require(script.Parent.Parent.Pause)
 local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
 
@@ -161,7 +162,7 @@ local function startBake()
 	showInOven(peek(pastryId))
 	needle:set(0)
 	message:set("")
-	bakeStart = os.clock()
+	bakeStart = Pause.clock()
 	status:set("baking")
 end
 
@@ -656,7 +657,7 @@ function PastryPopup.init(playerGui: PlayerGui)
 		if id == "" then
 			return
 		end
-		local t = (os.clock() - bakeStart) / Catalog.Pastries[id].BakeTime
+		local t = (Pause.clock() - bakeStart) / Catalog.Pastries[id].BakeTime
 		needle:set(math.min(t, 1))
 		if t >= 1 then
 			finish(Quality.Burnt)
