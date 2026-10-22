@@ -128,12 +128,12 @@ function Hud.new(playerGui: PlayerGui)
 	-- encolhe a fileira se não couber antes da bancada (celular pequeno)
 	local fit = scope:New("UIScale")({ Scale = 1 }) :: UIScale
 
-	-- fica abaixo da barra do Roblox (botões de menu/chat) e fora do entalhe do celular
+	-- no topo da tela (altura original), centralizado entre os botões do Roblox e fora do entalhe do celular
 	gui = scope:New("ScreenGui")({
 		Name = "CafeHud",
 		ResetOnSpawn = false,
-		IgnoreGuiInset = false,
-		ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets,
+		IgnoreGuiInset = true,
+		ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets,
 		DisplayOrder = 2,
 		Parent = playerGui,
 		[Children] = {
@@ -141,7 +141,7 @@ function Hud.new(playerGui: PlayerGui)
 				Name = "Top",
 				BackgroundTransparency = 1,
 				AnchorPoint = Vector2.new(0.5, 0),
-				Position = UDim2.new(0.5, 0, 0, 10),
+				Position = UDim2.new(0.5, 0, 0, 18),
 				Size = UDim2.fromOffset(TOP_WIDTH, 52),
 				Visible = State.Loaded,
 				[Children] = {
@@ -174,7 +174,7 @@ function Hud.new(playerGui: PlayerGui)
 		-- centralizado na tela; se a borda direita encostar na bancada, desliza para a esquerda
 		local half = TOP_WIDTH * scale / 2
 		local shift = math.min(0, limit - (gui.AbsoluteSize.X / 2 + half))
-		top.Position = UDim2.new(0.5, shift, 0, 10)
+		top.Position = UDim2.new(0.5, shift, 0, 18)
 	end
 	refit()
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(refit)
