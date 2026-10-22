@@ -3,6 +3,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
 
 local Fusion = require(ReplicatedStorage.Packages.Fusion)
 local Progression = require(ReplicatedStorage.Shared.Progression)
@@ -15,6 +16,11 @@ local Theme = require(script.Parent.Theme)
 local Children, OnEvent = Fusion.Children, Fusion.OnEvent
 
 local Hud = {}
+
+-- largura natural da fileira do topo (pílulas 160 + 200 + 230, livro 52, 3 espaços de 14)
+local TOP_WIDTH = 160 + 200 + 230 + 52 + 3 * 14
+-- a bancada do preparo (Minigame) ocupa a direita: 38% da tela, no máximo 560, a 16 da borda
+local BENCH_FRACTION, BENCH_MAX, BENCH_MARGIN = 0.38, 560, 16
 
 local gui: ScreenGui
 local moneyPill: Frame
@@ -235,20 +241,26 @@ function Hud.new(playerGui: PlayerGui)
 		end,
 	})
 
+	-- encolhe a fileira para caber entre a borda esquerda e a bancada (celular/tablet)
+	local fit = scope:New("UIScale")({ Scale = 1 }) :: UIScale
+
+	-- fica abaixo da barra do Roblox (botões de menu/chat) e fora do entalhe do celular
 	gui = scope:New("ScreenGui")({
 		Name = "CafeHud",
 		ResetOnSpawn = false,
-		IgnoreGuiInset = true,
+		IgnoreGuiInset = false,
+		ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets,
 		DisplayOrder = 2,
 		Parent = playerGui,
 		[Children] = {
 			scope:New("Frame")({
 				Name = "Top",
 				BackgroundTransparency = 1,
-				Position = UDim2.fromOffset(20, 18),
-				Size = UDim2.new(1, 0, 0, 52),
+				Position = UDim2.fromOffset(16, 10),
+				Size = UDim2.fromOffset(TOP_WIDTH, 52),
 				Visible = State.Loaded,
 				[Children] = {
+					fit,
 					scope:New("UIListLayout")({
 						FillDirection = Enum.FillDirection.Horizontal,
 						Padding = UDim.new(0, 14),
@@ -263,6 +275,25 @@ function Hud.new(playerGui: PlayerGui)
 			}),
 		},
 	}) :: ScreenGui
+
+	local top = gui:FindFirstChild("Top") :: Frame
+	local function refit()
+		local camera = Workspace.CurrentCamera
+		if not camera then
+			return
+		end
+		local width = camera.ViewportSize.X
+		local benchLeft = width - BENCH_MARGIN - math.min(width * BENCH_FRACTION, BENCH_MAX)
+		local available = benchLeft - 12 - (gui.AbsolutePosition.X + top.Position.X.Offset)
+		fit.Scale = math.clamp(available / TOP_WIDTH, 0.4, 1)
+	end
+	refit()
+	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(refit)
+	gui:GetPropertyChangedSignal("AbsolutePosition"):Connect(refit)
+	Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(refit)
+	if Workspace.CurrentCamera then
+		Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(refit)
+	end
 end
 
 -- "+$18 Relâmpago!" subindo e moedinhas voando até o contador
