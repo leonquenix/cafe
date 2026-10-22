@@ -1,5 +1,5 @@
 --!strict
--- HUD do topo: dinheiro, nível + XP e progresso do dia. Também mostra o "+$" ao entregar.
+-- HUD do topo (centralizado): dinheiro e livro de receitas. Também mostra o "+$" ao entregar.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -17,8 +17,8 @@ local Children, OnEvent = Fusion.Children, Fusion.OnEvent
 
 local Hud = {}
 
--- largura natural da fileira do topo (pílulas 160 + 200 + 230, livro 52, 3 espaços de 14)
-local TOP_WIDTH = 160 + 200 + 230 + 52 + 3 * 14
+-- largura natural da fileira do topo (pílula 160, livro 52, 1 espaço de 14)
+local TOP_WIDTH = 160 + 52 + 14
 -- a bancada do preparo (Minigame) ocupa a direita: 38% da tela, no máximo 560, a 16 da borda
 local BENCH_FRACTION, BENCH_MAX, BENCH_MARGIN = 0.38, 560, 16
 
@@ -71,128 +71,12 @@ function Hud.new(playerGui: PlayerGui)
 		}),
 	})
 
-	local xpFill = scope:Spring(
-		scope:Computed(function(use)
-			return math.clamp(use(State.XP) / Progression.xpToNext(use(State.Level)), 0, 1)
-		end),
-		10,
-		1
-	)
-
-	local levelPill = pill(scope, "Level", 200, 2, {
-		scope:New("Frame")({
-			Name = "Badge",
-			AnchorPoint = Vector2.new(0, 0.5),
-			Position = UDim2.new(0, -4, 0.5, 0),
-			Size = UDim2.fromScale(1.25, 1.25),
-			SizeConstraint = Enum.SizeConstraint.RelativeYY,
-			BackgroundColor3 = Theme.Mustard,
-			ZIndex = 2,
-			[Children] = {
-				scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
-				scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink }),
-				scope:New("TextLabel")({
-					BackgroundTransparency = 1,
-					Position = UDim2.fromScale(0.15, 0.2),
-					Size = UDim2.fromScale(0.7, 0.6),
-					Font = Theme.Font,
-					TextScaled = true,
-					TextColor3 = Theme.Ink,
-					ZIndex = 3,
-					Text = scope:Computed(function(use)
-						return tostring(use(State.Level))
-					end),
-				}),
-			},
-		}),
-		scope:New("TextLabel")({
-			BackgroundTransparency = 1,
-			Position = UDim2.new(0, 72, 0.1, 0),
-			Size = UDim2.new(1, -86, 0.38, 0),
-			Font = Theme.Font,
-			TextScaled = true,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextColor3 = Theme.Ink,
-			Text = scope:Computed(function(use)
-				return `Nível {use(State.Level)}`
-			end),
-		}),
-		scope:New("Frame")({
-			Name = "XPBar",
-			Position = UDim2.new(0, 72, 0.56, 0),
-			Size = UDim2.new(1, -88, 0.24, 0),
-			BackgroundColor3 = Theme.PaperShade,
-			[Children] = {
-				scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
-				scope:New("UIStroke")({ Thickness = 2, Color = Theme.Ink }),
-				scope:New("Frame")({
-					BorderSizePixel = 0,
-					BackgroundColor3 = Theme.Sage,
-					Size = scope:Computed(function(use)
-						return UDim2.fromScale(math.max(use(xpFill), 0.04), 1)
-					end),
-					[Children] = scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
-				}),
-			},
-		}),
-	})
-
-	-- bolinhas de progresso do dia
-	local dots = scope:Computed(function(use)
-		local list = {}
-		for i = 1, use(State.PerDay) do
-			list[i] = i <= use(State.Served)
-		end
-		return list
-	end)
-
-	local dayPill = pill(scope, "Day", 230, 3, {
-		scope:New("TextLabel")({
-			BackgroundTransparency = 1,
-			Position = UDim2.new(0, 14, 0.1, 0),
-			Size = UDim2.new(1, -28, 0.38, 0),
-			Font = Theme.Font,
-			TextScaled = true,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextColor3 = Theme.Ink,
-			Text = scope:Computed(function(use)
-				return `Dia {use(State.Day)}  ·  {use(State.Served)}/{use(State.PerDay)} clientes`
-			end),
-		}),
-		scope:New("Frame")({
-			Name = "Dots",
-			BackgroundTransparency = 1,
-			Position = UDim2.new(0, 14, 0.56, 0),
-			Size = UDim2.new(1, -28, 0.26, 0),
-			[Children] = {
-				scope:New("UIListLayout")({
-					FillDirection = Enum.FillDirection.Horizontal,
-					Padding = UDim.new(0, 4),
-					SortOrder = Enum.SortOrder.LayoutOrder,
-				}),
-				scope:ForPairs(dots, function(use, dotScope, i: number, filled: boolean)
-					return i,
-						dotScope:New("Frame")({
-							LayoutOrder = i,
-							Size = UDim2.fromScale(1, 1),
-							SizeConstraint = Enum.SizeConstraint.RelativeYY,
-							BackgroundColor3 = if filled then Theme.Mustard else Theme.PaperShade,
-							[Children] = {
-								dotScope:New("UICorner")({ CornerRadius = UDim.new(0.3, 0) }),
-								dotScope:New("UIStroke")({ Thickness = 2, Color = Theme.Ink }),
-							},
-						})
-				end),
-			},
-		}),
-	})
-
 	-- botão do livro de receitas
 	local bookArt = PixelArt.draw(Sprites.Book)
 	bookArt.Size = UDim2.fromScale(0.7, 0.7)
 	local bookButton = scope:New("TextButton")({
 		Name = "Book",
-		LayoutOrder = 4,
+		LayoutOrder = 2,
 		Text = "",
 		AutoButtonColor = true,
 		BackgroundColor3 = Theme.Paper,
@@ -241,7 +125,7 @@ function Hud.new(playerGui: PlayerGui)
 		end,
 	})
 
-	-- encolhe a fileira para caber entre a borda esquerda e a bancada (celular/tablet)
+	-- encolhe a fileira se não couber antes da bancada (celular pequeno)
 	local fit = scope:New("UIScale")({ Scale = 1 }) :: UIScale
 
 	-- fica abaixo da barra do Roblox (botões de menu/chat) e fora do entalhe do celular
@@ -256,20 +140,20 @@ function Hud.new(playerGui: PlayerGui)
 			scope:New("Frame")({
 				Name = "Top",
 				BackgroundTransparency = 1,
-				Position = UDim2.fromOffset(16, 10),
+				AnchorPoint = Vector2.new(0.5, 0),
+				Position = UDim2.new(0.5, 0, 0, 10),
 				Size = UDim2.fromOffset(TOP_WIDTH, 52),
 				Visible = State.Loaded,
 				[Children] = {
 					fit,
 					scope:New("UIListLayout")({
 						FillDirection = Enum.FillDirection.Horizontal,
+						HorizontalAlignment = Enum.HorizontalAlignment.Center,
 						Padding = UDim.new(0, 14),
 						SortOrder = Enum.SortOrder.LayoutOrder,
 						VerticalAlignment = Enum.VerticalAlignment.Center,
 					}),
 					moneyPill,
-					levelPill,
-					dayPill,
 					bookButton,
 				},
 			}),
@@ -284,8 +168,13 @@ function Hud.new(playerGui: PlayerGui)
 		end
 		local width = camera.ViewportSize.X
 		local benchLeft = width - BENCH_MARGIN - math.min(width * BENCH_FRACTION, BENCH_MAX)
-		local available = benchLeft - 12 - (gui.AbsolutePosition.X + top.Position.X.Offset)
-		fit.Scale = math.clamp(available / TOP_WIDTH, 0.4, 1)
+		local limit = benchLeft - 12 - gui.AbsolutePosition.X
+		local scale = math.clamp((limit - 16) / TOP_WIDTH, 0.4, 1)
+		fit.Scale = scale
+		-- centralizado na tela; se a borda direita encostar na bancada, desliza para a esquerda
+		local half = TOP_WIDTH * scale / 2
+		local shift = math.min(0, limit - (gui.AbsoluteSize.X / 2 + half))
+		top.Position = UDim2.new(0.5, shift, 0, 10)
 	end
 	refit()
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(refit)
