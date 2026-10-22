@@ -412,9 +412,10 @@ function Minigame.new(playerGui: PlayerGui)
 					12,
 					1
 				),
+				-- esvazia desde o primeiro segundo (a cor ainda segue o bônus, que fica no máximo até FastTime)
 				Size = scope:Computed(function(use)
-					local range = Progression.MaxMultiplier - Progression.MinMultiplier
-					return UDim2.fromScale(math.clamp((use(multiplier) - Progression.MinMultiplier) / range, 0.02, 1), 1)
+					local t = use(elapsed) / Progression.SlowTime
+					return UDim2.fromScale(math.clamp(1 - t, 0.02, 1), 1)
 				end),
 				[Children] = {
 					scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
