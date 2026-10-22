@@ -2,6 +2,7 @@
 -- Pop-up do forno: quando o cliente pede doce, abre no centro da tela ANTES do preparo da bebida.
 -- Arrastar o doce pedido até o forno -> o ponteiro corre pela barra -> "Tirar!" na hora certa.
 -- Zona verde = perfeito, amarela = ok, começo = cru, fim = queimado.
+-- Perfeito ou ok é entregue sozinho e a janela fecha logo depois da mensagem.
 -- Cru ou queimado ainda pode ser entregue (paga menos) ou assado de novo pagando (Catalog.retryCost).
 -- O X fecha sem o doce: o cliente paga só a bebida.
 
@@ -27,6 +28,8 @@ local RAW_END = 0.5
 local PERFECT_START, PERFECT_END = 0.62, 0.82
 local BURN_START = 0.9
 
+local AUTO_DELIVER_DELAY = 0.8 -- tempo para ler "Perfeito!" / "Tá bom!" antes de entregar sozinho
+
 type Status = "idle" | "flying" | "baking" | "done" | "waiting"
 
 local PastryPopup = {}
@@ -39,6 +42,7 @@ local quality = scope:Value(Quality.Skipped)
 local needle = scope:Value(0)
 local message = scope:Value("")
 local bakeStart = 0
+local bakeToken = 0 -- muda a cada fornada, invalida entregas automáticas antigas
 
 local finishCallback: ((quality: number) -> ())? = nil
 local retryCallback: ((done: (ok: boolean) -> ()) -> ())? = nil
@@ -143,7 +147,10 @@ local function showInOven(id: string?)
 	end
 end
 
+local close: (q: number) -> ()
+
 local function finish(q: number)
+	bakeToken += 1
 	quality:set(q)
 	status:set("done")
 	if q == Quality.Perfect then
@@ -156,6 +163,14 @@ local function finish(q: number)
 		message:set("Queimou! O cliente não vai pagar o doce")
 	end
 	shake(panel)
+	if not Catalog.isBadPastry(q) then
+		local token = bakeToken
+		task.delay(AUTO_DELIVER_DELAY, function()
+			if token == bakeToken and peek(status) == "done" then
+				close(q)
+			end
+		end)
+	end
 end
 
 local function startBake()
@@ -183,6 +198,7 @@ local function takeOut()
 end
 
 local function reset()
+	bakeToken += 1
 	status:set("idle")
 	quality:set(Quality.Skipped)
 	needle:set(0)
@@ -190,7 +206,7 @@ local function reset()
 	showInOven(nil)
 end
 
-local function close(q: number)
+function close(q: number)
 	if not peek(visible) then
 		return
 	end
