@@ -129,7 +129,7 @@ function Minigame.new(playerGui: PlayerGui)
 	local drink = scope:Computed(function(use)
 		return Recipes.Drinks[use(drinkId)]
 	end)
-	-- ingredientes exigidos + regra de mistura ("required" | "forbidden" | "none")
+	-- ingredientes exigidos + regra de mistura ("required" | "forbidden")
 	local requirements = scope:Computed(function(use)
 		local m = use(modifierId)
 		local req, rule = Recipes.requirements(use(drinkId), if m ~= "" then m else nil)
@@ -198,7 +198,7 @@ function Minigame.new(playerGui: PlayerGui)
 			end
 			return "Ops, não é essa receita... o cliente vai reclamar!"
 		elseif #use(portions) == 0 then
-			return if rule == "forbidden" then "Em camadas! Arraste sem mexer" else "Arraste os ingredientes até o copo"
+			return if use(modifierId) == "NoMix" then "Em camadas! Arraste sem mexer" else "Arraste os ingredientes até o copo"
 		elseif not use(ingredientsOk) then
 			return "Continue adicionando..."
 		elseif rule == "required" and not use(mixDone) then
@@ -251,11 +251,11 @@ function Minigame.new(playerGui: PlayerGui)
 			end
 		end
 		if req.Mix == "required" then
-			table.insert(list, { Key = "Mix", Text = "Misturar", Sprite = "Spoon", Done = use(mixDone), Order = 50 })
+			table.insert(list, { Key = "Mix", Text = "Mexer", Sprite = "Spoon", Done = use(mixDone), Order = 50 })
 		elseif req.Mix == "forbidden" then
 			table.insert(list, {
 				Key = "NoMix",
-				Text = "NÃO mexer!",
+				Text = "Não mexer!",
 				Sprite = "Spoon",
 				Done = use(ingredientsOk) and not use(stirred),
 				Order = 50,

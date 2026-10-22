@@ -227,7 +227,7 @@ local function unlockCard(scope: any, kind: UnlockKind, id: string, order: numbe
 	if kind == "drink" then
 		art = drinkGlass(id)
 		title = Recipes.Drinks[id].Name
-		subtitle = Recipes.describe(id) .. (if Recipes.Drinks[id].Mix then " + mexer" else "")
+		subtitle = Recipes.describe(id) .. " · " .. Recipes.mixText(id)
 	elseif kind == "ingredient" then
 		art = PixelArt.ingredient(id)
 		title = Recipes.Ingredients[id].Name

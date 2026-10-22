@@ -115,11 +115,11 @@ function Recipes.modifierApplies(drinkId: string, modifierId: string): boolean
 	return false
 end
 
--- Ingredientes exigidos e regra de mistura ("required" | "forbidden" | "none")
+-- Ingredientes exigidos e regra de mistura ("required" | "forbidden"): toda receita diz se mexe ou não
 function Recipes.requirements(drinkId: string, modifierId: string?): ({ [string]: number }, string)
 	local d = Recipes.Drinks[drinkId]
 	local req = table.clone(d.Ingredients)
-	local mixRule = if d.Mix then "required" else "none"
+	local mixRule = if d.Mix then "required" else "forbidden"
 	if modifierId == "NoMix" then
 		mixRule = "forbidden"
 	elseif modifierId == "Double" then
@@ -262,6 +262,11 @@ end
 -- Cor da bebida pronta (misturada ou não)
 function Recipes.finalColor(drinkId: string): Color3
 	return Recipes.blend(Recipes.portions(drinkId))
+end
+
+-- Instrução de mistura em texto, sempre presente: "Mexer" | "Não mexer"
+function Recipes.mixText(drinkId: string): string
+	return if Recipes.Drinks[drinkId].Mix then "Mexer" else "Não mexer"
 end
 
 -- Lista de ingredientes em texto: "Café + Leite + Canela"

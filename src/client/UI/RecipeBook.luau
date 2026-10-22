@@ -127,7 +127,7 @@ local function recipeCard(scope: any, order: number, id: string): Frame
 						Size = UDim2.fromScale(0.64, 0.19),
 						TextXAlignment = Enum.TextXAlignment.Left,
 					}),
-					label(scope, Recipes.describe(id) .. (if d.Mix then " + mexer" else "") .. `  ·  ${d.Price}`, {
+					label(scope, Recipes.describe(id) .. ` · {Recipes.mixText(id)}  ·  ${d.Price}`, {
 						Position = UDim2.fromScale(0.32, 0.29),
 						Size = UDim2.fromScale(0.64, 0.2),
 						TextXAlignment = Enum.TextXAlignment.Left,

@@ -294,7 +294,7 @@ local function menuCards(scope: any, selection: any): { Frame }
 						TextXAlignment = Enum.TextXAlignment.Left,
 						Visible = unlocked,
 					}),
-					label(scope, `${d.Price}  ·  {Recipes.describe(id)}`, {
+					label(scope, `${d.Price}  ·  {Recipes.describe(id)} · {Recipes.mixText(id)}`, {
 						Position = UDim2.fromScale(0.38, 0.42),
 						Size = UDim2.fromScale(0.58, 0.24),
 						TextXAlignment = Enum.TextXAlignment.Left,
