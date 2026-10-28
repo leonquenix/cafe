@@ -17,6 +17,7 @@ local Catalog = require(ReplicatedStorage.Shared.Catalog)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
 local Pause = require(script.Parent.Parent.Pause)
+local Sfx = require(script.Parent.Parent.Sfx)
 local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
 
@@ -151,6 +152,8 @@ local close: (q: number) -> ()
 
 local function finish(q: number)
 	bakeToken += 1
+	-- porta do forno abrindo para tirar o doce
+	Sfx.play("OvenOut")
 	quality:set(q)
 	status:set("done")
 	if q == Quality.Perfect then
@@ -175,6 +178,13 @@ end
 
 local function startBake()
 	showInOven(peek(pastryId))
+	-- assadeira entra na grade e a porta fecha
+	Sfx.play("OvenIn")
+	task.delay(0.25, function()
+		if peek(status) == "baking" then
+			Sfx.play("OvenDoor")
+		end
+	end)
 	needle:set(0)
 	message:set("")
 	bakeStart = Pause.clock()
@@ -211,6 +221,10 @@ function close(q: number)
 		return
 	end
 	visible:set(false)
+	if q ~= Quality.Skipped then
+		-- o doce vai pro prato no balcão
+		Sfx.play("Plate")
+	end
 	local cb = finishCallback
 	finishCallback = nil
 	retryCallback = nil
@@ -367,6 +381,8 @@ local function makeCard(id: string, order: number): GuiObject
 			tapCard(id, card)
 		end,
 	})
+	-- o doce é item de jogo: o som é o do forno
+	card:SetAttribute("NoClickSound", true)
 	return card
 end
 
@@ -664,6 +680,9 @@ function PastryPopup.init(playerGui: PlayerGui)
 			panel,
 		},
 	}) :: ScreenGui
+	-- o fundo escuro só segura os cliques: sem pop
+	local dim = gui:FindFirstChild("Dim") :: GuiButton
+	dim:SetAttribute("NoClickSound", true)
 
 	RunService.RenderStepped:Connect(function()
 		if peek(status) ~= "baking" then

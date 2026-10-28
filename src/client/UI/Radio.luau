@@ -338,6 +338,7 @@ local function build()
 	-- área de toque maior que a barra visível
 	local hit = Instance.new("TextButton")
 	hit.Name = "VolumeBar"
+	hit:SetAttribute("NoClickSound", true) -- é um controle deslizante, não um botão
 	hit.Text = ""
 	hit.AutoButtonColor = false
 	hit.BackgroundTransparency = 1
