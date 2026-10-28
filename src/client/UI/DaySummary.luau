@@ -38,7 +38,7 @@ local DaySummary = {}
 
 -- dia bom = média das avaliações (estrelas do placar) a partir desta nota
 DaySummary.GoodDayStars = 4
-DaySummary.GoodSound = "rbxassetid://1841173427"
+DaySummary.GoodSound = "rbxassetid://9048736215"
 DaySummary.BadSound = "rbxassetid://100695479081760"
 DaySummary.GoodVolume = 0.51
 DaySummary.BadVolume = 0.6
@@ -492,7 +492,7 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 
 	local avgStars = DaySummary.rating(summary)
 	if avgStars >= DaySummary.GoodDayStars then
-		playSound(DaySummary.GoodSound, DaySummary.GoodVolume)
+		playSound(DaySummary.GoodSound, DaySummary.GoodVolume, 1, true)
 	else
 		playSound(DaySummary.BadSound, DaySummary.BadVolume)
 	end
