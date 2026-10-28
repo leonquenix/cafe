@@ -2,6 +2,7 @@
 -- Rádio da gameplay: música de fundo que começa com o expediente e um painel (aberto pelo
 -- botão abaixo do livro de receitas) para trocar de estação e ajustar o volume.
 -- A escolha fica salva no perfil (atributos RadioTrack/RadioVolume vindos do servidor).
+-- Com o painel aberto no meio do expediente o jogo pausa, igual ao livro de receitas.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,7 +10,10 @@ local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local Fusion = require(ReplicatedStorage.Packages.Fusion)
 local Net = require(ReplicatedStorage.Shared.Net)
+local Pause = require(script.Parent.Parent.Pause)
+local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
 
 local Radio = {}
@@ -154,9 +158,10 @@ function Radio.setVolume(percentValue: number)
 end
 
 function Radio.close()
-	if panel then
+	if panel and panel.Visible then
 		panel.Visible = false
 		backdrop.Visible = false
+		Pause.set(false)
 	end
 end
 
@@ -185,6 +190,10 @@ function Radio.toggle()
 	end
 	loadSettings()
 	refreshPanel()
+	-- no meio do expediente o jogo pausa até o painel fechar
+	if Fusion.peek(State.DayActive) then
+		Pause.set(true)
+	end
 	backdrop.Visible = true
 	panel.Visible = true
 	place()
@@ -197,7 +206,8 @@ local function build()
 	backdrop.Name = "RadioBackdrop"
 	backdrop.Text = ""
 	backdrop.AutoButtonColor = false
-	backdrop.BackgroundTransparency = 1
+	backdrop.BackgroundColor3 = Theme.Ink
+	backdrop.BackgroundTransparency = 0.7 -- escurece de leve: jogo pausado
 	backdrop.Size = UDim2.fromScale(1, 1)
 	backdrop.Visible = false
 	backdrop.ZIndex = 20
