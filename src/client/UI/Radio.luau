@@ -24,7 +24,7 @@ local Radio = {}
 Radio.Tracks = {
 	{ Name = "Bossa Nova", Id = "rbxassetid://91689040007075", Color = Theme.Mustard },
 	{ Name = "Metal", Id = "rbxassetid://9047442385", Color = Color3.fromRGB(150, 140, 170), Speed = 0.9, Lofi = true, Region = NumberRange.new(7.5, 196) },
-	{ Name = "K-pop", Id = "rbxassetid://9042053575", Color = Color3.fromRGB(240, 160, 190), Speed = 0.88, Region = NumberRange.new(12.5, 150) },
+	{ Name = "K-pop", Id = "rbxassetid://72296082968733", Color = Color3.fromRGB(240, 160, 190), Region = NumberRange.new(12, 132) },
 	{ Name = "Jazz", Id = "rbxassetid://140331368291861", Color = Theme.Wood },
 	{ Name = "Lo-fi Hip Hop", Id = "rbxassetid://9047104336", Color = Theme.Sage },
 	{ Name = "New Age", Id = "rbxassetid://128130163260275", Color = Color3.fromRGB(150, 200, 220) },
