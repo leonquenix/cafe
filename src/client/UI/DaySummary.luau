@@ -1,7 +1,8 @@
 --!strict
 -- Placar do fim do dia: faturamento, bebidas entregues, reviews divertidos,
 -- XP subindo e — se subir de nível — uma tela de "você aprendeu receitas novas!".
--- Ao abrir toca um som de conquista (dia bom) ou um som triste; subir de nível toca uma fanfarra.
+-- Ao abrir toca um som de conquista (dia bom) ou um som triste, e depois os grilos da noite
+-- (até o jogador clicar para começar o próximo dia); subir de nível toca uma fanfarra.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -46,6 +47,9 @@ DaySummary.BadVolume = 0.5
 DaySummary.LevelUpSound = "rbxassetid://1845399641"
 DaySummary.LevelUpVolume = 0.5
 DaySummary.LevelUpSpeed = 1.15
+-- ambiente noturno com grilos, em loop depois do som do fim do dia
+DaySummary.NightSound = "rbxassetid://9112764023"
+DaySummary.NightVolume = 0.35
 
 local playerGui: PlayerGui
 
@@ -59,7 +63,7 @@ function DaySummary.rating(summary: Summary): number
 	return if rated > 0 then math.floor(total / rated + 0.5) else 0
 end
 
-local function playSound(id: string, volume: number, speed: number?, soft: boolean?)
+local function playSound(id: string, volume: number, speed: number?, soft: boolean?): Sound
 	local sound = Instance.new("Sound")
 	sound.Name = "DaySummarySound"
 	sound.SoundId = id
@@ -77,6 +81,38 @@ local function playSound(id: string, volume: number, speed: number?, soft: boole
 		sound:Destroy()
 	end)
 	sound:Play()
+	return sound
+end
+
+local night: Sound? = nil
+
+local function startNight()
+	if night then
+		return
+	end
+	local sound = Instance.new("Sound")
+	sound.Name = "NightAmbience"
+	sound.SoundId = DaySummary.NightSound
+	sound.Looped = true
+	sound.Volume = 0
+	sound.Parent = SoundService
+	sound:Play()
+	night = sound
+	TweenService:Create(sound, TweenInfo.new(2.5, Enum.EasingStyle.Sine), { Volume = DaySummary.NightVolume }):Play()
+end
+
+-- some com os grilos (o jogador mandou começar o próximo dia)
+function DaySummary.stopNight(fade: number?)
+	local sound = night
+	if not sound then
+		return
+	end
+	night = nil
+	local t = TweenService:Create(sound, TweenInfo.new(fade or 2, Enum.EasingStyle.Sine), { Volume = 0 })
+	t.Completed:Once(function()
+		sound:Destroy()
+	end)
+	t:Play()
 end
 
 local function tween(inst: Instance, time: number, props: { [string]: any }, style: Enum.EasingStyle?, dir: Enum.EasingDirection?): Tween
@@ -491,11 +527,11 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 	local scope = Fusion.scoped(Fusion)
 
 	local avgStars = DaySummary.rating(summary)
-	if avgStars >= DaySummary.GoodDayStars then
-		playSound(DaySummary.GoodSound, DaySummary.GoodVolume, 1, true)
-	else
-		playSound(DaySummary.BadSound, DaySummary.BadVolume, 1, true)
-	end
+	local good = avgStars >= DaySummary.GoodDayStars
+	local sting = playSound(if good then DaySummary.GoodSound else DaySummary.BadSound, if good then DaySummary.GoodVolume else DaySummary.BadVolume, 1, true)
+	-- grilos depois do som (ou logo, se o som não carregar)
+	sting.Ended:Once(startNight)
+	task.delay(9, startNight)
 
 	-- saldo total: começa no que havia antes do dia e recebe vendas e gorjetas
 	local totalMoney = peek(State.Money) :: number

@@ -148,6 +148,8 @@ local function startDay(day: number)
 		return
 	end
 	startingDay = true
+	-- os grilos da noite somem quando o jogador manda começar o dia
+	DaySummary.stopNight(2)
 	Transition.play(day, function()
 		DayCycle.morning(0)
 		Hud.setVisible(true)
