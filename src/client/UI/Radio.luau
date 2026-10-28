@@ -19,11 +19,12 @@ local Theme = require(script.Parent.Theme)
 local Radio = {}
 
 -- estações (todas cozy/lo-fi); a primeira é a padrão.
--- Speed < 1 desacelera a batida; Lofi abafa os agudos (efeito "lo-fi" em faixas pesadas)
+-- Speed < 1 desacelera a batida; Lofi abafa os agudos (efeito "lo-fi" em faixas pesadas);
+-- Region (segundos da faixa) corta a intro e o final para o loop não marcar o começo
 Radio.Tracks = {
 	{ Name = "Bossa Nova", Id = "rbxassetid://91689040007075", Color = Theme.Mustard },
-	{ Name = "Metal", Id = "rbxassetid://9047442385", Color = Color3.fromRGB(150, 140, 170), Speed = 0.9, Lofi = true },
-	{ Name = "K-pop", Id = "rbxassetid://9042053575", Color = Color3.fromRGB(240, 160, 190), Speed = 0.88 },
+	{ Name = "Metal", Id = "rbxassetid://9047442385", Color = Color3.fromRGB(150, 140, 170), Speed = 0.9, Lofi = true, Region = NumberRange.new(7.5, 196) },
+	{ Name = "K-pop", Id = "rbxassetid://9042053575", Color = Color3.fromRGB(240, 160, 190), Speed = 0.88, Region = NumberRange.new(12.5, 150) },
 	{ Name = "Jazz", Id = "rbxassetid://140331368291861", Color = Theme.Wood },
 	{ Name = "Lo-fi Hip Hop", Id = "rbxassetid://9047104336", Color = Theme.Sage },
 	{ Name = "New Age", Id = "rbxassetid://128130163260275", Color = Color3.fromRGB(150, 200, 220) },
@@ -73,13 +74,20 @@ local function loadSettings()
 	end
 end
 
--- aplica a faixa atual no Sound (id, velocidade e filtro lo-fi)
+-- aplica a faixa atual no Sound (id, velocidade, filtro lo-fi e trecho tocado) e volta ao começo
 local function apply(sound: Sound)
 	local info = Radio.Tracks[track] :: any
 	sound.SoundId = info.Id
 	sound.PlaybackSpeed = info.Speed or 1
 	local eq = sound:FindFirstChild("Lofi") :: EqualizerSoundEffect
 	eq.Enabled = info.Lofi == true
+	local region: NumberRange? = info.Region
+	sound.PlaybackRegionsEnabled = region ~= nil
+	if region then
+		sound.PlaybackRegion = region
+		sound.LoopRegion = region
+	end
+	sound.TimePosition = if region then region.Min else 0
 end
 
 local function refreshPanel()
@@ -142,7 +150,6 @@ function Radio.setTrack(index: number)
 			return
 		end
 		apply(sound)
-		sound.TimePosition = 0
 		sound:Play()
 		tween(sound, 0.8, { Volume = targetVolume() })
 	end)
