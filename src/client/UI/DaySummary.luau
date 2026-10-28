@@ -16,6 +16,7 @@ local Recipes = require(ReplicatedStorage.Shared.Recipes)
 local Glass = require(script.Parent.Parent.Art.Glass)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
+local Sfx = require(script.Parent.Parent.Sfx)
 local State = require(script.Parent.Parent.State)
 local Reviews = require(script.Parent.Reviews)
 local Theme = require(script.Parent.Theme)
@@ -915,6 +916,10 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 		-- faturamento: o saldo recebe as vendas e depois as gorjetas
 		local function countUp(from: number, amount: number, text: string, duration: number)
 			gainText:set(text)
+			if amount > 0 then
+				-- o valor entra no caixa junto com a contagem (abaixo do som de êxito/dia ruim)
+				Sfx.play("Coins", 0.8)
+			end
 			gainScale.Scale = 0
 			tween(gainScale, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
 			local t0 = os.clock()

@@ -37,6 +37,8 @@ Sfx.Sounds = {
 	Cash = { Id = "rbxassetid://7112275565", Volume = 0.8, Start = 0.4 } :: Def,
 	-- loja: já comprado, no limite, nível baixo ou sem moedas (negação curtinha)
 	Denied = { Id = "rbxassetid://17208353912", Volume = 0.18 } :: Def,
+	-- cliente pagou / placar soma o faturamento: moedas caindo na caixa
+	Coins = { Id = "rbxassetid://9117243937", Volume = 0.45 } :: Def,
 }
 
 -- loop da colher: só o trecho em que ela gira (sem o começo/fim mudos)

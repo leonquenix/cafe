@@ -10,6 +10,7 @@ local Progression = require(ReplicatedStorage.Shared.Progression)
 local Recipes = require(ReplicatedStorage.Shared.Recipes)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
+local Sfx = require(script.Parent.Parent.Sfx)
 local State = require(script.Parent.Parent.State)
 local Radio = require(script.Parent.Radio)
 local Theme = require(script.Parent.Theme)
@@ -215,6 +216,10 @@ end
 -- "+$18 Relâmpago!" subindo e moedinhas voando até o contador
 function Hud.payout(earned: number, tier: number, tip: number?)
 	local rng = Random.new()
+	if earned + (tip or 0) > 0 then
+		-- dinheiro do cliente entrando no caixa
+		Sfx.play("Coins")
+	end
 	local origin = UDim2.fromScale(0.31, 0.36)
 
 	local label = Instance.new("TextLabel")
