@@ -24,8 +24,8 @@ TitleScreen.CameraPosition = Vector3.new(Layout.DoorX + 4.2, 7, Layout.Room.MinZ
 TitleScreen.CameraTarget = Vector3.new(Layout.DoorX, 9.5, Layout.Room.MinZ)
 TitleScreen.FieldOfView = 60
 
--- trilha do menu: bossa nova alegre (APM Music, Creator Store), em loop com fade
-TitleScreen.MusicId = "rbxassetid://1845764031"
+-- trilha do menu: bossa nova de violão, simples e leve (Creator Store), em loop com fade
+TitleScreen.MusicId = "rbxassetid://89325176578939"
 TitleScreen.MusicVolume = 0.45
 
 local playerGui: PlayerGui
