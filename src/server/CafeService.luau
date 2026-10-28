@@ -693,8 +693,10 @@ function CafeService.resetSession(player: Player)
 end
 
 function CafeService.start()
-	DataService.onLoaded(function(player)
+	DataService.onLoaded(function(player, data)
 		sessions[player] = newSession()
+		player:SetAttribute("RadioTrack", data.RadioTrack)
+		player:SetAttribute("RadioVolume", data.RadioVolume)
 		sendState(player)
 	end)
 
@@ -715,6 +717,16 @@ function CafeService.start()
 	Net.Pause.listen(onPause)
 	Net.Buy.listen(onBuy)
 	Net.SetMenu.listen(onSetMenu)
+	Net.SetRadio.listen(function(value, player: Player?)
+		local data = player and DataService.get(player)
+		if not player or not data then
+			return
+		end
+		data.RadioTrack = math.clamp(value.track, 1, 6)
+		data.RadioVolume = math.clamp(value.volume, 0, 100)
+		player:SetAttribute("RadioTrack", data.RadioTrack)
+		player:SetAttribute("RadioVolume", data.RadioVolume)
+	end)
 
 	Players.PlayerRemoving:Connect(function(player)
 		sessions[player] = nil

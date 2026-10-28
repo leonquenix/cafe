@@ -77,6 +77,13 @@ return ByteNet.defineNamespace("Cafe", function()
 		Buy = ByteNet.definePacket({
 			value = ByteNet.string,
 		}),
+		-- cliente -> servidor: estação do rádio (1-6) e volume (0-100), salvos no perfil
+		SetRadio = ByteNet.definePacket({
+			value = ByteNet.struct({
+				track = ByteNet.uint8,
+				volume = ByteNet.uint8,
+			}),
+		}),
 		-- cliente -> servidor: cardápio do dia
 		SetMenu = ByteNet.definePacket({
 			value = ByteNet.array(ByteNet.string),

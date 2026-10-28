@@ -742,6 +742,22 @@ Sprites.Book = {
 	Palette = { o = OUTLINE, R = rgb(196, 90, 80), Y = rgb(246, 210, 130), W = rgb(250, 240, 220) },
 } :: Sprite
 
+Sprites.Radio = {
+	Rows = {
+		"..........o.",
+		".........o..",
+		"oooooooooooo",
+		"oWWWWWWWWWWo",
+		"oWSSSSWWKKWo",
+		"oWSsSsWWKKWo",
+		"oWSSSSWWWWWo",
+		"oWSsSsWWDDWo",
+		"oWWWWWWWWWWo",
+		"oooooooooooo",
+	},
+	Palette = { o = OUTLINE, W = rgb(120, 176, 160), S = rgb(92, 60, 48), s = rgb(170, 128, 96), K = rgb(240, 190, 96), D = rgb(232, 132, 128) },
+} :: Sprite
+
 local function face(mouthTop: string, mouthBottom: string, brows: string, eyes: string, color: Color3): Sprite
 	return {
 		Rows = {

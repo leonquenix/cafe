@@ -19,6 +19,8 @@ export type Data = {
 	Menu: { string },
 	DrinkStats: { [string]: number },
 	Mastered: { [string]: boolean },
+	RadioTrack: number, -- estação escolhida no rádio (1 = bossa nova)
+	RadioVolume: number, -- 0-100
 }
 
 local TEMPLATE: Data = {
@@ -34,6 +36,8 @@ local TEMPLATE: Data = {
 	Menu = {},
 	DrinkStats = {},
 	Mastered = {},
+	RadioTrack = 1,
+	RadioVolume = 70,
 }
 
 local Store = ProfileStore.New("CafeData_v1", TEMPLATE)

@@ -1,5 +1,5 @@
 --!strict
--- HUD do topo (centralizado): dinheiro e livro de receitas. Também mostra o "+$" ao entregar.
+-- HUD do topo (centralizado): dinheiro e livro de receitas (com o rádio logo abaixo). Também mostra o "+$" ao entregar.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -11,6 +11,7 @@ local Recipes = require(ReplicatedStorage.Shared.Recipes)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
 local State = require(script.Parent.Parent.State)
+local Radio = require(script.Parent.Radio)
 local Theme = require(script.Parent.Theme)
 
 local Children, OnEvent = Fusion.Children, Fusion.OnEvent
@@ -125,6 +126,30 @@ function Hud.new(playerGui: PlayerGui)
 		end,
 	})
 
+	-- botão do rádio: logo abaixo do livro (acompanha o encolhimento da fileira)
+	local radioArt = PixelArt.draw(Sprites.Radio)
+	radioArt.Size = UDim2.fromScale(0.72, 0.6)
+	radioArt.AnchorPoint = Vector2.new(0.5, 0.5)
+	radioArt.Position = UDim2.fromScale(0.5, 0.5)
+	local radioButton = scope:New("TextButton")({
+		Name = "Radio",
+		Text = "",
+		AutoButtonColor = true,
+		BackgroundColor3 = Theme.Paper,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 1, 10),
+		Size = UDim2.fromScale(0.85, 0.85),
+		Parent = bookButton,
+		[Children] = {
+			scope:New("UICorner")({ CornerRadius = UDim.new(0.3, 0) }),
+			scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+			radioArt,
+		},
+		[OnEvent("Activated")] = function()
+			Radio.toggle()
+		end,
+	})
+
 	-- encolhe a fileira se não couber antes da bancada (celular pequeno)
 	local fit = scope:New("UIScale")({ Scale = 1 }) :: UIScale
 
@@ -159,6 +184,8 @@ function Hud.new(playerGui: PlayerGui)
 			}),
 		},
 	}) :: ScreenGui
+
+	Radio.attach(gui, radioButton)
 
 	local top = gui:FindFirstChild("Top") :: Frame
 	local function refit()
