@@ -38,7 +38,7 @@ local DaySummary = {}
 
 -- dia bom = média das avaliações (estrelas do placar) a partir desta nota
 DaySummary.GoodDayStars = 4
-DaySummary.GoodSound = "rbxassetid://1844584698"
+DaySummary.GoodSound = "rbxassetid://9048749902"
 DaySummary.BadSound = "rbxassetid://100695479081760"
 DaySummary.SoundVolume = 0.6
 
