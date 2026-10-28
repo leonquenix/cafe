@@ -41,8 +41,8 @@ local DaySummary = {}
 DaySummary.GoodDayStars = 4
 DaySummary.GoodSound = "rbxassetid://9048736215"
 DaySummary.BadSound = "rbxassetid://1839846554" -- "ops", leve e de game show, sem ser triste
-DaySummary.GoodVolume = 0.51
-DaySummary.BadVolume = 0.5
+DaySummary.GoodVolume = 0.43
+DaySummary.BadVolume = 0.425
 -- fanfarra de trompetes do nível novo / receitas novas: mais aguda (Speed) e aveludada (agudos abafados)
 DaySummary.LevelUpSound = "rbxassetid://1845399641"
 DaySummary.LevelUpVolume = 0.5
@@ -50,7 +50,7 @@ DaySummary.LevelUpSpeed = 1.15
 -- ambiente noturno com grilos, em loop depois do som do fim do dia
 -- (a gravação é bem mais baixa que as músicas, por isso o volume acima de 1)
 DaySummary.NightSound = "rbxassetid://9112835836" -- grilo solitário, cricrilos espaçados e corujas
-DaySummary.NightVolume = 6
+DaySummary.NightVolume = 5.1
 
 local playerGui: PlayerGui
 
