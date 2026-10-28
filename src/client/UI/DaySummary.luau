@@ -38,9 +38,10 @@ local DaySummary = {}
 
 -- dia bom = média das avaliações (estrelas do placar) a partir desta nota
 DaySummary.GoodDayStars = 4
-DaySummary.GoodSound = "rbxassetid://9048749902"
+DaySummary.GoodSound = "rbxassetid://1841173427"
 DaySummary.BadSound = "rbxassetid://100695479081760"
-DaySummary.SoundVolume = 0.6
+DaySummary.GoodVolume = 0.51
+DaySummary.BadVolume = 0.6
 
 local playerGui: PlayerGui
 
@@ -58,7 +59,7 @@ local function playSting(good: boolean)
 	local sound = Instance.new("Sound")
 	sound.Name = "DayEndSting"
 	sound.SoundId = if good then DaySummary.GoodSound else DaySummary.BadSound
-	sound.Volume = DaySummary.SoundVolume
+	sound.Volume = if good then DaySummary.GoodVolume else DaySummary.BadVolume
 	sound.Parent = SoundService
 	sound.Ended:Once(function()
 		sound:Destroy()
