@@ -246,6 +246,7 @@ local function retry()
 	if peek(State.Money) < Catalog.retryCost(peek(pastryId)) then
 		message:set("Moedas insuficientes para assar de novo")
 		shake(panel)
+		Sfx.play("Denied")
 		return
 	end
 	status:set("waiting")
@@ -254,9 +255,11 @@ local function retry()
 			return
 		end
 		if ok then
+			Sfx.play("Cash")
 			reset()
 			message:set("Mais uma chance! Arraste de novo")
 		else
+			Sfx.play("Denied")
 			status:set("done")
 			message:set("Moedas insuficientes para assar de novo")
 		end
@@ -683,6 +686,9 @@ function PastryPopup.init(playerGui: PlayerGui)
 	-- o fundo escuro só segura os cliques: sem pop
 	local dim = gui:FindFirstChild("Dim") :: GuiButton
 	dim:SetAttribute("NoClickSound", true)
+	-- "Assar de novo" é uma compra: caixa registradora ou negação, não o pop
+	local retryButton = panel:FindFirstChild("Retry", true) :: GuiButton
+	retryButton:SetAttribute("NoClickSound", true)
 
 	RunService.RenderStepped:Connect(function()
 		if peek(status) ~= "baking" then

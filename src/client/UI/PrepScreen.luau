@@ -12,6 +12,7 @@ local Recipes = require(ReplicatedStorage.Shared.Recipes)
 local Glass = require(script.Parent.Parent.Art.Glass)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
+local Sfx = require(script.Parent.Parent.Sfx)
 local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
 
@@ -101,6 +102,38 @@ local function shopCard(
 		})
 	end
 
+	local buyButton = scope:New("TextButton")({
+		Name = "Buy",
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.fromScale(0.96, 0.93),
+		Size = UDim2.fromScale(0.5, 0.2),
+		BackgroundColor3 = scope:Computed(function(use)
+			return if use(buttonEnabled) then Theme.SageDark else Theme.PaperShade
+		end),
+		AutoButtonColor = buttonEnabled,
+		Font = Theme.Font,
+		TextScaled = true,
+		TextColor3 = scope:Computed(function(use)
+			return if use(buttonEnabled) then Theme.Paper else Theme.WoodDark
+		end),
+		Text = buttonText,
+		[Children] = {
+			scope:New("UICorner")({ CornerRadius = UDim.new(0.3, 0) }),
+			scope:New("UIStroke")({ Thickness = 2, Color = Theme.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+			scope:New("UIPadding")({ PaddingTop = UDim.new(0.16, 0), PaddingBottom = UDim.new(0.16, 0) }),
+		},
+		[OnEvent("Activated")] = function()
+			if peek(buttonEnabled) then
+				onClick()
+			else
+				-- já comprado, no máximo, nível baixo ou sem moedas
+				Sfx.play("Denied")
+			end
+		end,
+	})
+	-- compra tem som próprio (caixa registradora ou negação), não o pop
+	buyButton:SetAttribute("NoClickSound", true)
+
 	return scope:New("Frame")({
 		Name = title,
 		LayoutOrder = order,
@@ -134,40 +167,32 @@ local function shopCard(
 				Font = Enum.Font.Gotham,
 			}),
 			pipRow or {},
-			scope:New("TextButton")({
-				Name = "Buy",
-				AnchorPoint = Vector2.new(1, 1),
-				Position = UDim2.fromScale(0.96, 0.93),
-				Size = UDim2.fromScale(0.5, 0.2),
-				BackgroundColor3 = scope:Computed(function(use)
-					return if use(buttonEnabled) then Theme.SageDark else Theme.PaperShade
-				end),
-				AutoButtonColor = buttonEnabled,
-				Font = Theme.Font,
-				TextScaled = true,
-				TextColor3 = scope:Computed(function(use)
-					return if use(buttonEnabled) then Theme.Paper else Theme.WoodDark
-				end),
-				Text = buttonText,
-				[Children] = {
-					scope:New("UICorner")({ CornerRadius = UDim.new(0.3, 0) }),
-					scope:New("UIStroke")({ Thickness = 2, Color = Theme.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-					scope:New("UIPadding")({ PaddingTop = UDim.new(0.16, 0), PaddingBottom = UDim.new(0.16, 0) }),
-				},
-				[OnEvent("Activated")] = function()
-					if peek(buttonEnabled) then
-						onClick()
-					end
-				end,
-			}),
+			buyButton,
 		},
 	})
 end
 
+-- o servidor não responde a compra: ela vale quando o State volta com menos moedas
+local BUY_TIMEOUT = 2
+
 local function buy(id: string)
-	if PrepScreen.onBuy then
-		PrepScreen.onBuy(id)
+	if not PrepScreen.onBuy then
+		return
 	end
+	local before = peek(State.Money) :: number
+	PrepScreen.onBuy(id)
+	task.spawn(function()
+		local t0 = os.clock()
+		while os.clock() - t0 < BUY_TIMEOUT do
+			if (peek(State.Money) :: number) < before then
+				Sfx.play("Cash")
+				return
+			end
+			task.wait()
+		end
+		-- recusada pelo servidor
+		Sfx.play("Denied")
+	end)
 end
 
 local function upgradeCards(scope: any): { Frame }

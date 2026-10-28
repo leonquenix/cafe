@@ -33,6 +33,10 @@ Sfx.Sounds = {
 	-- tirar do forno (porta abrindo) e o prato pousando no balcão
 	OvenOut = { Id = "rbxassetid://9117180051", Volume = 0.8 } :: Def,
 	Plate = { Id = "rbxassetid://9114076433", Volume = 1.2 } :: Def,
+	-- loja: compra efetivada (caixa registradora "ka-ching", pula o silêncio do começo)
+	Cash = { Id = "rbxassetid://7112275565", Volume = 0.8, Start = 0.4 } :: Def,
+	-- loja: já comprado, no limite, nível baixo ou sem moedas (negação curtinha)
+	Denied = { Id = "rbxassetid://17208353912", Volume = 0.18 } :: Def,
 }
 
 -- loop da colher: só o trecho em que ela gira (sem o começo/fim mudos)
