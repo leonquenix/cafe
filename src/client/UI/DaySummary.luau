@@ -48,8 +48,9 @@ DaySummary.LevelUpSound = "rbxassetid://1845399641"
 DaySummary.LevelUpVolume = 0.5
 DaySummary.LevelUpSpeed = 1.15
 -- ambiente noturno com grilos, em loop depois do som do fim do dia
-DaySummary.NightSound = "rbxassetid://9112764023"
-DaySummary.NightVolume = 0.35
+-- (a gravação é bem mais baixa que as músicas, por isso o volume acima de 1)
+DaySummary.NightSound = "rbxassetid://9112765304"
+DaySummary.NightVolume = 1.6
 
 local playerGui: PlayerGui
 
