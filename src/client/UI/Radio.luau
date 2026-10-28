@@ -14,11 +14,12 @@ local Theme = require(script.Parent.Theme)
 
 local Radio = {}
 
--- estações (todas cozy/lo-fi); a primeira é a padrão
+-- estações (todas cozy/lo-fi); a primeira é a padrão.
+-- Speed < 1 desacelera a batida; Lofi abafa os agudos (efeito "lo-fi" em faixas pesadas)
 Radio.Tracks = {
 	{ Name = "Bossa Nova", Id = "rbxassetid://91689040007075", Color = Theme.Mustard },
-	{ Name = "Metal Lo-fi", Id = "rbxassetid://71592508493849", Color = Color3.fromRGB(150, 140, 170) },
-	{ Name = "K-pop Lo-fi", Id = "rbxassetid://86664488694082", Color = Color3.fromRGB(240, 160, 190) },
+	{ Name = "Metal Lo-fi", Id = "rbxassetid://9038252543", Color = Color3.fromRGB(150, 140, 170), Speed = 0.8, Lofi = true },
+	{ Name = "K-pop Lo-fi", Id = "rbxassetid://106053746039582", Color = Color3.fromRGB(240, 160, 190), Speed = 0.88 },
 	{ Name = "Jazz", Id = "rbxassetid://140331368291861", Color = Theme.Wood },
 	{ Name = "Lo-fi Hip Hop", Id = "rbxassetid://9047104336", Color = Theme.Sage },
 	{ Name = "New Age", Id = "rbxassetid://128130163260275", Color = Color3.fromRGB(150, 200, 220) },
@@ -68,6 +69,15 @@ local function loadSettings()
 	end
 end
 
+-- aplica a faixa atual no Sound (id, velocidade e filtro lo-fi)
+local function apply(sound: Sound)
+	local info = Radio.Tracks[track] :: any
+	sound.SoundId = info.Id
+	sound.PlaybackSpeed = info.Speed or 1
+	local eq = sound:FindFirstChild("Lofi") :: EqualizerSoundEffect
+	eq.Enabled = info.Lofi == true
+end
+
 local function refreshPanel()
 	if not panel then
 		return
@@ -93,8 +103,14 @@ function Radio.play()
 	loadSettings()
 	local sound = Instance.new("Sound")
 	sound.Name = "RadioMusic"
-	sound.SoundId = Radio.Tracks[track].Id
 	sound.Looped = true
+	local eq = Instance.new("EqualizerSoundEffect")
+	eq.Name = "Lofi"
+	eq.LowGain = 2
+	eq.MidGain = -4
+	eq.HighGain = -14
+	eq.Parent = sound
+	apply(sound)
 	sound.Volume = 0
 	sound.Parent = SoundService
 	sound:Play()
@@ -121,7 +137,7 @@ function Radio.setTrack(index: number)
 		if mine ~= switching then
 			return
 		end
-		sound.SoundId = Radio.Tracks[track].Id
+		apply(sound)
 		sound.TimePosition = 0
 		sound:Play()
 		tween(sound, 0.8, { Volume = targetVolume() })
