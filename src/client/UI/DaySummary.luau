@@ -39,9 +39,9 @@ local DaySummary = {}
 -- dia bom = média das avaliações (estrelas do placar) a partir desta nota
 DaySummary.GoodDayStars = 4
 DaySummary.GoodSound = "rbxassetid://9048736215"
-DaySummary.BadSound = "rbxassetid://100695479081760"
+DaySummary.BadSound = "rbxassetid://1839846554" -- "ops", leve e de game show, sem ser triste
 DaySummary.GoodVolume = 0.51
-DaySummary.BadVolume = 0.6
+DaySummary.BadVolume = 0.5
 -- fanfarra de trompetes do nível novo / receitas novas: mais aguda (Speed) e aveludada (agudos abafados)
 DaySummary.LevelUpSound = "rbxassetid://1845399641"
 DaySummary.LevelUpVolume = 0.5
@@ -494,7 +494,7 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 	if avgStars >= DaySummary.GoodDayStars then
 		playSound(DaySummary.GoodSound, DaySummary.GoodVolume, 1, true)
 	else
-		playSound(DaySummary.BadSound, DaySummary.BadVolume)
+		playSound(DaySummary.BadSound, DaySummary.BadVolume, 1, true)
 	end
 
 	-- saldo total: começa no que havia antes do dia e recebe vendas e gorjetas
