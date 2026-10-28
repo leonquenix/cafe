@@ -222,8 +222,9 @@ function close(q: number)
 	end
 	visible:set(false)
 	if q ~= Quality.Skipped then
-		-- o doce vai pro prato no balcão
+		-- o doce vai pro prato no balcão e o sininho confirma a entrega
 		Sfx.play("Plate")
+		Sfx.play("Deliver")
 	end
 	local cb = finishCallback
 	finishCallback = nil
@@ -614,6 +615,8 @@ function PastryPopup.init(playerGui: PlayerGui)
 					}),
 					button({
 						Name = "Main",
+						-- "Tirar!" tem a porta do forno e "Entregar" o sininho: sem pop
+						[Fusion.Attribute("NoClickSound")] = true,
 						Position = UDim2.fromScale(0.44, 0.82),
 						Size = scope:Computed(function(use)
 							return if use(bad) then UDim2.fromScale(0.21, 0.14) else UDim2.fromScale(0.52, 0.14)

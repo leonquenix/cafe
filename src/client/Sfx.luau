@@ -3,7 +3,8 @@
 -- e os sons do preparo (copo, colher mexendo, forno). Tudo local, para resposta imediata.
 -- Assets da Creator Store (Roblox / Pro Sound Effects); volumes medidos no playtest
 -- (PlaybackLoudness) para ficarem um pouco abaixo da música/rádio e dos sons de fim do dia.
--- Botão que já tem som próprio (ou não é um "clique" de verdade) leva o atributo NoClickSound.
+-- Botão que já tem som próprio (ou não é um "clique" de verdade) leva o atributo NoClickSound;
+-- o atributo ClickSound troca o pop por outro som da lista (ex.: "BookOpen").
 
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
@@ -39,6 +40,12 @@ Sfx.Sounds = {
 	Denied = { Id = "rbxassetid://17208353912", Volume = 0.18 } :: Def,
 	-- cliente pagou / placar soma o faturamento: moedas caindo na caixa
 	Coins = { Id = "rbxassetid://9117243937", Volume = 0.45 } :: Def,
+	-- doce entregue no popup do forno: sininho de confirmação
+	Deliver = { Id = "rbxassetid://17208361335", Volume = 0.3 } :: Def,
+	-- ícone do rádio: sintonizando pela faixa AM
+	RadioTune = { Id = "rbxassetid://9118028337", Volume = 0.9 } :: Def,
+	-- livro de receitas abrindo e virando a página (pula o começo quase mudo)
+	BookOpen = { Id = "rbxassetid://9118835414", Volume = 0.9, Start = 0.6 } :: Def,
 }
 
 -- loop da colher: só o trecho em que ela gira (sem o começo/fim mudos)
@@ -159,7 +166,8 @@ local function hook(button: GuiButton)
 			return
 		end
 		lastClick = now
-		Sfx.play("Click")
+		local custom = button:GetAttribute("ClickSound")
+		Sfx.play(if type(custom) == "string" and (Sfx.Sounds :: any)[custom] then custom else "Click")
 	end)
 end
 

@@ -634,6 +634,7 @@ function PrepScreen.show(onOpen: () -> (), initialTab: string?)
 							}),
 							scope:New("TextButton")({
 								Name = "Book",
+								[Fusion.Attribute("ClickSound")] = "BookOpen",
 								Position = UDim2.fromScale(0.58, 0),
 								Size = UDim2.fromScale(0.1, 0.9),
 								BackgroundColor3 = Theme.Paper,
