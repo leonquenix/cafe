@@ -148,6 +148,8 @@ local function startDay(day: number)
 		return
 	end
 	startingDay = true
+	-- a música do menu vai sumindo durante a transição e o rádio entra no lugar
+	TitleScreen.stopMusic(2)
 	Transition.play(day, function()
 		DayCycle.morning(0)
 		Hud.setVisible(true)

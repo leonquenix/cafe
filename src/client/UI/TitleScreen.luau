@@ -31,6 +31,8 @@ TitleScreen.MusicVolume = 0.45
 TitleScreen.MusicSpeed = 1.12
 
 local playerGui: PlayerGui
+-- a música do menu continua depois do PLAY (loja/cardápio) e só para quando o dia começa
+local music: Sound?
 
 function TitleScreen.init(gui: PlayerGui)
 	playerGui = gui
@@ -45,20 +47,23 @@ end
 function TitleScreen.show(onPlay: () -> (), onFree: (() -> ())?)
 	local scope = Fusion.scoped(Fusion)
 
-	local music = Instance.new("Sound")
-	music.Name = "TitleMusic"
-	music.SoundId = TitleScreen.MusicId
-	music.Looped = true
-	music.Volume = 0
-	music.PlaybackSpeed = TitleScreen.MusicSpeed
-	local eq = Instance.new("EqualizerSoundEffect")
-	eq.LowGain = -4
-	eq.MidGain = 0
-	eq.HighGain = 2
-	eq.Parent = music
-	music.Parent = SoundService
-	music:Play()
-	tween(music, 2.5, { Volume = TitleScreen.MusicVolume }, Enum.EasingStyle.Sine)
+	if not music then
+		local sound = Instance.new("Sound")
+		sound.Name = "TitleMusic"
+		sound.SoundId = TitleScreen.MusicId
+		sound.Looped = true
+		sound.Volume = 0
+		sound.PlaybackSpeed = TitleScreen.MusicSpeed
+		local eq = Instance.new("EqualizerSoundEffect")
+		eq.LowGain = -4
+		eq.MidGain = 0
+		eq.HighGain = 2
+		eq.Parent = sound
+		sound.Parent = SoundService
+		sound:Play()
+		tween(sound, 2.5, { Volume = TitleScreen.MusicVolume }, Enum.EasingStyle.Sine)
+		music = sound
+	end
 
 	local cup = PixelArt.draw(Sprites.Coffee)
 	cup.Size = UDim2.fromScale(1, 1)
@@ -263,9 +268,6 @@ function TitleScreen.show(onPlay: () -> (), onFree: (() -> ())?)
 		tween(titleScale, 0.35, { Scale = 0 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
 		tween(info, 0.3, { TextTransparency = 1 })
 		tween(gradient, 0.6, { BackgroundTransparency = 1 })
-		tween(music, 2.5, { Volume = 0 }, Enum.EasingStyle.Sine).Completed:Once(function()
-			music:Destroy()
-		end)
 		task.delay(0.6, function()
 			gui:Destroy()
 			Fusion.doCleanup(scope)
@@ -279,6 +281,18 @@ function TitleScreen.show(onPlay: () -> (), onFree: (() -> ())?)
 		if onFree then
 			leave(freeScale, onFree)
 		end
+	end)
+end
+
+-- para a música do menu com fade (chamado quando o dia começa; o rádio assume)
+function TitleScreen.stopMusic(fade: number?)
+	local sound = music
+	if not sound then
+		return
+	end
+	music = nil
+	tween(sound, fade or 2, { Volume = 0 }, Enum.EasingStyle.Sine).Completed:Once(function()
+		sound:Destroy()
 	end)
 end
 
