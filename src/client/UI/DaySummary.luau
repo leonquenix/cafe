@@ -2,7 +2,7 @@
 -- Placar do fim do dia: faturamento, bebidas entregues, reviews divertidos,
 -- XP subindo e — se subir de nível — uma tela de "você aprendeu receitas novas!".
 -- Ao abrir toca um som de conquista (dia bom) ou um som triste, e depois os grilos da noite
--- (até o jogador clicar para começar o próximo dia); subir de nível toca uma fanfarra.
+-- (até o jogador clicar em "Começar Dia"); subir de nível toca uma fanfarra.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -86,9 +86,11 @@ local function playSound(id: string, volume: number, speed: number?, soft: boole
 end
 
 local night: Sound? = nil
+-- placar aberto esperando os grilos; o clique em "Começar Dia" cancela um início ainda pendente
+local nightWanted = false
 
 local function startNight()
-	if night then
+	if night or not nightWanted then
 		return
 	end
 	local sound = Instance.new("Sound")
@@ -104,6 +106,7 @@ end
 
 -- some com os grilos (o jogador mandou começar o próximo dia)
 function DaySummary.stopNight(fade: number?)
+	nightWanted = false
 	local sound = night
 	if not sound then
 		return
@@ -531,6 +534,7 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 	local good = avgStars >= DaySummary.GoodDayStars
 	local sting = playSound(if good then DaySummary.GoodSound else DaySummary.BadSound, if good then DaySummary.GoodVolume else DaySummary.BadVolume, 1, true)
 	-- grilos depois do som (ou logo, se o som não carregar)
+	nightWanted = true
 	sting.Ended:Once(startNight)
 	task.delay(9, startNight)
 
@@ -897,6 +901,7 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 			return
 		end
 		continued = true
+		DaySummary.stopNight(2)
 		tween(card, 0.4, { Position = UDim2.fromScale(0.5, 1.6) }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
 		task.delay(0.35, function()
 			onContinue()
