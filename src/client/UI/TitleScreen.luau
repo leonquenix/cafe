@@ -27,6 +27,8 @@ TitleScreen.FieldOfView = 60
 -- trilha do menu: bossa nova de violão, simples e leve (Creator Store), em loop com fade
 TitleScreen.MusicId = "rbxassetid://89325176578939"
 TitleScreen.MusicVolume = 0.45
+-- um pouco mais rápida/aguda e com menos grave: fica mais fofinha, tipo caixinha de música
+TitleScreen.MusicSpeed = 1.12
 
 local playerGui: PlayerGui
 
@@ -48,6 +50,12 @@ function TitleScreen.show(onPlay: () -> (), onFree: (() -> ())?)
 	music.SoundId = TitleScreen.MusicId
 	music.Looped = true
 	music.Volume = 0
+	music.PlaybackSpeed = TitleScreen.MusicSpeed
+	local eq = Instance.new("EqualizerSoundEffect")
+	eq.LowGain = -4
+	eq.MidGain = 0
+	eq.HighGain = 2
+	eq.Parent = music
 	music.Parent = SoundService
 	music:Play()
 	tween(music, 2.5, { Volume = TitleScreen.MusicVolume }, Enum.EasingStyle.Sine)
