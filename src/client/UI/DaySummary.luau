@@ -479,21 +479,6 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 	local avgStars = DaySummary.rating(summary)
 	playSting(avgStars >= DaySummary.GoodDayStars)
 
-	local drinkCounts: { [string]: number } = {}
-	local wrongCounts: { [string]: number } = {}
-	local pastryCounts: { [string]: number } = {}
-	local pastryWrong: { [string]: number } = {}
-	for _, o in summary.orders do
-		if o.pastry and o.pastry ~= "" then
-			local counts = if o.pastryOk then pastryCounts else pastryWrong
-			counts[o.pastry] = (counts[o.pastry] or 0) + 1
-		end
-		if o.wrong then
-			wrongCounts[o.drink] = (wrongCounts[o.drink] or 0) + 1
-		else
-			drinkCounts[o.drink] = (drinkCounts[o.drink] or 0) + 1
-		end
-	end
 	-- saldo total: começa no que havia antes do dia e recebe vendas e gorjetas
 	local totalMoney = peek(State.Money) :: number
 	local moneyBefore = math.max(0, totalMoney - summary.earned)
@@ -505,12 +490,10 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 	local xpText = scope:Value("")
 	local continueVisible = scope:Value(false)
 
-	-- bebidas e doces entregues (os errados/incompletos também, num card avermelhado logo depois)
+	-- bebidas e doces entregues, um card por item na ordem dos pedidos (os errados/incompletos num card avermelhado)
 	local tiles = {}
 	local tileOrder = 0
-	local shownDrinks = table.clone(Recipes.DrinkOrder)
-	table.move(Recipes.SecretDrinkOrder, 1, #Recipes.SecretDrinkOrder, #shownDrinks + 1, shownDrinks)
-	local function addTile(id: string, n: number, wrong: boolean, art: Frame, name: string)
+	local function addTile(id: string, wrong: boolean, art: Frame, name: string)
 		tileOrder += 1
 		local tile = panel(scope, {
 			Name = if wrong then `{id}Wrong` else id,
@@ -523,12 +506,6 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 					Size = UDim2.fromScale(0.8, 0.58),
 					[Children] = art,
 				}),
-				label(scope, `x{n}`, {
-					AnchorPoint = Vector2.new(1, 0),
-					Position = UDim2.fromScale(0.98, 0.02),
-					Size = UDim2.fromScale(0.45, 0.2),
-					TextColor3 = Theme.WoodDark,
-				}),
 				label(scope, name, {
 					Position = UDim2.fromScale(0.05, 0.64),
 					Size = UDim2.fromScale(0.9, 0.3),
@@ -539,27 +516,25 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 		})
 		table.insert(tiles, tile)
 	end
-	for _, id in shownDrinks do
-		if drinkCounts[id] then
-			addTile(id, drinkCounts[id], false, drinkGlass(id), Recipes.Drinks[id].Name)
-		end
-		if wrongCounts[id] then
-			addTile(id, wrongCounts[id], true, drinkGlass(id), Recipes.Drinks[id].Name)
-		end
-	end
 	local function pastryArt(id: string): Frame
 		local art = PixelArt.draw((Sprites :: any)[Catalog.Pastries[id].Icon])
 		art.Size = UDim2.fromScale(0.85, 0.85)
 		return art
 	end
-	for _, id in Catalog.PastryOrder do
-		if pastryCounts[id] then
-			addTile(id, pastryCounts[id], false, pastryArt(id), Catalog.Pastries[id].Name)
+	for _, o in summary.orders do
+		if Recipes.Drinks[o.drink] then
+			addTile(o.drink, o.wrong, drinkGlass(o.drink), Recipes.Drinks[o.drink].Name)
 		end
-		if pastryWrong[id] then
-			addTile(id, pastryWrong[id], true, pastryArt(id), Catalog.Pastries[id].Name)
+		if o.pastry and Catalog.Pastries[o.pastry] then
+			addTile(o.pastry, not o.pastryOk, pastryArt(o.pastry), Catalog.Pastries[o.pastry].Name)
 		end
 	end
+	-- 7 por linha em 2 linhas; com mais itens, mais colunas e cards menores até tudo caber
+	local gridCols = 7
+	while math.ceil(#tiles / gridCols) * 0.51 * 7 / gridCols > 1 do
+		gridCols += 1
+	end
+	local gridShrink = 7 / gridCols
 
 	-- reviews
 	local reviewCards = {}
@@ -762,9 +737,8 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 								Size = UDim2.fromScale(1, 0.54),
 								[Children] = {
 									scope:New("UIGridLayout")({
-										-- 7 por linha: cabem as bebidas e os doces do dia
-										CellSize = UDim2.fromScale(0.13, 0.47),
-										CellPadding = UDim2.fromScale(0.015, 0.04),
+										CellSize = UDim2.fromScale(0.13 * gridShrink, 0.47 * gridShrink),
+										CellPadding = UDim2.fromScale(0.015 * gridShrink, 0.04 * gridShrink),
 										SortOrder = Enum.SortOrder.LayoutOrder,
 									}),
 									tiles,
