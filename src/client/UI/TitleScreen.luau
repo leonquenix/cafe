@@ -4,6 +4,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
 local Fusion = require(ReplicatedStorage.Packages.Fusion)
@@ -23,6 +24,10 @@ TitleScreen.CameraPosition = Vector3.new(Layout.DoorX + 4.2, 7, Layout.Room.MinZ
 TitleScreen.CameraTarget = Vector3.new(Layout.DoorX, 9.5, Layout.Room.MinZ)
 TitleScreen.FieldOfView = 60
 
+-- trilha do menu: bossa nova alegre (APM Music, Creator Store), em loop com fade
+TitleScreen.MusicId = "rbxassetid://1845764031"
+TitleScreen.MusicVolume = 0.45
+
 local playerGui: PlayerGui
 
 function TitleScreen.init(gui: PlayerGui)
@@ -37,6 +42,15 @@ end
 
 function TitleScreen.show(onPlay: () -> (), onFree: (() -> ())?)
 	local scope = Fusion.scoped(Fusion)
+
+	local music = Instance.new("Sound")
+	music.Name = "TitleMusic"
+	music.SoundId = TitleScreen.MusicId
+	music.Looped = true
+	music.Volume = 0
+	music.Parent = SoundService
+	music:Play()
+	tween(music, 2.5, { Volume = TitleScreen.MusicVolume }, Enum.EasingStyle.Sine)
 
 	local cup = PixelArt.draw(Sprites.Coffee)
 	cup.Size = UDim2.fromScale(1, 1)
@@ -241,6 +255,9 @@ function TitleScreen.show(onPlay: () -> (), onFree: (() -> ())?)
 		tween(titleScale, 0.35, { Scale = 0 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
 		tween(info, 0.3, { TextTransparency = 1 })
 		tween(gradient, 0.6, { BackgroundTransparency = 1 })
+		tween(music, 2.5, { Volume = 0 }, Enum.EasingStyle.Sine).Completed:Once(function()
+			music:Destroy()
+		end)
 		task.delay(0.6, function()
 			gui:Destroy()
 			Fusion.doCleanup(scope)
