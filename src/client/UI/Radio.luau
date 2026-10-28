@@ -22,8 +22,8 @@ local Radio = {}
 -- Speed < 1 desacelera a batida; Lofi abafa os agudos (efeito "lo-fi" em faixas pesadas)
 Radio.Tracks = {
 	{ Name = "Bossa Nova", Id = "rbxassetid://91689040007075", Color = Theme.Mustard },
-	{ Name = "Metal Lo-fi", Id = "rbxassetid://9038252543", Color = Color3.fromRGB(150, 140, 170), Speed = 0.8, Lofi = true },
-	{ Name = "K-pop Lo-fi", Id = "rbxassetid://106053746039582", Color = Color3.fromRGB(240, 160, 190), Speed = 0.88 },
+	{ Name = "Metal", Id = "rbxassetid://9047442385", Color = Color3.fromRGB(150, 140, 170), Speed = 0.9, Lofi = true },
+	{ Name = "K-pop", Id = "rbxassetid://9042053575", Color = Color3.fromRGB(240, 160, 190), Speed = 0.88 },
 	{ Name = "Jazz", Id = "rbxassetid://140331368291861", Color = Theme.Wood },
 	{ Name = "Lo-fi Hip Hop", Id = "rbxassetid://9047104336", Color = Theme.Sage },
 	{ Name = "New Age", Id = "rbxassetid://128130163260275", Color = Color3.fromRGB(150, 200, 220) },
