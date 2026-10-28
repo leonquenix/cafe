@@ -1,7 +1,7 @@
 --!strict
 -- Placar do fim do dia: faturamento, bebidas entregues, reviews divertidos,
 -- XP subindo e — se subir de nível — uma tela de "você aprendeu receitas novas!".
--- Ao abrir toca um som de conquista (dia bom) ou um som triste.
+-- Ao abrir toca um som de conquista (dia bom) ou um som triste; subir de nível toca uma fanfarra.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -42,6 +42,10 @@ DaySummary.GoodSound = "rbxassetid://1841173427"
 DaySummary.BadSound = "rbxassetid://100695479081760"
 DaySummary.GoodVolume = 0.51
 DaySummary.BadVolume = 0.6
+-- fanfarra de trompetes do nível novo / receitas novas: mais aguda (Speed) e aveludada (agudos abafados)
+DaySummary.LevelUpSound = "rbxassetid://1845399641"
+DaySummary.LevelUpVolume = 0.5
+DaySummary.LevelUpSpeed = 1.15
 
 local playerGui: PlayerGui
 
@@ -55,11 +59,19 @@ function DaySummary.rating(summary: Summary): number
 	return if rated > 0 then math.floor(total / rated + 0.5) else 0
 end
 
-local function playSting(good: boolean)
+local function playSound(id: string, volume: number, speed: number?, soft: boolean?)
 	local sound = Instance.new("Sound")
-	sound.Name = "DayEndSting"
-	sound.SoundId = if good then DaySummary.GoodSound else DaySummary.BadSound
-	sound.Volume = if good then DaySummary.GoodVolume else DaySummary.BadVolume
+	sound.Name = "DaySummarySound"
+	sound.SoundId = id
+	sound.Volume = volume
+	sound.PlaybackSpeed = speed or 1
+	if soft then
+		local eq = Instance.new("EqualizerSoundEffect")
+		eq.LowGain = -2
+		eq.MidGain = 0
+		eq.HighGain = -6
+		eq.Parent = sound
+	end
 	sound.Parent = SoundService
 	sound.Ended:Once(function()
 		sound:Destroy()
@@ -323,6 +335,7 @@ end
 
 local function showLevelUp(scope: any, parent: GuiObject, levelBefore: number, levelAfter: number, onClose: () -> ())
 	local drinks, ingredients = Progression.unlocksBetween(levelBefore, levelAfter)
+	playSound(DaySummary.LevelUpSound, DaySummary.LevelUpVolume, DaySummary.LevelUpSpeed, true)
 
 	local rays = scope:New("Frame")({
 		Name = "Rays",
@@ -478,7 +491,11 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 	local scope = Fusion.scoped(Fusion)
 
 	local avgStars = DaySummary.rating(summary)
-	playSting(avgStars >= DaySummary.GoodDayStars)
+	if avgStars >= DaySummary.GoodDayStars then
+		playSound(DaySummary.GoodSound, DaySummary.GoodVolume)
+	else
+		playSound(DaySummary.BadSound, DaySummary.BadVolume)
+	end
 
 	-- saldo total: começa no que havia antes do dia e recebe vendas e gorjetas
 	local totalMoney = peek(State.Money) :: number
