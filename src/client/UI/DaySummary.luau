@@ -1,9 +1,11 @@
 --!strict
 -- Placar do fim do dia: faturamento, bebidas entregues, reviews divertidos,
 -- XP subindo e — se subir de nível — uma tela de "você aprendeu receitas novas!".
+-- Ao abrir toca um som de conquista (dia bom) ou um som triste.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
 local Fusion = require(ReplicatedStorage.Packages.Fusion)
@@ -34,7 +36,35 @@ export type Summary = {
 
 local DaySummary = {}
 
+-- dia bom = média das avaliações (estrelas do placar) a partir desta nota
+DaySummary.GoodDayStars = 4
+DaySummary.GoodSound = "rbxassetid://1844584698"
+DaySummary.BadSound = "rbxassetid://100695479081760"
+DaySummary.SoundVolume = 0.6
+
 local playerGui: PlayerGui
+
+-- nota do dia (1-5): média das estrelas de cada pedido; pedido errado vale 1 estrela
+function DaySummary.rating(summary: Summary): number
+	local total = 0
+	for _, o in summary.orders do
+		total += if o.wrong then 1 else Reviews.stars(o.tier)
+	end
+	local rated = #summary.orders
+	return if rated > 0 then math.floor(total / rated + 0.5) else 0
+end
+
+local function playSting(good: boolean)
+	local sound = Instance.new("Sound")
+	sound.Name = "DayEndSting"
+	sound.SoundId = if good then DaySummary.GoodSound else DaySummary.BadSound
+	sound.Volume = DaySummary.SoundVolume
+	sound.Parent = SoundService
+	sound.Ended:Once(function()
+		sound:Destroy()
+	end)
+	sound:Play()
+end
 
 local function tween(inst: Instance, time: number, props: { [string]: any }, style: Enum.EasingStyle?, dir: Enum.EasingDirection?): Tween
 	local t = TweenService:Create(inst, TweenInfo.new(time, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out), props)
@@ -446,7 +476,9 @@ end
 function DaySummary.show(summary: Summary, onContinue: () -> ())
 	local scope = Fusion.scoped(Fusion)
 
-	local totalStars = 0
+	local avgStars = DaySummary.rating(summary)
+	playSting(avgStars >= DaySummary.GoodDayStars)
+
 	local drinkCounts: { [string]: number } = {}
 	local wrongCounts: { [string]: number } = {}
 	local pastryCounts: { [string]: number } = {}
@@ -457,16 +489,11 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 			counts[o.pastry] = (counts[o.pastry] or 0) + 1
 		end
 		if o.wrong then
-			totalStars += 1 -- pedido errado vale 1 estrela
 			wrongCounts[o.drink] = (wrongCounts[o.drink] or 0) + 1
 		else
-			totalStars += Reviews.stars(o.tier)
 			drinkCounts[o.drink] = (drinkCounts[o.drink] or 0) + 1
 		end
 	end
-	local rated = #summary.orders
-	local avgStars = if rated > 0 then math.floor(totalStars / rated + 0.5) else 0
-
 	-- saldo total: começa no que havia antes do dia e recebe vendas e gorjetas
 	local totalMoney = peek(State.Money) :: number
 	local moneyBefore = math.max(0, totalMoney - summary.earned)

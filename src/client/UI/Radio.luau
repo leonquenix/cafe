@@ -107,7 +107,7 @@ local function refreshPanel()
 	percent.Text = `{volume}%`
 end
 
--- começa a tocar (no início do expediente); chamadas repetidas não fazem nada
+-- começa a tocar (no início de cada expediente); chamadas repetidas não fazem nada
 function Radio.play()
 	if music then
 		return
@@ -129,6 +129,20 @@ function Radio.play()
 	music = sound
 	tween(sound, 2.5, { Volume = targetVolume() })
 	refreshPanel()
+end
+
+-- para a música (fim do expediente) com um fade; o próximo Radio.play() recomeça
+function Radio.stop(fade: number?)
+	local sound = music
+	if not sound then
+		return
+	end
+	music = nil
+	switching += 1 -- cancela uma troca de estação em andamento
+	Radio.close()
+	tween(sound, fade or 1.5, { Volume = 0 }).Completed:Once(function()
+		sound:Destroy()
+	end)
 end
 
 function Radio.setTrack(index: number)

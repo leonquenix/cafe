@@ -151,7 +151,7 @@ local function startDay(day: number)
 	Transition.play(day, function()
 		DayCycle.morning(0)
 		Hud.setVisible(true)
-		-- música da gameplay: começa no primeiro expediente e segue tocando
+		-- música da gameplay: toca durante o expediente
 		Radio.play()
 	end, function()
 		Net.StartDay.send(1)
@@ -391,6 +391,8 @@ end)
 
 Net.DayEnded.listen(function(summary)
 	Customers.endDay()
+	-- o rádio para; o placar abre com o som de dia bom ou ruim
+	Radio.stop(1.5)
 	-- fim de dia forçado (comando endDay): fecha o preparo e despacha a fila
 	PastryPopup.dismiss()
 	pendingRetry = nil
