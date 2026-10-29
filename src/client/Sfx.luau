@@ -39,7 +39,7 @@ Sfx.Sounds = {
 	-- loja: já comprado, no limite, nível baixo ou sem moedas (negação curtinha)
 	Denied = { Id = "rbxassetid://17208353912", Volume = 0.18 } :: Def,
 	-- cliente pagou / placar soma o faturamento: moedas caindo na gaveta do caixa (pula o silêncio inicial)
-	Coins = { Id = "rbxassetid://1319346243", Volume = 0.7, Start = 0.45 } :: Def,
+	Coins = { Id = "rbxassetid://1319346243", Volume = 0.84, Start = 0.45 } :: Def,
 	-- ícone do rádio: sintonizando pela faixa AM
 	RadioTune = { Id = "rbxassetid://9118028337", Volume = 0.9 } :: Def,
 	-- livro de receitas abrindo e virando a página (pula o começo quase mudo)
