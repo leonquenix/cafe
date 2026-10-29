@@ -39,7 +39,7 @@ Sfx.Sounds = {
 	-- loja: pop fofinho de conquista logo depois do ka-ching da compra confirmada
 	CutePop = { Id = "rbxassetid://134383970285022", Volume = 0.25 } :: Def,
 	-- loja: já comprado, no limite, nível baixo ou sem moedas (negação curtinha)
-	Denied = { Id = "rbxassetid://17208353912", Volume = 0.18 } :: Def,
+	Denied = { Id = "rbxassetid://17208353912", Volume = 0.207 } :: Def,
 	-- cliente pagou: "ka-ching" de caixa registradora (pula o silêncio inicial)
 	Coins = { Id = "rbxassetid://118326705311058", Volume = 0.45, Start = 0.45 } :: Def,
 	-- placar do fim do dia: chuva de moedas enquanto o faturamento soma
