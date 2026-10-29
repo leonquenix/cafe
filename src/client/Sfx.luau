@@ -14,8 +14,8 @@ local Sfx = {}
 type Def = { Id: string, Volume: number, Speed: number?, Start: number?, Length: number? }
 
 Sfx.Sounds = {
-	-- clique de botão: bolha estourando (Roblox GUI - Bubble)
-	Click = { Id = "rbxassetid://17208204604", Volume = 0.45 } :: Def,
+	-- clique de botão: bolha estourando (ui-bubble-click: estalo curto e forte, por isso o volume baixo)
+	Click = { Id = "rbxassetid://77120543307812", Volume = 0.2 } :: Def,
 	-- copo vazio chegando na bancada (caneca de cerâmica na mesa de madeira)
 	CupDown = { Id = "rbxassetid://9117037749", Volume = 0.8 } :: Def,
 	-- ingrediente despejado no copo (corta no fim do despejo)
@@ -36,6 +36,8 @@ Sfx.Sounds = {
 	Plate = { Id = "rbxassetid://9114076521", Volume = 0.45, Start = 0.68 } :: Def,
 	-- loja: compra efetivada (caixa registradora "ka-ching", pula o silêncio do começo)
 	Cash = { Id = "rbxassetid://7112275565", Volume = 0.8, Start = 0.4 } :: Def,
+	-- loja: pop fofinho de conquista logo depois do ka-ching da compra confirmada
+	CutePop = { Id = "rbxassetid://134383970285022", Volume = 0.25 } :: Def,
 	-- loja: já comprado, no limite, nível baixo ou sem moedas (negação curtinha)
 	Denied = { Id = "rbxassetid://17208353912", Volume = 0.18 } :: Def,
 	-- cliente pagou: "ka-ching" de caixa registradora (pula o silêncio inicial)

@@ -41,9 +41,12 @@ local DaySummary = {}
 -- dia bom = média das avaliações (estrelas do placar) a partir desta nota
 DaySummary.GoodDayStars = 4
 DaySummary.GoodSound = "rbxassetid://9048736215"
-DaySummary.BadSound = "rbxassetid://1839846554" -- "ops", leve e de game show, sem ser triste
+-- dia ruim: começo do "Sad Violin" (a faixa é longa: toca só BadLength s e some com fade)
+DaySummary.BadSound = "rbxassetid://1844634063"
+DaySummary.BadStart = 0.25 -- pula o silêncio do começo
+DaySummary.BadLength = 6
 DaySummary.GoodVolume = 0.43
-DaySummary.BadVolume = 0.425
+DaySummary.BadVolume = 0.4
 -- fanfarra de trompetes do nível novo / receitas novas: mais aguda (Speed) e aveludada (agudos abafados)
 DaySummary.LevelUpSound = "rbxassetid://1845399641"
 DaySummary.LevelUpVolume = 0.5
@@ -531,6 +534,20 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 	local avgStars = DaySummary.rating(summary)
 	local good = avgStars >= DaySummary.GoodDayStars
 	local sting = playSound(if good then DaySummary.GoodSound else DaySummary.BadSound, if good then DaySummary.GoodVolume else DaySummary.BadVolume, 1, true)
+	if not good then
+		sting.TimePosition = DaySummary.BadStart
+		-- corte manual: o Ended não dispara, então os grilos entram depois do fade
+		task.delay(DaySummary.BadLength, function()
+			if sting.Parent then
+				local fade = TweenService:Create(sting, TweenInfo.new(0.6), { Volume = 0 })
+				fade.Completed:Once(function()
+					sting:Destroy()
+					startNight()
+				end)
+				fade:Play()
+			end
+		end)
+	end
 	-- grilos depois do som (ou logo, se o som não carregar)
 	sting.Ended:Once(startNight)
 	task.delay(9, startNight)
