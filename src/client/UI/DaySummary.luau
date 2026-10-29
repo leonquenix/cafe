@@ -918,7 +918,7 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 			gainText:set(text)
 			if amount > 0 then
 				-- o valor entra no caixa junto com a contagem (abaixo do som de êxito/dia ruim)
-				Sfx.play("Coins", 0.8)
+				Sfx.play("CoinsCount")
 			end
 			gainScale.Scale = 0
 			tween(gainScale, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)

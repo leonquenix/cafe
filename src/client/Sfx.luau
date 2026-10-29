@@ -11,7 +11,7 @@ local TweenService = game:GetService("TweenService")
 
 local Sfx = {}
 
-type Def = { Id: string, Volume: number, Speed: number?, Start: number? }
+type Def = { Id: string, Volume: number, Speed: number?, Start: number?, Length: number? }
 
 Sfx.Sounds = {
 	-- clique de botão: bolha estourando (Roblox GUI - Bubble)
@@ -40,10 +40,15 @@ Sfx.Sounds = {
 	Denied = { Id = "rbxassetid://17208353912", Volume = 0.18 } :: Def,
 	-- cliente pagou / placar soma o faturamento: moedas caindo na gaveta do caixa (pula o silêncio inicial)
 	Coins = { Id = "rbxassetid://1319346243", Volume = 0.84, Start = 0.45 } :: Def,
-	-- ícone do rádio: sintonizando pela faixa AM
-	RadioTune = { Id = "rbxassetid://9118028337", Volume = 0.9 } :: Def,
-	-- livro de receitas abrindo e virando a página (pula o começo quase mudo)
-	BookOpen = { Id = "rbxassetid://9118835414", Volume = 0.9, Start = 0.6 } :: Def,
+	-- placar do fim do dia: chuva de moedas enquanto o faturamento soma
+	CoinsCount = { Id = "rbxassetid://134911555436784", Volume = 0.27 } :: Def,
+	-- ícone do rádio e botões das músicas: chiado de estática (a gravação é longa: só um trecho curto)
+	RadioTune = { Id = "rbxassetid://138347177735590", Volume = 0.6, Start = 0.15, Length = 0.9 } :: Def,
+	-- fechar o rádio: zumbido curto e o clique de rádio antigo desligando
+	RadioOff = { Id = "rbxassetid://9117158538", Volume = 1.5, Start = 0.55 } :: Def,
+	-- livro de receitas: página virando ao abrir e o livro fechando
+	BookOpen = { Id = "rbxassetid://95995953662374", Volume = 1.2 } :: Def,
+	BookClose = { Id = "rbxassetid://7244593699", Volume = 0.3, Start = 0.12 } :: Def,
 }
 
 -- loop da colher: só o trecho em que ela gira (sem o começo/fim mudos)
@@ -82,6 +87,14 @@ function Sfx.play(name: string, volumeScale: number?): Sound
 		sound:Destroy()
 	end)
 	sound:Play()
+	if def.Length then
+		-- gravação mais longa que o efeito: corta com um fade curto
+		task.delay(def.Length, function()
+			if sound.Parent then
+				Sfx.fadeOut(sound, 0.2)
+			end
+		end)
+	end
 	return sound
 end
 

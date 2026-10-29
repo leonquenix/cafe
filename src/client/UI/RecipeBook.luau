@@ -341,6 +341,7 @@ function RecipeBook.show()
 					}),
 					scope:New("TextButton")({
 						Name = "Close",
+						[Fusion.Attribute("ClickSound")] = "BookClose",
 						AnchorPoint = Vector2.new(1, 0),
 						Position = UDim2.fromScale(1, 0),
 						Size = UDim2.fromScale(0.09, 0.09),
