@@ -31,17 +31,15 @@ Sfx.Sounds = {
 	-- forno: assadeira entrando na grade e porta fechando
 	OvenIn = { Id = "rbxassetid://9116642361", Volume = 0.55 } :: Def,
 	OvenDoor = { Id = "rbxassetid://9117179507", Volume = 0.5 } :: Def,
-	-- tirar do forno (porta abrindo) e o prato pousando no balcão
+	-- tirar do forno (porta abrindo) e o prato pousando no balcão (começa direto no impacto)
 	OvenOut = { Id = "rbxassetid://9117180051", Volume = 0.8 } :: Def,
-	Plate = { Id = "rbxassetid://9114076433", Volume = 1.2 } :: Def,
+	Plate = { Id = "rbxassetid://9114076521", Volume = 0.45, Start = 0.68 } :: Def,
 	-- loja: compra efetivada (caixa registradora "ka-ching", pula o silêncio do começo)
 	Cash = { Id = "rbxassetid://7112275565", Volume = 0.8, Start = 0.4 } :: Def,
 	-- loja: já comprado, no limite, nível baixo ou sem moedas (negação curtinha)
 	Denied = { Id = "rbxassetid://17208353912", Volume = 0.18 } :: Def,
-	-- cliente pagou / placar soma o faturamento: moedas caindo na caixa
-	Coins = { Id = "rbxassetid://9117243937", Volume = 0.45 } :: Def,
-	-- doce entregue no popup do forno: sininho de confirmação
-	Deliver = { Id = "rbxassetid://17208361335", Volume = 0.3 } :: Def,
+	-- cliente pagou / placar soma o faturamento: moedas caindo na gaveta do caixa (pula o silêncio inicial)
+	Coins = { Id = "rbxassetid://1319346243", Volume = 0.7, Start = 0.45 } :: Def,
 	-- ícone do rádio: sintonizando pela faixa AM
 	RadioTune = { Id = "rbxassetid://9118028337", Volume = 0.9 } :: Def,
 	-- livro de receitas abrindo e virando a página (pula o começo quase mudo)
