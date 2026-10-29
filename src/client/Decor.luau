@@ -1,12 +1,17 @@
 --!strict
 -- Decoração comprada na loja, construída com Parts só para o jogador (cada um tem o seu café).
 -- Alguns itens têm animaçãozinha: gato respirando, disco girando, fogo piscando, lanternas balançando.
+-- Clicar no gato faz carinho: ele mia e solta um balãozinho de coração.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local Layout = require(ReplicatedStorage.Shared.Layout)
+local Sfx = require(script.Parent.Sfx)
+local Bubble = require(script.Parent.UI.Bubble)
 
 local rgb = Color3.fromRGB
 local Decor = {}
@@ -16,6 +21,8 @@ local built: { [string]: Model } = {}
 local animators: { { Id: string, Fn: (t: number) -> () } } = {}
 local appearing: { [string]: boolean } = {}
 local currentId = ""
+-- partes clicáveis no mundo: parte -> o que fazer no clique
+local clickables: { [BasePart]: () -> () } = {}
 
 local function addAnimator(fn: (t: number) -> ())
 	table.insert(animators, { Id = currentId, Fn = fn })
@@ -142,6 +149,31 @@ BUILDERS.Cat = function(m)
 	for i, p in headParts do
 		head0[i] = p.CFrame
 	end
+	-- carinho: área invisível cobrindo o gato inteiro, clique = miado + coração
+	local hitbox = part(m, Vector3.new(2.6, 1.7, 1.4) * S, at(0.05, 0.7, 0.15), gray, { Transparency = 1 })
+	hitbox.Name = "PetArea"
+	local heart: BillboardGui? = nil
+	local lastPet = 0
+	clickables[hitbox] = function()
+		local now = os.clock()
+		if now - lastPet < 0.4 or appearing.Cat then
+			return
+		end
+		lastPet = now
+		Sfx.play("Meow")
+		if heart then
+			Bubble.pop(heart)
+		end
+		local b = Bubble.love(head)
+		heart = b
+		task.delay(1.6, function()
+			if heart == b then
+				heart = nil
+				Bubble.pop(b)
+			end
+		end)
+	end
+
 	local b0, t0 = body.CFrame, tail.CFrame
 	addAnimator(function(t)
 		local breathe = math.sin(t * 1.6) * 0.04
@@ -341,6 +373,26 @@ function Decor.start()
 			if not appearing[a.Id] then
 				a.Fn(t)
 			end
+		end
+	end)
+
+	-- clique/toque no mundo (fora da UI): vê se acertou algo clicável da decoração
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if processed then
+			return
+		end
+		if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then
+			return
+		end
+		local camera = workspace.CurrentCamera
+		local ray = camera:ScreenPointToRay(input.Position.X, input.Position.Y)
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = { Players.LocalPlayer.Character :: any }
+		local hit = workspace:Raycast(ray.Origin, ray.Direction * 200, params)
+		local fn = hit and clickables[hit.Instance :: BasePart]
+		if fn then
+			fn()
 		end
 	end)
 end

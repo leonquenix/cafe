@@ -1,5 +1,6 @@
 --!strict
 -- Balões sobre a cabeça dos clientes: pedido, agradecimento e humor (paciência).
+-- Também o balãozinho de coração do gato do balcão quando ganha carinho.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -155,6 +156,16 @@ function Bubble.heart(head: BasePart, text: string?): BillboardGui
 	label.Position = UDim2.fromScale(0.36, 0.2)
 	label.Parent = panel
 
+	gui.Parent = head
+	return gui
+end
+
+-- balãozinho só com o coração (carinho no gato)
+function Bubble.love(head: BasePart, offsetY: number?): BillboardGui
+	local gui, panel = base(head, 1.9, 2, offsetY or 0.7)
+	local heart = PixelArt.draw(Sprites.Heart)
+	heart.Size = UDim2.fromScale(0.72, 0.72)
+	heart.Parent = panel
 	gui.Parent = head
 	return gui
 end
