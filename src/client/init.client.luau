@@ -52,10 +52,10 @@ RecipeBook.init(playerGui)
 Hud.new(playerGui)
 Hud.setVisible(false)
 
--- Cmdr (comandos de admin): F2 abre o console
+-- Cmdr (comandos de admin): ";" (ou F2) abre o console
 task.spawn(function()
 	local CmdrClient = require(ReplicatedStorage:WaitForChild("CmdrClient") :: ModuleScript) :: any
-	CmdrClient:SetActivationKeys({ Enum.KeyCode.F2 })
+	CmdrClient:SetActivationKeys({ Enum.KeyCode.Semicolon, Enum.KeyCode.F2 })
 end)
 
 local minigame = Minigame.new(playerGui)

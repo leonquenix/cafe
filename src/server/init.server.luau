@@ -16,7 +16,7 @@ DataService.start()
 CafeService.start()
 Barista.start()
 
--- Comandos de admin (abre com F2)
+-- Comandos de admin (abre com ";" ou F2)
 Cmdr.Registry:RegisterDefaultCommands(function(command)
 	return command.Name == "help"
 end)
