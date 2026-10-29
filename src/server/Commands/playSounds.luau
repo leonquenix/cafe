@@ -64,38 +64,42 @@ return {
 		local DaySummary = require(client.UI.DaySummary) :: any
 
 		local function sfx(name: string, label: string)
-			return function()
-				context:Reply(label)
+			return label, function()
 				local def = Sfx.Sounds[name]
 				waitFor(Sfx.play(name), def.Start or 0, def.Length)
 			end
 		end
 		local function day(label: string, id: string, volume: number, speed: number?, soft: boolean?)
-			return function()
-				context:Reply(label)
+			return label, function()
 				waitFor(playDay(id, volume, speed, soft), 0)
 			end
 		end
 
-		local steps = {
-			sfx("Click", "Clique: pop de bolha"),
-			sfx("RadioTune", "Ícone do rádio: estática"),
-			sfx("RadioOff", "Fechar o rádio"),
-			sfx("BookOpen", "Ícone do livro: abrir"),
-			sfx("BookClose", "Livro: fechar"),
-			sfx("Coins", "Dinheiro: ka-ching do pagamento"),
-			sfx("CoinsCount", "Dinheiro: moedas do placar"),
-			sfx("Cash", "Dinheiro: compra na loja"),
-			day("Fim do dia: dia bom (conquista)", DaySummary.GoodSound, DaySummary.GoodVolume, 1, true),
-			day("Fim do dia: dia ruim", DaySummary.BadSound, DaySummary.BadVolume, 1, true),
-			day("Fim do dia: nível novo", DaySummary.LevelUpSound, DaySummary.LevelUpVolume, DaySummary.LevelUpSpeed, true),
-			day("Fim do dia: grilos", DaySummary.NightSound, DaySummary.NightVolume),
-		}
+		-- cada passo: rótulo e função que toca e espera o som acabar
+		local steps = {}
+		local function add(label: string, run: () -> ())
+			table.insert(steps, { label = label, run = run })
+		end
+		add(sfx("Click", "Clique: pop de bolha"))
+		add(sfx("RadioTune", "Ícone do rádio: estática"))
+		add(sfx("RadioOff", "Fechar o rádio"))
+		add(sfx("BookOpen", "Ícone do livro: abrir"))
+		add(sfx("BookClose", "Livro: fechar"))
+		add(sfx("Coins", "Dinheiro: ka-ching do pagamento"))
+		add(sfx("CoinsCount", "Dinheiro: moedas do placar"))
+		add(sfx("Cash", "Dinheiro: compra na loja"))
+		add(day("Fim do dia: dia bom (conquista)", DaySummary.GoodSound, DaySummary.GoodVolume, 1, true))
+		add(day("Fim do dia: dia ruim", DaySummary.BadSound, DaySummary.BadVolume, 1, true))
+		add(day("Fim do dia: nível novo", DaySummary.LevelUpSound, DaySummary.LevelUpVolume, DaySummary.LevelUpSpeed, true))
+		add(day("Fim do dia: grilos", DaySummary.NightSound, DaySummary.NightVolume))
 
 		running = true
-		task.spawn(function()
-			for _, step in steps do
-				local ok, err = pcall(step)
+		-- defer: a linha "Tocando..." aparece antes do "1/N"
+		task.defer(function()
+			for i, step in steps do
+				-- progresso: qual som está tocando de quantos
+				context:Reply(`{i}/{#steps}  {step.label}`)
+				local ok, err = pcall(step.run)
 				if not ok then
 					context:Reply(`Erro: {err}`, Color3.fromRGB(255, 120, 120))
 				end
