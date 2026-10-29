@@ -24,11 +24,10 @@ TitleScreen.CameraPosition = Vector3.new(Layout.DoorX + 4.2, 7, Layout.Room.MinZ
 TitleScreen.CameraTarget = Vector3.new(Layout.DoorX, 9.5, Layout.Room.MinZ)
 TitleScreen.FieldOfView = 60
 
--- trilha do menu: bossa nova de violão, simples e leve (Creator Store), em loop com fade
-TitleScreen.MusicId = "rbxassetid://89325176578939"
+-- trilha da tela de início: "Waltzing Flutes" (Gerhard Narholz, APM), em loop com fade
+TitleScreen.MusicId = "rbxassetid://1846271108"
 TitleScreen.MusicVolume = 0.45
--- um pouco mais rápida/aguda e com menos grave: fica mais fofinha, tipo caixinha de música
-TitleScreen.MusicSpeed = 1.12
+TitleScreen.MusicSpeed = 1
 
 local playerGui: PlayerGui
 
@@ -51,11 +50,6 @@ function TitleScreen.show(onPlay: () -> (), onFree: (() -> ())?)
 	music.Looped = true
 	music.Volume = 0
 	music.PlaybackSpeed = TitleScreen.MusicSpeed
-	local eq = Instance.new("EqualizerSoundEffect")
-	eq.LowGain = -4
-	eq.MidGain = 0
-	eq.HighGain = 2
-	eq.Parent = music
 	music.Parent = SoundService
 	music:Play()
 	tween(music, 2.5, { Volume = TitleScreen.MusicVolume }, Enum.EasingStyle.Sine)
