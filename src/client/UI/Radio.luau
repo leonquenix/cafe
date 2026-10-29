@@ -256,6 +256,7 @@ local function build()
 
 	local close = Instance.new("TextButton")
 	close.Name = "Close"
+	close:SetAttribute("ClickSound", "RadioOff") -- desliga o rádio, em vez do pop
 	close.Text = "X"
 	close.Font = Theme.Font
 	close.TextScaled = true
@@ -291,6 +292,7 @@ local function build()
 	for i, info in Radio.Tracks do
 		local button = Instance.new("TextButton")
 		button.Name = info.Name
+		button:SetAttribute("ClickSound", "RadioTune") -- trocar de música chia como sintonizar
 		button.LayoutOrder = i
 		button.Text = ""
 		button.AutoButtonColor = true
@@ -338,6 +340,7 @@ local function build()
 	-- área de toque maior que a barra visível
 	local hit = Instance.new("TextButton")
 	hit.Name = "VolumeBar"
+	hit:SetAttribute("NoClickSound", true) -- é um controle deslizante, não um botão
 	hit.Text = ""
 	hit.AutoButtonColor = false
 	hit.BackgroundTransparency = 1

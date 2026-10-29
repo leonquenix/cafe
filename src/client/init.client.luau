@@ -14,6 +14,7 @@ local Customers = require(script.Customers)
 local DayCycle = require(script.DayCycle)
 local Decor = require(script.Decor)
 local State = require(script.State)
+local Sfx = require(script.Sfx)
 local DaySummary = require(script.UI.DaySummary)
 local FreeCelebration = require(script.UI.FreeCelebration)
 local Hud = require(script.UI.Hud)
@@ -44,6 +45,8 @@ CameraController.start()
 CameraController.focus(TitleScreen.CameraPosition, TitleScreen.CameraTarget, 0, TitleScreen.FieldOfView)
 DayCycle.morning(0)
 Decor.start()
+-- pop de bolha em todos os botões (antes das telas serem criadas)
+Sfx.init(playerGui)
 TitleScreen.init(playerGui)
 FreeCelebration.init(playerGui)
 BackButton.init(playerGui)
@@ -56,10 +59,10 @@ Hud.new(playerGui)
 PastryPopup.init(playerGui)
 Hud.setVisible(false)
 
--- Cmdr (comandos de admin): F2 abre o console
+-- Cmdr (comandos de admin): ";" (ou F2) abre o console
 task.spawn(function()
 	local CmdrClient = require(ReplicatedStorage:WaitForChild("CmdrClient") :: ModuleScript) :: any
-	CmdrClient:SetActivationKeys({ Enum.KeyCode.F2 })
+	CmdrClient:SetActivationKeys({ Enum.KeyCode.Semicolon, Enum.KeyCode.F2 })
 end)
 
 local minigame = Minigame.new(playerGui)
@@ -94,6 +97,9 @@ end
 PrepScreen.onSetMenu = function(list)
 	Net.SetMenu.send(list)
 end
+PrepScreen.onSetCatColor = function(color)
+	Net.SetCatColor.send(color)
+end
 
 -- Decoração nova: fecha o menu, a câmera voa até o lugar, a peça se monta, volta e reabre o menu
 local function showcaseDecor(id: string)
@@ -114,6 +120,11 @@ local function showcaseDecor(id: string)
 		prepareDay(peek(State.Day), "Decor")
 	end)
 end
+
+-- pelagem do gato do balcão (antes do Owned, pra ele já ser montado na cor certa)
+State.scope:Observer(State.CatColor):onBind(function()
+	Decor.setCatColor(peek(State.CatColor))
+end)
 
 State.scope:Observer(State.Owned):onBind(function()
 	local owned = peek(State.Owned)
@@ -151,6 +162,8 @@ local function startDay(day: number)
 	startingDay = true
 	-- os grilos da noite somem quando o jogador manda começar o dia
 	DaySummary.stopNight(2)
+	-- a música do menu vai sumindo durante a transição e o rádio entra no lugar
+	TitleScreen.stopMusic(2)
 	MenuMusic.stop(2)
 	Transition.play(day, function()
 		DayCycle.morning(0)
@@ -170,7 +183,8 @@ function prepareDay(day: number, tab: string?)
 		startDay(day)
 		return
 	end
-	-- entre os dias toca o piano do menu
+	-- entre os dias toca o piano do menu no lugar da música da tela de início
+	TitleScreen.stopMusic(2)
 	MenuMusic.play()
 	PrepScreen.show(function()
 		startDay(day)

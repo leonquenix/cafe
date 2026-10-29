@@ -95,6 +95,18 @@ Catalog.Decor = {
 	Stove = { Id = "Stove", Name = "Fogão a Lenha", Description = "Estalinhos e calor de vó.", Icon = "Stove", Cost = 400, Cozy = 3, Level = 4 },
 } :: { [string]: Decor }
 
+-- Pelagens do gatinho da vitrine (escolhida no pop-up de compra; o visual fica em client/Decor)
+Catalog.CatColorOrder = { "Gray", "Orange", "Black", "White", "Calico", "Tuxedo" }
+Catalog.CatColors = {
+	Gray = { Id = "Gray", Name = "CINZA" },
+	Orange = { Id = "Orange", Name = "LARANJA" },
+	Black = { Id = "Black", Name = "PRETO" },
+	White = { Id = "White", Name = "BRANCO" },
+	Calico = { Id = "Calico", Name = "TRICOLOR" },
+	Tuxedo = { Id = "Tuxedo", Name = "FRAJOLINHA" },
+} :: { [string]: { Id: string, Name: string } }
+Catalog.DefaultCatColor = "Gray"
+
 Catalog.CozyBonus = 0.02 -- cada ponto de aconchego: +2% em todos os pagamentos
 
 -- Resultado do pop-up do forno (o cliente manda; o servidor paga de acordo)

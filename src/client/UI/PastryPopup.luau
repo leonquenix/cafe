@@ -17,6 +17,7 @@ local Catalog = require(ReplicatedStorage.Shared.Catalog)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
 local Pause = require(script.Parent.Parent.Pause)
+local Sfx = require(script.Parent.Parent.Sfx)
 local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
 
@@ -48,6 +49,7 @@ local finishCallback: ((quality: number) -> ())? = nil
 local retryCallback: ((done: (ok: boolean) -> ()) -> ())? = nil
 
 local gui: ScreenGui
+local dragGui: ScreenGui -- o doce arrastado fica numa tela própria, por cima de tudo
 local panel: Frame
 local ovenFrame: Frame
 local tray: Frame
@@ -69,6 +71,8 @@ end
 
 -- Segue um ponteiro (mouse ou toque) até soltar. No toque escuta também o próprio
 -- InputObject e os eventos Touch*, porque no celular nem sempre o InputChanged chega.
+-- No toque só vale o dedo que começou o arrasto (cada dedo tem o seu InputObject):
+-- outro dedo, ou o toque passando por outra carta, não mexe nem solta este doce.
 local function trackPointer(input: InputObject, onMove: (Vector2) -> (), onEnd: (Vector2) -> ())
 	local touch = input.UserInputType == Enum.UserInputType.Touch
 	local last = pointerPosition(input)
@@ -91,19 +95,31 @@ local function trackPointer(input: InputObject, onMove: (Vector2) -> (), onEnd: 
 		end
 		onEnd(last)
 	end
+	local function released(): boolean
+		return input.UserInputState == Enum.UserInputState.End or input.UserInputState == Enum.UserInputState.Cancel
+	end
 	table.insert(conns, UserInputService.InputChanged:Connect(function(i)
-		if i == input or (if touch then i.UserInputType == Enum.UserInputType.Touch else i.UserInputType == Enum.UserInputType.MouseMovement) then
+		if i == input or (not touch and i.UserInputType == Enum.UserInputType.MouseMovement) then
 			move(i)
 		end
 	end))
 	table.insert(conns, UserInputService.InputEnded:Connect(function(i)
-		if i == input or i.UserInputType == (if touch then Enum.UserInputType.Touch else Enum.UserInputType.MouseButton1) then
+		if i == input or (if touch then released() else i.UserInputType == Enum.UserInputType.MouseButton1) then
 			stop()
 		end
 	end))
 	if touch then
-		table.insert(conns, UserInputService.TouchMoved:Connect(move))
-		table.insert(conns, UserInputService.TouchEnded:Connect(stop))
+		table.insert(conns, UserInputService.TouchMoved:Connect(function(i)
+			if i == input then
+				move(i)
+			end
+		end))
+		-- se o fim deste dedo se perder, qualquer toque soltando confere o estado dele
+		table.insert(conns, UserInputService.TouchEnded:Connect(function(i)
+			if i == input or released() then
+				stop()
+			end
+		end))
 		table.insert(conns, input.Changed:Connect(function(prop)
 			if prop == "Position" then
 				move(input)
@@ -151,6 +167,8 @@ local close: (q: number) -> ()
 
 local function finish(q: number)
 	bakeToken += 1
+	-- porta do forno abrindo para tirar o doce
+	Sfx.play("OvenOut")
 	quality:set(q)
 	status:set("done")
 	if q == Quality.Perfect then
@@ -175,6 +193,13 @@ end
 
 local function startBake()
 	showInOven(peek(pastryId))
+	-- assadeira entra na grade e a porta fecha
+	Sfx.play("OvenIn")
+	task.delay(0.25, function()
+		if peek(status) == "baking" then
+			Sfx.play("OvenDoor")
+		end
+	end)
 	needle:set(0)
 	message:set("")
 	bakeStart = Pause.clock()
@@ -211,6 +236,10 @@ function close(q: number)
 		return
 	end
 	visible:set(false)
+	if q ~= Quality.Skipped then
+		-- o doce vai pro prato no balcão (toca na hora do clique / da entrega automática)
+		Sfx.play("Plate")
+	end
 	local cb = finishCallback
 	finishCallback = nil
 	retryCallback = nil
@@ -232,6 +261,7 @@ local function retry()
 	if peek(State.Money) < Catalog.retryCost(peek(pastryId)) then
 		message:set("Moedas insuficientes para assar de novo")
 		shake(panel)
+		Sfx.play("Denied")
 		return
 	end
 	status:set("waiting")
@@ -240,9 +270,11 @@ local function retry()
 			return
 		end
 		if ok then
+			Sfx.play("Cash")
 			reset()
 			message:set("Mais uma chance! Arraste de novo")
 		else
+			Sfx.play("Denied")
 			status:set("done")
 			message:set("Moedas insuficientes para assar de novo")
 		end
@@ -253,6 +285,7 @@ end
 
 local TAP_DISTANCE = 12 -- até aqui o arrasto conta como toque simples
 local dragMoved = false
+local dragCard: GuiObject? = nil -- carta sendo arrastada: um doce por vez
 
 local function makeGhost(id: string, card: GuiObject): Frame
 	local ghost = Instance.new("Frame")
@@ -262,13 +295,13 @@ local function makeGhost(id: string, card: GuiObject): Frame
 	ghost.Size = UDim2.fromOffset(card.AbsoluteSize.X * 0.9, card.AbsoluteSize.X * 0.9)
 	ghost.ZIndex = 20
 	PixelArt.draw((Sprites :: any)[Catalog.Pastries[id].Icon], 20).Parent = ghost
-	ghost.Parent = gui
+	ghost.Parent = dragGui
 	return ghost
 end
 
 -- Toque simples numa carta: o doce certo voa sozinho até o forno
 local function tapCard(id: string, card: GuiObject)
-	if peek(status) ~= "idle" or dragMoved then
+	if peek(status) ~= "idle" or dragMoved or (dragCard ~= nil and dragCard ~= card) then
 		return
 	end
 	if id ~= peek(pastryId) then
@@ -290,9 +323,11 @@ local function tapCard(id: string, card: GuiObject)
 end
 
 local function beginDrag(id: string, input: InputObject, card: GuiObject)
-	if peek(status) ~= "idle" then
+	-- só um toque novo começa arrasto, e nunca enquanto outro doce está na mão
+	if peek(status) ~= "idle" or dragCard or input.UserInputState ~= Enum.UserInputState.Begin then
 		return
 	end
+	dragCard = card
 	local ghost = makeGhost(id, card)
 	local start = pointerPosition(input)
 	ghost.Position = UDim2.fromOffset(start.X, start.Y)
@@ -304,6 +339,12 @@ local function beginDrag(id: string, input: InputObject, card: GuiObject)
 			dragMoved = true
 		end
 	end, function(_p)
+		-- libera depois do Activated desta mesma soltura (que ainda pode chegar)
+		task.defer(function()
+			if dragCard == card then
+				dragCard = nil
+			end
+		end)
 		-- decide pelo doce que o jogador está vendo (o fantasma), não pela posição do evento
 		local p = ghost.AbsolutePosition + ghost.AbsoluteSize / 2
 		if not dragMoved then
@@ -367,6 +408,8 @@ local function makeCard(id: string, order: number): GuiObject
 			tapCard(id, card)
 		end,
 	})
+	-- o doce é item de jogo: o som é o do forno
+	card:SetAttribute("NoClickSound", true)
 	return card
 end
 
@@ -595,6 +638,8 @@ function PastryPopup.init(playerGui: PlayerGui)
 					}),
 					button({
 						Name = "Main",
+						-- "Tirar!" tem a porta do forno e "Entregar" o prato pousando: sem pop
+						[Fusion.Attribute("NoClickSound")] = true,
 						Position = UDim2.fromScale(0.44, 0.82),
 						Size = scope:Computed(function(use)
 							return if use(bad) then UDim2.fromScale(0.21, 0.14) else UDim2.fromScale(0.52, 0.14)
@@ -664,6 +709,20 @@ function PastryPopup.init(playerGui: PlayerGui)
 			panel,
 		},
 	}) :: ScreenGui
+	dragGui = scope:New("ScreenGui")({
+		Name = "CafePastryDrag",
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		DisplayOrder = 9,
+		Enabled = visible,
+		Parent = playerGui,
+	}) :: ScreenGui
+	-- o fundo escuro só segura os cliques: sem pop
+	local dim = gui:FindFirstChild("Dim") :: GuiButton
+	dim:SetAttribute("NoClickSound", true)
+	-- "Assar de novo" é uma compra: caixa registradora ou negação, não o pop
+	local retryButton = panel:FindFirstChild("Retry", true) :: GuiButton
+	retryButton:SetAttribute("NoClickSound", true)
 
 	RunService.RenderStepped:Connect(function()
 		if peek(status) ~= "baking" then
@@ -701,6 +760,7 @@ end
 
 -- Fecha sem avisar ninguém (fim de dia forçado)
 function PastryPopup.dismiss()
+	dragCard = nil
 	finishCallback = nil
 	retryCallback = nil
 	visible:set(false)

@@ -30,6 +30,8 @@ TitleScreen.MusicVolume = 0.45
 TitleScreen.MusicSpeed = 1
 
 local playerGui: PlayerGui
+-- a música continua depois do PLAY até a loja abrir (entra a do menu) ou o dia começar
+local music: Sound?
 
 function TitleScreen.init(gui: PlayerGui)
 	playerGui = gui
@@ -44,15 +46,18 @@ end
 function TitleScreen.show(onPlay: () -> (), onFree: (() -> ())?)
 	local scope = Fusion.scoped(Fusion)
 
-	local music = Instance.new("Sound")
-	music.Name = "TitleMusic"
-	music.SoundId = TitleScreen.MusicId
-	music.Looped = true
-	music.Volume = 0
-	music.PlaybackSpeed = TitleScreen.MusicSpeed
-	music.Parent = SoundService
-	music:Play()
-	tween(music, 2.5, { Volume = TitleScreen.MusicVolume }, Enum.EasingStyle.Sine)
+	if not music then
+		local sound = Instance.new("Sound")
+		sound.Name = "TitleMusic"
+		sound.SoundId = TitleScreen.MusicId
+		sound.Looped = true
+		sound.Volume = 0
+		sound.PlaybackSpeed = TitleScreen.MusicSpeed
+		sound.Parent = SoundService
+		sound:Play()
+		tween(sound, 2.5, { Volume = TitleScreen.MusicVolume }, Enum.EasingStyle.Sine)
+		music = sound
+	end
 
 	local cup = PixelArt.draw(Sprites.Coffee)
 	cup.Size = UDim2.fromScale(1, 1)
@@ -257,9 +262,6 @@ function TitleScreen.show(onPlay: () -> (), onFree: (() -> ())?)
 		tween(titleScale, 0.35, { Scale = 0 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
 		tween(info, 0.3, { TextTransparency = 1 })
 		tween(gradient, 0.6, { BackgroundTransparency = 1 })
-		tween(music, 2.5, { Volume = 0 }, Enum.EasingStyle.Sine).Completed:Once(function()
-			music:Destroy()
-		end)
 		task.delay(0.6, function()
 			gui:Destroy()
 			Fusion.doCleanup(scope)
@@ -273,6 +275,18 @@ function TitleScreen.show(onPlay: () -> (), onFree: (() -> ())?)
 		if onFree then
 			leave(freeScale, onFree)
 		end
+	end)
+end
+
+-- para a música da tela de início com fade (quando a loja abre ou o dia começa)
+function TitleScreen.stopMusic(fade: number?)
+	local sound = music
+	if not sound then
+		return
+	end
+	music = nil
+	tween(sound, fade or 2, { Volume = 0 }, Enum.EasingStyle.Sine).Completed:Once(function()
+		sound:Destroy()
 	end)
 end
 

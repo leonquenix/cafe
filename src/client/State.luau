@@ -23,6 +23,7 @@ local State = {
 	Menu = scope:Value({} :: { string }),
 	Stats = scope:Value({} :: { [string]: number }),
 	Mastered = scope:Value({} :: { [string]: boolean }),
+	CatColor = scope:Value("Gray"),
 }
 
 function State.apply(s: any)
@@ -34,6 +35,8 @@ function State.apply(s: any)
 	State.PerDay:set(s.perDay)
 	State.DayActive:set(s.dayActive)
 	State.Cozy:set(s.cozy)
+	-- antes do Owned: o gato do balcão já nasce com a pelagem certa
+	State.CatColor:set(s.catColor)
 
 	local upgrades = {}
 	for _, u in s.upgrades do

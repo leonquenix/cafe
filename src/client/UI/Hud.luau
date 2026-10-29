@@ -10,11 +10,12 @@ local Progression = require(ReplicatedStorage.Shared.Progression)
 local Recipes = require(ReplicatedStorage.Shared.Recipes)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
+local Sfx = require(script.Parent.Parent.Sfx)
 local State = require(script.Parent.Parent.State)
 local Radio = require(script.Parent.Radio)
 local Theme = require(script.Parent.Theme)
 
-local Children, OnEvent = Fusion.Children, Fusion.OnEvent
+local Attribute, Children, OnEvent = Fusion.Attribute, Fusion.Children, Fusion.OnEvent
 
 local Hud = {}
 
@@ -77,6 +78,7 @@ function Hud.new(playerGui: PlayerGui)
 	bookArt.Size = UDim2.fromScale(0.7, 0.7)
 	local bookButton = scope:New("TextButton")({
 		Name = "Book",
+		[Attribute("ClickSound")] = "BookOpen",
 		LayoutOrder = 2,
 		Text = "",
 		AutoButtonColor = true,
@@ -133,6 +135,7 @@ function Hud.new(playerGui: PlayerGui)
 	radioArt.Position = UDim2.fromScale(0.5, 0.5)
 	local radioButton = scope:New("TextButton")({
 		Name = "Radio",
+		[Attribute("ClickSound")] = "RadioTune",
 		Text = "",
 		AutoButtonColor = true,
 		BackgroundColor3 = Theme.Paper,
@@ -215,6 +218,10 @@ end
 -- "+$18 Relâmpago!" subindo e moedinhas voando até o contador
 function Hud.payout(earned: number, tier: number, tip: number?)
 	local rng = Random.new()
+	if earned + (tip or 0) > 0 then
+		-- dinheiro do cliente entrando no caixa
+		Sfx.play("Coins")
+	end
 	local origin = UDim2.fromScale(0.31, 0.36)
 
 	local label = Instance.new("TextLabel")

@@ -1,0 +1,117 @@
+-- Toca em sequência os sons de clique, de dinheiro e do fim do dia, com os volumes do jogo.
+-- Roda só no cliente (os sons são locais); lê os ids/volumes direto dos módulos Sfx e DaySummary.
+local Players = game:GetService("Players")
+local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
+
+local GAP = 0.5 -- silêncio entre um som e outro
+local MAX_LENGTH = 4 -- gravações longas (placar, grilos) tocam só um trecho
+
+-- espera a gravação acabar (ou corta com fade se for longa demais);
+-- length = trecho que o jogo toca de verdade (vale mesmo acima de MAX_LENGTH)
+local function waitFor(sound: Sound, start: number, length: number?)
+	local t0 = os.clock()
+	while not sound.IsLoaded and os.clock() - t0 < 3 do
+		task.wait()
+	end
+	local duration = length or math.min((sound.TimeLength - start) / sound.PlaybackSpeed, MAX_LENGTH)
+	task.wait(math.max(duration, 0.2))
+	if sound.Parent and sound.IsPlaying then
+		local t = TweenService:Create(sound, TweenInfo.new(0.3), { Volume = 0 })
+		t.Completed:Once(function()
+			sound:Destroy()
+		end)
+		t:Play()
+	end
+	task.wait(GAP)
+end
+
+-- mesmo jeito que o placar toca os sons dele (agudos abafados nos "soft")
+local function playDay(id: string, volume: number, speed: number?, soft: boolean?): Sound
+	local sound = Instance.new("Sound")
+	sound.Name = "PlaySoundsTest"
+	sound.SoundId = id
+	sound.Volume = volume
+	sound.PlaybackSpeed = speed or 1
+	if soft then
+		local eq = Instance.new("EqualizerSoundEffect")
+		eq.LowGain = -2
+		eq.MidGain = 0
+		eq.HighGain = -6
+		eq.Parent = sound
+	end
+	sound.Parent = SoundService
+	sound.Ended:Once(function()
+		sound:Destroy()
+	end)
+	sound:Play()
+	return sound
+end
+
+local running = false
+
+return {
+	Name = "playSounds",
+	Aliases = { "sounds" },
+	Description = "Toca em sequência os sons de clique, de dinheiro e do fim do dia (com os volumes do jogo).",
+	Group = "CafeAdmin",
+	Args = {},
+	ClientRun = function(context)
+		if running then
+			return "Já está tocando a sequência."
+		end
+		local client = (Players.LocalPlayer :: any).PlayerScripts:WaitForChild("Client")
+		local Sfx = require(client.Sfx) :: any
+		local DaySummary = require(client.UI.DaySummary) :: any
+
+		local function sfx(name: string, label: string)
+			return label, function()
+				local def = Sfx.Sounds[name]
+				waitFor(Sfx.play(name), def.Start or 0, def.Length)
+			end
+		end
+		local function day(label: string, id: string, volume: number, speed: number?, soft: boolean?, start: number?, length: number?)
+			return label, function()
+				local sound = playDay(id, volume, speed, soft)
+				sound.TimePosition = start or 0
+				waitFor(sound, start or 0, length)
+			end
+		end
+
+		-- cada passo: rótulo e função que toca e espera o som acabar
+		local steps = {}
+		local function add(label: string, run: () -> ())
+			table.insert(steps, { label = label, run = run })
+		end
+		add(sfx("Click", "Clique: pop de bolha"))
+		add(sfx("RadioTune", "Ícone do rádio: estática"))
+		add(sfx("RadioOff", "Fechar o rádio"))
+		add(sfx("BookOpen", "Ícone do livro: abrir"))
+		add(sfx("BookClose", "Livro: fechar"))
+		add(sfx("Coins", "Dinheiro: ka-ching do pagamento"))
+		add(sfx("CoinsCount", "Dinheiro: moedas do placar"))
+		add(sfx("Cash", "Dinheiro: compra na loja"))
+		add(sfx("CutePop", "Compra: pop fofo"))
+		add(sfx("Meow", "Gato: miado do carinho"))
+		add(day("Fim do dia: dia bom (conquista)", DaySummary.GoodSound, DaySummary.GoodVolume, 1, true))
+		add(day("Fim do dia: dia ruim", DaySummary.BadSound, DaySummary.BadVolume, 1, true, DaySummary.BadStart, DaySummary.BadLength))
+		add(day("Fim do dia: nível novo", DaySummary.LevelUpSound, DaySummary.LevelUpVolume, DaySummary.LevelUpSpeed, true))
+		add(day("Fim do dia: grilos", DaySummary.NightSound, DaySummary.NightVolume))
+
+		running = true
+		-- defer: a linha "Tocando..." aparece antes do "1/N"
+		task.defer(function()
+			for i, step in steps do
+				-- progresso: qual som está tocando de quantos
+				context:Reply(`{i}/{#steps}  {step.label}`)
+				local ok, err = pcall(step.run)
+				if not ok then
+					context:Reply(`Erro: {err}`, Color3.fromRGB(255, 120, 120))
+				end
+			end
+			running = false
+			context:Reply("Fim da sequência.")
+		end)
+		return `Tocando {#steps} sons em sequência...`
+	end,
+}

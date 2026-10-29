@@ -12,7 +12,9 @@ local Recipes = require(ReplicatedStorage.Shared.Recipes)
 local Glass = require(script.Parent.Parent.Art.Glass)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
+local Sfx = require(script.Parent.Parent.Sfx)
 local State = require(script.Parent.Parent.State)
+local CatPicker = require(script.Parent.CatPicker)
 local Theme = require(script.Parent.Theme)
 
 local Children, OnEvent, peek = Fusion.Children, Fusion.OnEvent, Fusion.peek
@@ -21,6 +23,7 @@ local PrepScreen = {}
 
 PrepScreen.onBuy = nil :: ((id: string) -> ())?
 PrepScreen.onSetMenu = nil :: ((list: { string }) -> ())?
+PrepScreen.onSetCatColor = nil :: ((color: string) -> ())?
 PrepScreen.onOpenBook = nil :: (() -> ())?
 PrepScreen.onWalk = nil :: (() -> ())?
 
@@ -38,6 +41,7 @@ local TABS = {
 
 function PrepScreen.init(gui: PlayerGui)
 	playerGui = gui
+	CatPicker.init(gui)
 end
 
 local function label(scope: any, text: any, props: { [string]: any }): TextLabel
@@ -101,6 +105,38 @@ local function shopCard(
 		})
 	end
 
+	local buyButton = scope:New("TextButton")({
+		Name = "Buy",
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.fromScale(0.96, 0.93),
+		Size = UDim2.fromScale(0.5, 0.2),
+		BackgroundColor3 = scope:Computed(function(use)
+			return if use(buttonEnabled) then Theme.SageDark else Theme.PaperShade
+		end),
+		AutoButtonColor = buttonEnabled,
+		Font = Theme.Font,
+		TextScaled = true,
+		TextColor3 = scope:Computed(function(use)
+			return if use(buttonEnabled) then Theme.Paper else Theme.WoodDark
+		end),
+		Text = buttonText,
+		[Children] = {
+			scope:New("UICorner")({ CornerRadius = UDim.new(0.3, 0) }),
+			scope:New("UIStroke")({ Thickness = 2, Color = Theme.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+			scope:New("UIPadding")({ PaddingTop = UDim.new(0.16, 0), PaddingBottom = UDim.new(0.16, 0) }),
+		},
+		[OnEvent("Activated")] = function()
+			if peek(buttonEnabled) then
+				onClick()
+			else
+				-- já comprado, no máximo, nível baixo ou sem moedas
+				Sfx.play("Denied")
+			end
+		end,
+	})
+	-- compra tem som próprio (caixa registradora ou negação), não o pop
+	buyButton:SetAttribute("NoClickSound", true)
+
 	return scope:New("Frame")({
 		Name = title,
 		LayoutOrder = order,
@@ -134,40 +170,33 @@ local function shopCard(
 				Font = Enum.Font.Gotham,
 			}),
 			pipRow or {},
-			scope:New("TextButton")({
-				Name = "Buy",
-				AnchorPoint = Vector2.new(1, 1),
-				Position = UDim2.fromScale(0.96, 0.93),
-				Size = UDim2.fromScale(0.5, 0.2),
-				BackgroundColor3 = scope:Computed(function(use)
-					return if use(buttonEnabled) then Theme.SageDark else Theme.PaperShade
-				end),
-				AutoButtonColor = buttonEnabled,
-				Font = Theme.Font,
-				TextScaled = true,
-				TextColor3 = scope:Computed(function(use)
-					return if use(buttonEnabled) then Theme.Paper else Theme.WoodDark
-				end),
-				Text = buttonText,
-				[Children] = {
-					scope:New("UICorner")({ CornerRadius = UDim.new(0.3, 0) }),
-					scope:New("UIStroke")({ Thickness = 2, Color = Theme.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-					scope:New("UIPadding")({ PaddingTop = UDim.new(0.16, 0), PaddingBottom = UDim.new(0.16, 0) }),
-				},
-				[OnEvent("Activated")] = function()
-					if peek(buttonEnabled) then
-						onClick()
-					end
-				end,
-			}),
+			buyButton,
 		},
 	})
 end
 
+-- o servidor não responde a compra: ela vale quando o State volta com menos moedas
+local BUY_TIMEOUT = 2
+
 local function buy(id: string)
-	if PrepScreen.onBuy then
-		PrepScreen.onBuy(id)
+	if not PrepScreen.onBuy then
+		return
 	end
+	local before = peek(State.Money) :: number
+	PrepScreen.onBuy(id)
+	task.spawn(function()
+		local t0 = os.clock()
+		while os.clock() - t0 < BUY_TIMEOUT do
+			if (peek(State.Money) :: number) < before then
+				Sfx.play("Cash")
+				task.delay(0.25, Sfx.play, "CutePop")
+				return
+			end
+			task.wait()
+		end
+		-- recusada pelo servidor
+		Sfx.play("Denied")
+	end)
 end
 
 local function upgradeCards(scope: any): { Frame }
@@ -235,10 +264,51 @@ local function pastryCards(scope: any): { Frame }
 	return cards
 end
 
+-- Gatinho: o botão abre o pop-up de cores (comprar já escolhendo a pelagem; depois, trocar de graça)
+local function catCard(scope: any, order: number, d: Catalog.Decor): Frame
+	local owned = scope:Computed(function(use)
+		return use(State.Owned)[d.Id] == true
+	end)
+	local text = scope:Computed(function(use)
+		if use(owned) then
+			return "Mudar cor"
+		elseif use(State.Level) < d.Level then
+			return `Nível {d.Level}`
+		end
+		return `${d.Cost}`
+	end)
+	local enabled = scope:Computed(function(use)
+		return use(owned) or (use(State.Level) >= d.Level and use(State.Money) >= d.Cost)
+	end)
+	local desc = `{d.Description} Aconchego +{d.Cozy}.`
+	return shopCard(scope, order, d.Icon, d.Name, desc, nil, text, enabled, function()
+		local wasOwned = peek(owned) :: boolean
+		CatPicker.show({
+			Owned = wasOwned,
+			Cost = d.Cost,
+			Current = peek(State.CatColor) :: string,
+			OnConfirm = function(color)
+				if PrepScreen.onSetCatColor then
+					PrepScreen.onSetCatColor(color)
+				end
+				if wasOwned then
+					Sfx.play("CutePop")
+				else
+					buy(d.Id)
+				end
+			end,
+		})
+	end)
+end
+
 local function decorCards(scope: any): { Frame }
 	local cards = {}
 	for i, id in Catalog.DecorOrder do
 		local d = Catalog.Decor[id]
+		if id == "Cat" then
+			table.insert(cards, catCard(scope, i, d))
+			continue
+		end
 		local desc = `{d.Description} Aconchego +{d.Cozy}.`
 		table.insert(cards, ownableCard(scope, i, id, d.Icon, d.Name, desc, d.Cost, d.Level))
 	end
@@ -609,6 +679,7 @@ function PrepScreen.show(onOpen: () -> (), initialTab: string?)
 							}),
 							scope:New("TextButton")({
 								Name = "Book",
+								[Fusion.Attribute("ClickSound")] = "BookOpen",
 								Position = UDim2.fromScale(0.58, 0),
 								Size = UDim2.fromScale(0.1, 0.9),
 								BackgroundColor3 = Theme.Paper,

@@ -16,6 +16,7 @@ local Recipes = require(ReplicatedStorage.Shared.Recipes)
 local Glass = require(script.Parent.Parent.Art.Glass)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
+local Sfx = require(script.Parent.Parent.Sfx)
 local State = require(script.Parent.Parent.State)
 local Reviews = require(script.Parent.Reviews)
 local Theme = require(script.Parent.Theme)
@@ -40,9 +41,12 @@ local DaySummary = {}
 -- dia bom = média das avaliações (estrelas do placar) a partir desta nota
 DaySummary.GoodDayStars = 4
 DaySummary.GoodSound = "rbxassetid://9048736215"
-DaySummary.BadSound = "rbxassetid://1839846554" -- "ops", leve e de game show, sem ser triste
+-- dia ruim: começo do "Sad Violin" (a faixa é longa: toca só BadLength s e some com fade)
+DaySummary.BadSound = "rbxassetid://1844634063"
+DaySummary.BadStart = 0.25 -- pula o silêncio do começo
+DaySummary.BadLength = 6
 DaySummary.GoodVolume = 0.292
-DaySummary.BadVolume = 0.289
+DaySummary.BadVolume = 0.4
 -- fanfarra de trompetes do nível novo / receitas novas: mais aguda (Speed) e aveludada (agudos abafados)
 DaySummary.LevelUpSound = "rbxassetid://1845399641"
 DaySummary.LevelUpVolume = 0.425
@@ -533,6 +537,20 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 	local avgStars = DaySummary.rating(summary)
 	local good = avgStars >= DaySummary.GoodDayStars
 	local sting = playSound(if good then DaySummary.GoodSound else DaySummary.BadSound, if good then DaySummary.GoodVolume else DaySummary.BadVolume, 1, true)
+	if not good then
+		sting.TimePosition = DaySummary.BadStart
+		-- corte manual: o Ended não dispara, então os grilos entram depois do fade
+		task.delay(DaySummary.BadLength, function()
+			if sting.Parent then
+				local fade = TweenService:Create(sting, TweenInfo.new(0.6), { Volume = 0 })
+				fade.Completed:Once(function()
+					sting:Destroy()
+					startNight()
+				end)
+				fade:Play()
+			end
+		end)
+	end
 	-- grilos depois do som (ou logo, se o som não carregar)
 	nightWanted = true
 	sting.Ended:Once(startNight)
@@ -920,6 +938,10 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 		-- faturamento: o saldo recebe as vendas e depois as gorjetas
 		local function countUp(from: number, amount: number, text: string, duration: number)
 			gainText:set(text)
+			if amount > 0 then
+				-- o valor entra no caixa junto com a contagem (abaixo do som de êxito/dia ruim)
+				Sfx.play("CoinsCount")
+			end
 			gainScale.Scale = 0
 			tween(gainScale, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
 			local t0 = os.clock()

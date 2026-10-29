@@ -2,6 +2,7 @@
 -- Persistência com ProfileStore.
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local ProfileStore = require(ServerScriptService.ServerPackages.ProfileStore)
@@ -21,6 +22,7 @@ export type Data = {
 	Mastered: { [string]: boolean },
 	RadioTrack: number, -- estação escolhida no rádio (1 = bossa nova)
 	RadioVolume: number, -- 0-100
+	CatColor: string, -- pelagem do gatinho da vitrine (Catalog.CatColors)
 }
 
 local TEMPLATE: Data = {
@@ -38,6 +40,7 @@ local TEMPLATE: Data = {
 	Mastered = {},
 	RadioTrack = 1,
 	RadioVolume = 70,
+	CatColor = "Gray",
 }
 
 local Store = ProfileStore.New("CafeData_v1", TEMPLATE)
@@ -46,8 +49,21 @@ local loadedCallbacks: { (Player, Data) -> () } = {}
 
 local DataService = {}
 
+-- Save de teste (só no Studio): com o atributo TestSave no ServerScriptService preenchido (ex.: "novo1"),
+-- o jogo usa um perfil separado, Player_<id>_Test_<nome>, que começa do zero. O save real não é tocado.
+-- Apagar o atributo volta para o save real; trocar o nome começa outro perfil novo.
+local function profileKey(player: Player): string
+	local key = `Player_{player.UserId}`
+	local slot = if RunService:IsStudio() then ServerScriptService:GetAttribute("TestSave") else nil
+	if type(slot) == "string" and slot ~= "" then
+		key = `{key}_Test_{slot}`
+		warn(`[DataService] usando o SAVE DE TESTE "{slot}" ({key}); o save real não é alterado`)
+	end
+	return key
+end
+
 local function onPlayerAdded(player: Player)
-	local profile = Store:StartSessionAsync(`Player_{player.UserId}`, {
+	local profile = Store:StartSessionAsync(profileKey(player), {
 		Cancel = function()
 			return player.Parent ~= Players
 		end,

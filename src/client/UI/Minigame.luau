@@ -17,6 +17,7 @@ local Glass = require(script.Parent.Parent.Art.Glass)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
 local Pause = require(script.Parent.Parent.Pause)
+local Sfx = require(script.Parent.Parent.Sfx)
 local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
 
@@ -375,6 +376,8 @@ function Minigame.new(playerGui: PlayerGui)
 		end,
 	})
 	self.glassZone = glassZone
+	-- mexer tem o som da colher, não o pop de botão
+	glassZone:SetAttribute("NoClickSound", true)
 	self.canStir = canStir
 
 	scope:Observer(canStir):onBind(function()
@@ -636,6 +639,9 @@ function Minigame.new(playerGui: PlayerGui)
 			self:_serve()
 		end,
 	})
+	-- lixo e servir têm som próprio (ralo / xícara pousando)
+	trashButton:SetAttribute("NoClickSound", true)
+	serveButton:SetAttribute("NoClickSound", true)
 
 	---------------------------------------------------------- painel direito (bancada)
 	local bench = scope:New("Frame")({
@@ -898,6 +904,8 @@ function Minigame._makeSlot(self: any, id: string, order: number): GuiObject
 			end
 		end,
 	})
+	-- ingrediente é item de jogo: o som é o do despejo no copo
+	slot:SetAttribute("NoClickSound", true)
 	return slot
 end
 
@@ -997,6 +1005,7 @@ function Minigame._addIngredient(self: any, id: string)
 		local to = #list * ROWS_PER_PORTION
 		local turbo = (peek(State.Upgrades) :: any).Espresso or 0
 		local duration = POUR_TIME * (1 - 0.2 * turbo)
+		local pourSound = Sfx.play("Pour")
 		local t0 = os.clock()
 		while true do
 			local a = math.min(1, (os.clock() - t0) / duration)
@@ -1008,6 +1017,7 @@ function Minigame._addIngredient(self: any, id: string)
 			RunService.RenderStepped:Wait()
 		end
 		glass:setStream(nil)
+		Sfx.fadeOut(pourSound, 0.2)
 
 		tween(pourer, 0.2, { Rotation = 0 })
 		tween(ps, 0.2, { Scale = 0 }, Enum.EasingStyle.Back, Enum.EasingDirection.In).Completed:Wait()
@@ -1052,6 +1062,9 @@ function Minigame._beginStir(self: any, input: InputObject)
 		local turns = math.max(0.9, STIR_TURNS - 0.45 * whisk)
 		progress = math.min(1, progress + math.abs(d) / (2 * math.pi * turns))
 		self.swirl += d
+		if math.abs(d) > 0.01 then
+			Sfx.stirring()
+		end
 		if progress > 0 and peek(self.phase) == "Ready" then
 			-- mexeu um copo já pronto (ex.: pedido sem mexer): volta a ser preparo
 			self.phase:set("Making")
@@ -1060,6 +1073,7 @@ function Minigame._beginStir(self: any, input: InputObject)
 		glass:setSpoon(true, self.swirl)
 		self.mix:set(progress)
 	end, function()
+		Sfx.stopStirring()
 		if self.stopStir == stop then
 			self.stopStir = nil
 		end
@@ -1076,6 +1090,7 @@ function Minigame._trash(self: any)
 	end
 	self.busy = true
 	self:_shake()
+	Sfx.play("Trash")
 	local glass = self.glass
 	task.spawn(function()
 		local from = glass.Level
@@ -1103,6 +1118,7 @@ function Minigame._celebrate(self: any)
 	local glassScale = self.glassScale :: UIScale
 	local glass = self.glass
 	glass:setSpoon(false)
+	Sfx.play("Ready")
 	tween(glassScale, 0.12, { Scale = 1.12 }).Completed:Once(function()
 		tween(glassScale, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
 	end)
@@ -1173,6 +1189,12 @@ function Minigame.open(self: any, order: Order)
 	task.delay(0.2, function()
 		if self.order == order then
 			tween(self.glassHolder, 0.45, { Position = UDim2.fromScale(0.5, 0.5) }, Enum.EasingStyle.Back)
+			-- o copo pousa na bancada
+			task.delay(0.3, function()
+				if self.order == order then
+					Sfx.play("CupDown")
+				end
+			end)
 		end
 	end)
 	self.openedAt = Pause.clock()
@@ -1257,6 +1279,7 @@ function Minigame._freeServe(self: any)
 	if self.onFreeServe then
 		self.onFreeServe(table.clone(portions), mix)
 	end
+	Sfx.play("Serve")
 	local holder = self.glassHolder :: Frame
 	tween(holder, 0.3, { Position = UDim2.fromScale(-0.8, 0.3), Rotation = -15 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
 	task.delay(1.6, function()
@@ -1266,6 +1289,11 @@ function Minigame._freeServe(self: any)
 		resetGlass(self)
 		self.glassHolder.Position = UDim2.fromScale(0.5, -0.6)
 		tween(self.glassHolder, 0.45, { Position = UDim2.fromScale(0.5, 0.5) }, Enum.EasingStyle.Back)
+		task.delay(0.3, function()
+			if peek(self.free) then
+				Sfx.play("CupDown")
+			end
+		end)
 	end)
 end
 
@@ -1275,6 +1303,7 @@ function Minigame.serveDone(self: any, correct: boolean)
 	if not correct then
 		self:_shake()
 	end
+	Sfx.play("Serve")
 	local order = self.order
 	tween(holder, 0.35, { Position = UDim2.fromScale(-0.8, 0.3), Rotation = -15 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
 	-- depois de entregar, o copo sobe e sai da tela (no último pedido do dia ele ficava parado à vista)
