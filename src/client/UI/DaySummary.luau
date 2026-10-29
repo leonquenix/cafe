@@ -41,8 +41,8 @@ local DaySummary = {}
 DaySummary.GoodDayStars = 4
 DaySummary.GoodSound = "rbxassetid://9048736215"
 DaySummary.BadSound = "rbxassetid://1839846554" -- "ops", leve e de game show, sem ser triste
-DaySummary.GoodVolume = 0.43
-DaySummary.BadVolume = 0.425
+DaySummary.GoodVolume = 0.344
+DaySummary.BadVolume = 0.34
 -- fanfarra de trompetes do nível novo / receitas novas: mais aguda (Speed) e aveludada (agudos abafados)
 DaySummary.LevelUpSound = "rbxassetid://1845399641"
 DaySummary.LevelUpVolume = 0.5
