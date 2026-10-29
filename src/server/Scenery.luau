@@ -63,6 +63,13 @@ local function part(parent: Instance, size: Vector3, cf: CFrame | Vector3, color
 	return p
 end
 
+-- Papel da peça para os temas da fachada (client/OutsideTheme): "Bloom" some no inverno/outono,
+-- "Foliage" muda de cor e ganha neve, "Cap" ganha neve em cima, "Roof", "Grass" e "Soil" mudam de cor.
+local function tag<T>(p: T, role: string): T
+	(p :: any):SetAttribute("Theme", role)
+	return p
+end
+
 local function folder(name: string, parent: Instance?): Model
 	local m = Instance.new("Model")
 	m.Name = name
@@ -293,9 +300,9 @@ end
 
 local function tree(parent: Instance, pos: Vector3, scale: number)
 	part(parent, Vector3.new(1, 4, 1) * scale, pos + Vector3.new(0, 2 * scale, 0), C.WoodDark)
-	part(parent, Vector3.new(5, 3, 5) * scale, pos + Vector3.new(0, 5 * scale, 0), C.LeafDark)
-	part(parent, Vector3.new(4, 2.4, 4) * scale, pos + Vector3.new(0.4, 7 * scale, 0.3), C.Leaf)
-	part(parent, Vector3.new(2.6, 1.6, 2.6) * scale, pos + Vector3.new(-0.3, 8.6 * scale, -0.2), C.LeafLight)
+	tag(part(parent, Vector3.new(5, 3, 5) * scale, pos + Vector3.new(0, 5 * scale, 0), C.LeafDark), "Foliage")
+	tag(part(parent, Vector3.new(4, 2.4, 4) * scale, pos + Vector3.new(0.4, 7 * scale, 0.3), C.Leaf), "Foliage")
+	tag(part(parent, Vector3.new(2.6, 1.6, 2.6) * scale, pos + Vector3.new(-0.3, 8.6 * scale, -0.2), C.LeafLight), "Foliage")
 end
 
 -- Peça "inclinada" entre dois pontos (vigas diagonais, galhos, cordas)
@@ -400,14 +407,14 @@ function buildCottage(parent: Instance)
 		local width = w[2] - w[1]
 		local boxCF = CFrame.new((w[1] + w[2]) / 2, 3.35, fz - 0.65)
 		part(m, Vector3.new(width + 0.4, 0.8, 0.9), boxCF, C.Terracotta)
-		part(m, Vector3.new(width + 0.6, 0.2, 1), boxCF * CFrame.new(0, 0.45, 0), rgb(176, 96, 66))
+		tag(part(m, Vector3.new(width + 0.6, 0.2, 1), boxCF * CFrame.new(0, 0.45, 0), rgb(176, 96, 66)), "Cap")
 		local n = math.floor(width / 0.7)
 		for i = 0, n - 1 do
 			local x = -width / 2 + 0.4 + i * ((width - 0.8) / math.max(n - 1, 1))
-			part(m, Vector3.new(0.5, 0.5, 0.55), boxCF * CFrame.new(x, 0.75, 0), C.Leaf)
-			part(m, Vector3.new(0.4, 0.4, 0.4), boxCF * CFrame.new(x + 0.1, 1.15, -0.1), FLOWERS[rng:NextInteger(1, #FLOWERS)])
+			tag(part(m, Vector3.new(0.5, 0.5, 0.55), boxCF * CFrame.new(x, 0.75, 0), C.Leaf), "Foliage")
+			tag(part(m, Vector3.new(0.4, 0.4, 0.4), boxCF * CFrame.new(x + 0.1, 1.15, -0.1), FLOWERS[rng:NextInteger(1, #FLOWERS)]), "Bloom")
 			if i % 3 == 0 then
-				part(m, Vector3.new(0.3, 0.9, 0.3), boxCF * CFrame.new(x, -0.7, -0.45), C.LeafDark) -- folhagem caindo
+				tag(part(m, Vector3.new(0.3, 0.9, 0.3), boxCF * CFrame.new(x, -0.7, -0.45), C.LeafDark), "Foliage") -- folhagem caindo
 			end
 		end
 	end
@@ -436,7 +443,7 @@ function buildCottage(parent: Instance)
 	local zc = (roofZ0 + roofZ1) / 2
 	for _, side in { -1, 1 } do
 		local cf = CFrame.new(side * half / 2, R.Height + rise / 2 + 0.45, zc) * CFrame.Angles(0, 0, -side * angle)
-		part(m, Vector3.new(slope + 0.6, 0.8, depth), cf, COTTAGE.Roof)
+		tag(part(m, Vector3.new(slope + 0.6, 0.8, depth), cf, COTTAGE.Roof), "Roof")
 		local u = -slope / 2 + 0.8
 		while u < slope / 2 do
 			part(m, Vector3.new(0.22, 0.25, depth + 0.05), cf * CFrame.new(u, 0.45, 0), COTTAGE.RoofLine)
@@ -470,7 +477,7 @@ function buildCottage(parent: Instance)
 	for y = R.Height + 1, chimneyH - 1, 1.2 do
 		part(m, Vector3.new(2.5, 0.15, 2.5), Vector3.new(chimney.X, y, chimney.Z), COTTAGE.StoneDark)
 	end
-	local cap = part(m, Vector3.new(2.9, 0.5, 2.9), Vector3.new(chimney.X, chimneyH + 0.25, chimney.Z), COTTAGE.StoneDark)
+	local cap = tag(part(m, Vector3.new(2.9, 0.5, 2.9), Vector3.new(chimney.X, chimneyH + 0.25, chimney.Z), COTTAGE.StoneDark), "Cap")
 	local smoke = Instance.new("Smoke")
 	smoke.Color = rgb(236, 232, 228)
 	smoke.Opacity = 0.12
@@ -481,15 +488,15 @@ end
 
 local function flower(parent: Instance, pos: Vector3)
 	local h = rng:NextNumber(0.5, 1.1)
-	part(parent, Vector3.new(0.12, h, 0.12), pos + Vector3.new(0, h / 2, 0), C.LeafDark, { CastShadow = false })
+	tag(part(parent, Vector3.new(0.12, h, 0.12), pos + Vector3.new(0, h / 2, 0), C.LeafDark, { CastShadow = false }), "Bloom")
 	if rng:NextNumber() < 0.5 then
-		part(parent, Vector3.new(0.35, 0.12, 0.2), pos + Vector3.new(0.15, h * 0.4, 0), C.Leaf, { CastShadow = false })
+		tag(part(parent, Vector3.new(0.35, 0.12, 0.2), pos + Vector3.new(0.15, h * 0.4, 0), C.Leaf, { CastShadow = false }), "Bloom")
 	end
-	part(parent, Vector3.new(0.42, 0.42, 0.42), pos + Vector3.new(0, h + 0.15, 0), FLOWERS[rng:NextInteger(1, #FLOWERS)], { CastShadow = false })
+	tag(part(parent, Vector3.new(0.42, 0.42, 0.42), pos + Vector3.new(0, h + 0.15, 0), FLOWERS[rng:NextInteger(1, #FLOWERS)], { CastShadow = false }), "Bloom")
 end
 
 local function flowerBed(parent: Instance, x0: number, x1: number, z0: number, z1: number, density: number)
-	part(parent, Vector3.new(x1 - x0, 0.25, z1 - z0), Vector3.new((x0 + x1) / 2, 0, (z0 + z1) / 2), COTTAGE.Soil)
+	tag(part(parent, Vector3.new(x1 - x0, 0.25, z1 - z0), Vector3.new((x0 + x1) / 2, 0, (z0 + z1) / 2), COTTAGE.Soil), "Soil")
 	local count = math.floor((x1 - x0) * (z1 - z0) * density)
 	for _ = 1, count do
 		flower(parent, Vector3.new(rng:NextNumber(x0 + 0.2, x1 - 0.2), 0.12, rng:NextNumber(z0 + 0.2, z1 - 0.2)))
@@ -497,11 +504,11 @@ local function flowerBed(parent: Instance, x0: number, x1: number, z0: number, z
 end
 
 local function bush(parent: Instance, pos: Vector3, bloom: Color3, scale: number)
-	part(parent, Vector3.new(1.8, 1.3, 1.8) * scale, pos + Vector3.new(0, 0.65 * scale, 0), C.LeafDark)
-	part(parent, Vector3.new(1.4, 0.9, 1.4) * scale, pos + Vector3.new(0.2, 1.4 * scale, -0.1), C.Leaf)
+	tag(part(parent, Vector3.new(1.8, 1.3, 1.8) * scale, pos + Vector3.new(0, 0.65 * scale, 0), C.LeafDark), "Foliage")
+	tag(part(parent, Vector3.new(1.4, 0.9, 1.4) * scale, pos + Vector3.new(0.2, 1.4 * scale, -0.1), C.Leaf), "Foliage")
 	for _ = 1, 5 do
 		local o = Vector3.new(rng:NextNumber(-0.7, 0.7), rng:NextNumber(0.9, 1.8), rng:NextNumber(-0.7, 0.7)) * scale
-		part(parent, Vector3.new(0.6, 0.6, 0.6) * scale, pos + o, bloom:Lerp(Color3.new(1, 1, 1), rng:NextNumber(0, 0.25)))
+		tag(part(parent, Vector3.new(0.6, 0.6, 0.6) * scale, pos + o, bloom:Lerp(Color3.new(1, 1, 1), rng:NextNumber(0, 0.25))), "Bloom")
 	end
 end
 
@@ -533,11 +540,11 @@ local function bigTree(parent: Instance, base: Vector3)
 		{ Vector3.new(4.5, 2.5, 4.5), Vector3.new(2, 21.4, -1) },
 	}
 	for i, c in clusters do
-		part(m, c[1], base + c[2], greens[(i - 1) % #greens + 1])
+		tag(part(m, c[1], base + c[2], greens[(i - 1) % #greens + 1]), "Foliage")
 	end
 	for _ = 1, 14 do
 		local o = Vector3.new(rng:NextNumber(-7, 7), rng:NextNumber(11, 21), rng:NextNumber(-5.5, 5.5))
-		part(m, Vector3.new(1.4, 1.4, 1.4), base + o, if rng:NextNumber() < 0.5 then C.LeafLight else rgb(160, 200, 120))
+		tag(part(m, Vector3.new(1.4, 1.4, 1.4), base + o, if rng:NextNumber() < 0.5 then C.LeafLight else rgb(160, 200, 120)), "Foliage")
 	end
 	-- balanço pendurado no galho
 	local swingX = swingBranchEnd.X + 1.3
@@ -545,7 +552,7 @@ local function bigTree(parent: Instance, base: Vector3)
 		local top = Vector3.new(swingX, 10.15, base.Z - 0.2 + dz)
 		part(m, Vector3.new(0.1, 8, 0.1), top - Vector3.new(0, 4, 0), rgb(214, 190, 150), { CastShadow = false })
 	end
-	part(m, Vector3.new(0.9, 0.2, 1.8), Vector3.new(swingX, 2.1, base.Z - 0.2), C.Wood)
+	tag(part(m, Vector3.new(0.9, 0.2, 1.8), Vector3.new(swingX, 2.1, base.Z - 0.2), C.Wood), "Cap")
 end
 
 -- Jardim da frente: canteiros floridos, arbustos, cerquinha branca, banco e a árvore grande
@@ -582,7 +589,7 @@ function buildGarden(parent: Instance)
 	-- cerquinha branca (com o vão do portão)
 	local function fence(x0: number, x1: number)
 		part(m, Vector3.new(x1 - x0, 0.2, 0.15), Vector3.new((x0 + x1) / 2, 0.5, fenceZ), COTTAGE.Picket)
-		part(m, Vector3.new(x1 - x0, 0.2, 0.15), Vector3.new((x0 + x1) / 2, 1.15, fenceZ), COTTAGE.Picket)
+		tag(part(m, Vector3.new(x1 - x0, 0.2, 0.15), Vector3.new((x0 + x1) / 2, 1.15, fenceZ), COTTAGE.Picket), "Cap")
 		local x = x0 + 0.2
 		while x <= x1 do
 			part(m, Vector3.new(0.34, 1.5, 0.18), Vector3.new(x, 0.65, fenceZ - 0.05), COTTAGE.Picket)
@@ -593,17 +600,17 @@ function buildGarden(parent: Instance)
 	fence(-12, doorA0 - 0.6)
 	fence(doorA1 + 0.6, 26)
 	for _, x in { doorA0 - 0.6, doorA1 + 0.6 } do
-		part(m, Vector3.new(0.5, 2.1, 0.5), Vector3.new(x, 1, fenceZ), COTTAGE.Picket)
+		tag(part(m, Vector3.new(0.5, 2.1, 0.5), Vector3.new(x, 1, fenceZ), COTTAGE.Picket), "Cap")
 		part(m, Vector3.new(0.6, 0.6, 0.6), Vector3.new(x, 2.3, fenceZ), COTTAGE.Picket, { Shape = Enum.PartType.Ball })
 	end
 	-- caixa de correio
 	part(m, Vector3.new(0.25, 1.6, 0.25), Vector3.new(doorA1 + 1.8, 0.8, fenceZ - 0.9), C.WoodDark)
-	part(m, Vector3.new(0.7, 0.6, 1), Vector3.new(doorA1 + 1.8, 1.8, fenceZ - 0.9), rgb(206, 80, 76))
+	tag(part(m, Vector3.new(0.7, 0.6, 1), Vector3.new(doorA1 + 1.8, 1.8, fenceZ - 0.9), rgb(206, 80, 76)), "Cap")
 	part(m, Vector3.new(0.1, 0.4, 0.1), Vector3.new(doorA1 + 2.2, 2.2, fenceZ - 0.7), rgb(250, 210, 90))
 
 	-- banquinho de jardim
 	local bench = Vector3.new(0.5, 0, R.MinZ - 6.5)
-	part(m, Vector3.new(3.2, 0.25, 1), bench + Vector3.new(0, 1.2, 0), C.WoodLight)
+	tag(part(m, Vector3.new(3.2, 0.25, 1), bench + Vector3.new(0, 1.2, 0), C.WoodLight), "Cap")
 	part(m, Vector3.new(3.2, 0.9, 0.2), bench + Vector3.new(0, 1.9, 0.45), C.WoodLight)
 	for _, dx in { -1.3, 1.3 } do
 		part(m, Vector3.new(0.25, 1.1, 0.8), bench + Vector3.new(dx, 0.55, 0), C.WoodDark)
@@ -614,7 +621,9 @@ end
 
 local function buildOutside()
 	local m = folder("Outside")
-	part(m, Vector3.new(220, 1, 220), Vector3.new(0, -0.62, 0), rgb(120, 170, 96))
+	-- chega inteiro no cliente e nunca sai do streaming: os temas da fachada mexem nessas peças localmente
+	m.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
+	tag(part(m, Vector3.new(220, 1, 220), Vector3.new(0, -0.62, 0), rgb(120, 170, 96)), "Grass")
 	-- calçada até a porta
 	part(m, Vector3.new(4, 1, 14), Vector3.new(Layout.DoorX, -0.55, Layout.Room.MinZ - 7), rgb(210, 196, 176))
 	part(m, Vector3.new(80, 1, 5), Vector3.new(0, -0.55, Layout.Room.MinZ - 15), rgb(200, 186, 166))
@@ -635,7 +644,7 @@ local function buildOutside()
 	local bulb = part(m, Vector3.new(1.2, 1.2, 1.2), lampPos + Vector3.new(0, 9.4, 0), C.Warm, { Material = Enum.Material.Neon })
 	light(bulb, 1, 16)
 	-- placa do café
-	local sign = part(m, Vector3.new(5, 1.4, 0.3), Vector3.new(Layout.DoorX, 12.3, Layout.Room.MinZ - 1.45), C.Sage)
+	local sign = tag(part(m, Vector3.new(5, 1.4, 0.3), Vector3.new(Layout.DoorX, 12.3, Layout.Room.MinZ - 1.45), C.Sage), "Cap")
 	local plate = part(m, Vector3.new(4.4, 0.9, 0.1), sign.CFrame * CFrame.new(0, 0, -0.2), C.Cream)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Front

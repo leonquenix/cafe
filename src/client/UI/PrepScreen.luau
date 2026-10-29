@@ -26,6 +26,7 @@ PrepScreen.onSetMenu = nil :: ((list: { string }) -> ())?
 PrepScreen.onSetCatColor = nil :: ((color: string) -> ())?
 PrepScreen.onOpenBook = nil :: (() -> ())?
 PrepScreen.onWalk = nil :: (() -> ())?
+PrepScreen.onThemes = nil :: (() -> ())?
 
 -- fecha a tela atual sem abrir o café (usado pela animação de decoração nova)
 local closeCurrent: ((onClosed: () -> ()) -> ())? = nil
@@ -312,6 +313,19 @@ local function decorCards(scope: any): { Frame }
 		local desc = `{d.Description} Aconchego +{d.Cozy}.`
 		table.insert(cards, ownableCard(scope, i, id, d.Icon, d.Name, desc, d.Cost, d.Level))
 	end
+	-- temas da fachada: abre a prévia lá fora (ThemePicker)
+	local themeText = scope:Computed(function(use)
+		local current = Catalog.Themes[use(State.Theme)]
+		return if current and current.Cost > 0 then current.Name else "Ver temas"
+	end)
+	table.insert(
+		cards,
+		shopCard(scope, #Catalog.DecorOrder + 1, "Facade", "Temas da Fachada", "Inverno, outono, chuva e festas lá fora. Só visual.", nil, themeText, true, function()
+			if PrepScreen.onThemes then
+				PrepScreen.onThemes()
+			end
+		end)
+	)
 	return cards
 end
 

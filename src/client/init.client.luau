@@ -13,6 +13,7 @@ local CameraController = require(script.CameraController)
 local Customers = require(script.Customers)
 local DayCycle = require(script.DayCycle)
 local Decor = require(script.Decor)
+local OutsideTheme = require(script.OutsideTheme)
 local State = require(script.State)
 local Sfx = require(script.Sfx)
 local DaySummary = require(script.UI.DaySummary)
@@ -25,6 +26,7 @@ local MenuMusic = require(script.UI.MenuMusic)
 local Radio = require(script.UI.Radio)
 local RecipeBook = require(script.UI.RecipeBook)
 local Theme = require(script.UI.Theme)
+local ThemePicker = require(script.UI.ThemePicker)
 local TitleScreen = require(script.UI.TitleScreen)
 local Transition = require(script.UI.Transition)
 local WalkHud = require(script.UI.WalkHud)
@@ -45,6 +47,7 @@ CameraController.start()
 CameraController.focus(TitleScreen.CameraPosition, TitleScreen.CameraTarget, 0, TitleScreen.FieldOfView)
 DayCycle.morning(0)
 Decor.start()
+OutsideTheme.start()
 -- pop de bolha em todos os botões (antes das telas serem criadas)
 Sfx.init(playerGui)
 TitleScreen.init(playerGui)
@@ -54,6 +57,7 @@ WalkHud.init(playerGui)
 Transition.init(playerGui)
 DaySummary.init(playerGui)
 PrepScreen.init(playerGui)
+ThemePicker.init(playerGui)
 RecipeBook.init(playerGui)
 Hud.new(playerGui)
 PastryPopup.init(playerGui)
@@ -126,6 +130,14 @@ State.scope:Observer(State.CatColor):onBind(function()
 	Decor.setCatColor(peek(State.CatColor))
 end)
 
+-- tema da fachada salvo (a prévia do pop-up de temas manda no visual enquanto está aberto)
+local previewingTheme = false
+State.scope:Observer(State.Theme):onBind(function()
+	if not previewingTheme then
+		OutsideTheme.set(peek(State.Theme))
+	end
+end)
+
 State.scope:Observer(State.Owned):onBind(function()
 	local owned = peek(State.Owned)
 	Decor.apply(owned, pendingDecor)
@@ -189,6 +201,51 @@ function prepareDay(day: number, tab: string?)
 	PrepScreen.show(function()
 		startDay(day)
 	end, tab)
+end
+
+-- Temas da fachada: a câmera sai pra olhar a loja e o pop-up troca o tema ao vivo
+PrepScreen.onThemes = function()
+	PrepScreen.close(function()
+		previewingTheme = true
+		-- entre os dias é noite: a prévia acontece no fim de tarde pra dar pra ver o tema
+		DayCycle.setProgress(1, 1.8)
+		CameraController.focus(ThemePicker.CameraPosition, ThemePicker.CameraTarget, 1.8, ThemePicker.FieldOfView)
+		task.wait(1.6)
+		ThemePicker.show({
+			OnPreview = function(id)
+				OutsideTheme.set(id)
+			end,
+			OnBuy = function(id)
+				local before = peek(State.Money) :: number
+				Net.Buy.send(id)
+				task.spawn(function()
+					local t0 = os.clock()
+					while os.clock() - t0 < 2 do
+						if (peek(State.Money) :: number) < before then
+							Sfx.play("Cash")
+							task.delay(0.25, Sfx.play, "CutePop")
+							OutsideTheme.celebrate()
+							return
+						end
+						task.wait()
+					end
+					Sfx.play("Denied")
+				end)
+			end,
+			OnUse = function(id)
+				Net.SetTheme.send(id)
+				OutsideTheme.celebrate()
+			end,
+			OnClose = function()
+				previewingTheme = false
+				OutsideTheme.set(peek(State.Theme))
+				DayCycle.night(1.6)
+				CameraController.release(1.6)
+				task.wait(1.6)
+				prepareDay(peek(State.Day), "Decor")
+			end,
+		})
+	end)
 end
 
 -- Modo andar: solta o personagem pelo café (fora do expediente)

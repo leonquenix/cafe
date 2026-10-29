@@ -88,6 +88,10 @@ return ByteNet.defineNamespace("Cafe", function()
 		SetCatColor = ByteNet.definePacket({
 			value = ByteNet.string,
 		}),
+		-- cliente -> servidor: tema da fachada em uso (Catalog.Themes; precisa ter comprado), salvo no perfil
+		SetTheme = ByteNet.definePacket({
+			value = ByteNet.string,
+		}),
 		-- cliente -> servidor: cardápio do dia
 		SetMenu = ByteNet.definePacket({
 			value = ByteNet.array(ByteNet.string),
@@ -116,6 +120,8 @@ return ByteNet.defineNamespace("Cafe", function()
 				stats = ByteNet.array(ByteNet.struct({ drink = ByteNet.string, count = ByteNet.uint16 })),
 				mastered = ByteNet.array(ByteNet.string), -- recompensas de maestria já coletadas
 				catColor = ByteNet.string, -- pelagem do gatinho da vitrine
+				themes = ByteNet.array(ByteNet.string), -- temas da fachada comprados
+				theme = ByteNet.string, -- tema da fachada em uso
 			}),
 		}),
 		-- servidor -> cliente: resumo do dia que acabou

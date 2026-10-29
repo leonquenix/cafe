@@ -24,6 +24,8 @@ local State = {
 	Stats = scope:Value({} :: { [string]: number }),
 	Mastered = scope:Value({} :: { [string]: boolean }),
 	CatColor = scope:Value("Gray"),
+	Themes = scope:Value({} :: { [string]: boolean }), -- temas da fachada comprados
+	Theme = scope:Value("Original"), -- tema da fachada em uso
 }
 
 function State.apply(s: any)
@@ -63,6 +65,13 @@ function State.apply(s: any)
 		mastered[id] = true
 	end
 	State.Mastered:set(mastered)
+
+	local themes = {}
+	for _, id in s.themes do
+		themes[id] = true
+	end
+	State.Themes:set(themes)
+	State.Theme:set(s.theme)
 	State.Loaded:set(true)
 end
 

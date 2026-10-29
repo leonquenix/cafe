@@ -47,7 +47,18 @@ local PRESETS: { [string]: Preset } = {
 	},
 }
 
+-- Clima do tema da fachada (client/OutsideTheme): ajusta qualquer momento do dia por cima do preset
+export type Weather = {
+	Brightness: number, -- multiplicador
+	Exposure: number, -- somado
+	Tint: Color3, -- puxa o tint e a luz de fora para esta cor...
+	Amount: number, -- ...nesta proporção (0-1)
+}
+
 local DayCycle = {}
+
+local current: Preset? = nil
+local weather: Weather? = nil
 
 local lamps: { { Light: PointLight, Base: number } } = {}
 local lampFactor = Instance.new("NumberValue")
@@ -87,7 +98,22 @@ local function lerpPreset(a: Preset, b: Preset, t: number): Preset
 	}
 end
 
-local function apply(p: Preset, duration: number)
+local function withWeather(p: Preset): Preset
+	local w = weather
+	if not w then
+		return p
+	end
+	local out = table.clone(p)
+	out.Brightness = p.Brightness * w.Brightness
+	out.ExposureCompensation = p.ExposureCompensation + w.Exposure
+	out.OutdoorAmbient = p.OutdoorAmbient:Lerp(w.Tint:Lerp(Color3.new(0, 0, 0), 0.45), w.Amount)
+	out.Tint = p.Tint:Lerp(w.Tint, w.Amount)
+	return out
+end
+
+local function apply(base: Preset, duration: number)
+	current = base
+	local p = withWeather(base)
 	collectLamps()
 	local info = TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 	if duration <= 0 then
@@ -128,6 +154,14 @@ end
 
 function DayCycle.morning(duration: number?)
 	apply(PRESETS.Morning, duration or 0)
+end
+
+-- nil = sem clima (tema original)
+function DayCycle.setWeather(w: Weather?, duration: number?)
+	weather = w
+	if current then
+		apply(current, duration or 1.5)
+	end
 end
 
 return DayCycle

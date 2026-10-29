@@ -107,6 +107,28 @@ Catalog.CatColors = {
 } :: { [string]: { Id: string, Name: string } }
 Catalog.DefaultCatColor = "Gray"
 
+-- Temas da fachada (só visual, sem aconchego): trocados no pop-up de temas; o visual fica em client/OutsideTheme.
+-- "Original" é o visual de sempre, de graça. Natal e Halloween não exigem o tema base.
+export type Theme = {
+	Id: string,
+	Name: string,
+	Description: string,
+	Icon: string,
+	Cost: number,
+	Level: number,
+}
+
+Catalog.DefaultTheme = "Original"
+Catalog.ThemeOrder = { "Original", "Winter", "Autumn", "Rain", "Christmas", "Halloween" }
+Catalog.Themes = {
+	Original = { Id = "Original", Name = "Primavera", Description = "O jardim florido de sempre.", Icon = "ThemeSpring", Cost = 0, Level = 1 },
+	Winter = { Id = "Winter", Name = "Inverno", Description = "Neve caindo e tudo branquinho.", Icon = "ThemeWinter", Cost = 350, Level = 6 },
+	Autumn = { Id = "Autumn", Name = "Outono", Description = "Folhas laranja voando pelo jardim.", Icon = "ThemeAutumn", Cost = 300, Level = 5 },
+	Rain = { Id = "Rain", Name = "Dia de Chuva", Description = "Céu cinzinha e chuva lá fora.", Icon = "ThemeRain", Cost = 250, Level = 4 },
+	Christmas = { Id = "Christmas", Name = "Natal", Description = "Pisca-pisca, enfeites e o Papai Noel no céu.", Icon = "ThemeChristmas", Cost = 500, Level = 10 },
+	Halloween = { Id = "Halloween", Name = "Halloween", Description = "Abóboras, velinhas e morcegos.", Icon = "ThemeHalloween", Cost = 450, Level = 8 },
+} :: { [string]: Theme }
+
 Catalog.CozyBonus = 0.02 -- cada ponto de aconchego: +2% em todos os pagamentos
 
 -- Resultado do pop-up do forno (o cliente manda; o servidor paga de acordo)

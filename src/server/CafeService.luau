@@ -112,6 +112,10 @@ local function sendState(player: Player)
 	for drink in data.Mastered do
 		table.insert(mastered, drink)
 	end
+	local themes = {}
+	for id in data.Themes do
+		table.insert(themes, id)
+	end
 
 	Net.PlayerState.sendTo({
 		money = math.clamp(data.Money, 0, 4294967295),
@@ -128,6 +132,8 @@ local function sendState(player: Player)
 		stats = stats,
 		mastered = mastered,
 		catColor = if Catalog.CatColors[data.CatColor] then data.CatColor else Catalog.DefaultCatColor,
+		themes = themes,
+		theme = if Catalog.Themes[data.Theme] then data.Theme else Catalog.DefaultTheme,
 	}, player)
 end
 
@@ -593,6 +599,7 @@ local function onBuy(id: string, player: Player?)
 	local upgrade = Catalog.Upgrades[id]
 	local pastry = Catalog.Pastries[id]
 	local decor = Catalog.Decor[id]
+	local theme = Catalog.Themes[id]
 	if upgrade then
 		local lvl = data.Upgrades[id] or 0
 		cost = if upgrade.Level <= data.Level then upgrade.Costs[lvl + 1] else nil
@@ -608,6 +615,13 @@ local function onBuy(id: string, player: Player?)
 		cost = decor.Cost
 		apply = function()
 			data.Decor[id] = true
+		end
+	elseif theme and theme.Cost > 0 and not data.Themes[id] and theme.Level <= data.Level then
+		-- tema comprado já entra em uso
+		cost = theme.Cost
+		apply = function()
+			data.Themes[id] = true
+			data.Theme = id
 		end
 	end
 
@@ -724,6 +738,15 @@ function CafeService.start()
 			return
 		end
 		data.CatColor = id
+		sendState(player)
+	end)
+	Net.SetTheme.listen(function(id: string, player: Player?)
+		local data = player and DataService.get(player)
+		local theme = Catalog.Themes[id]
+		if not player or not data or not theme or (theme.Cost > 0 and not data.Themes[id]) then
+			return
+		end
+		data.Theme = id
 		sendState(player)
 	end)
 	Net.SetRadio.listen(function(value, player: Player?)
