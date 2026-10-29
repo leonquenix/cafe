@@ -12,7 +12,9 @@ local Recipes = require(ReplicatedStorage.Shared.Recipes)
 local Glass = require(script.Parent.Parent.Art.Glass)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
+local Sfx = require(script.Parent.Parent.Sfx)
 local State = require(script.Parent.Parent.State)
+local CatPicker = require(script.Parent.CatPicker)
 local Theme = require(script.Parent.Theme)
 
 local Children, OnEvent, peek = Fusion.Children, Fusion.OnEvent, Fusion.peek
@@ -21,6 +23,7 @@ local PrepScreen = {}
 
 PrepScreen.onBuy = nil :: ((id: string) -> ())?
 PrepScreen.onSetMenu = nil :: ((list: { string }) -> ())?
+PrepScreen.onSetCatColor = nil :: ((color: string) -> ())?
 PrepScreen.onOpenBook = nil :: (() -> ())?
 PrepScreen.onWalk = nil :: (() -> ())?
 
@@ -38,6 +41,7 @@ local TABS = {
 
 function PrepScreen.init(gui: PlayerGui)
 	playerGui = gui
+	CatPicker.init(gui)
 end
 
 local function label(scope: any, text: any, props: { [string]: any }): TextLabel
@@ -235,10 +239,51 @@ local function pastryCards(scope: any): { Frame }
 	return cards
 end
 
+-- Gatinho: o botão abre o pop-up de cores (comprar já escolhendo a pelagem; depois, trocar de graça)
+local function catCard(scope: any, order: number, d: Catalog.Decor): Frame
+	local owned = scope:Computed(function(use)
+		return use(State.Owned)[d.Id] == true
+	end)
+	local text = scope:Computed(function(use)
+		if use(owned) then
+			return "Mudar cor"
+		elseif use(State.Level) < d.Level then
+			return `Nível {d.Level}`
+		end
+		return `${d.Cost}`
+	end)
+	local enabled = scope:Computed(function(use)
+		return use(owned) or (use(State.Level) >= d.Level and use(State.Money) >= d.Cost)
+	end)
+	local desc = `{d.Description} Aconchego +{d.Cozy}.`
+	return shopCard(scope, order, d.Icon, d.Name, desc, nil, text, enabled, function()
+		local wasOwned = peek(owned) :: boolean
+		CatPicker.show({
+			Owned = wasOwned,
+			Cost = d.Cost,
+			Current = peek(State.CatColor) :: string,
+			OnConfirm = function(color)
+				if PrepScreen.onSetCatColor then
+					PrepScreen.onSetCatColor(color)
+				end
+				if wasOwned then
+					Sfx.play("CutePop")
+				else
+					buy(d.Id)
+				end
+			end,
+		})
+	end)
+end
+
 local function decorCards(scope: any): { Frame }
 	local cards = {}
 	for i, id in Catalog.DecorOrder do
 		local d = Catalog.Decor[id]
+		if id == "Cat" then
+			table.insert(cards, catCard(scope, i, d))
+			continue
+		end
 		local desc = `{d.Description} Aconchego +{d.Cozy}.`
 		table.insert(cards, ownableCard(scope, i, id, d.Icon, d.Name, desc, d.Cost, d.Level))
 	end

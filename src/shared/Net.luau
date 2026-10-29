@@ -84,6 +84,10 @@ return ByteNet.defineNamespace("Cafe", function()
 				volume = ByteNet.uint8,
 			}),
 		}),
+		-- cliente -> servidor: pelagem do gatinho da vitrine (Catalog.CatColors), salva no perfil
+		SetCatColor = ByteNet.definePacket({
+			value = ByteNet.string,
+		}),
 		-- cliente -> servidor: cardápio do dia
 		SetMenu = ByteNet.definePacket({
 			value = ByteNet.array(ByteNet.string),
@@ -111,6 +115,7 @@ return ByteNet.defineNamespace("Cafe", function()
 				menu = ByteNet.array(ByteNet.string),
 				stats = ByteNet.array(ByteNet.struct({ drink = ByteNet.string, count = ByteNet.uint16 })),
 				mastered = ByteNet.array(ByteNet.string), -- recompensas de maestria já coletadas
+				catColor = ByteNet.string, -- pelagem do gatinho da vitrine
 			}),
 		}),
 		-- servidor -> cliente: resumo do dia que acabou

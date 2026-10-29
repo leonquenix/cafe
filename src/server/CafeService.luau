@@ -127,6 +127,7 @@ local function sendState(player: Player)
 		menu = menuOf(data),
 		stats = stats,
 		mastered = mastered,
+		catColor = if Catalog.CatColors[data.CatColor] then data.CatColor else Catalog.DefaultCatColor,
 	}, player)
 end
 
@@ -717,6 +718,14 @@ function CafeService.start()
 	Net.Pause.listen(onPause)
 	Net.Buy.listen(onBuy)
 	Net.SetMenu.listen(onSetMenu)
+	Net.SetCatColor.listen(function(id: string, player: Player?)
+		local data = player and DataService.get(player)
+		if not player or not data or not Catalog.CatColors[id] then
+			return
+		end
+		data.CatColor = id
+		sendState(player)
+	end)
 	Net.SetRadio.listen(function(value, player: Player?)
 		local data = player and DataService.get(player)
 		if not player or not data then

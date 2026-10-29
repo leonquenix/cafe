@@ -93,6 +93,9 @@ end
 PrepScreen.onSetMenu = function(list)
 	Net.SetMenu.send(list)
 end
+PrepScreen.onSetCatColor = function(color)
+	Net.SetCatColor.send(color)
+end
 
 -- Decoração nova: fecha o menu, a câmera voa até o lugar, a peça se monta, volta e reabre o menu
 local function showcaseDecor(id: string)
@@ -113,6 +116,11 @@ local function showcaseDecor(id: string)
 		prepareDay(peek(State.Day), "Decor")
 	end)
 end
+
+-- pelagem do gato do balcão (antes do Owned, pra ele já ser montado na cor certa)
+State.scope:Observer(State.CatColor):onBind(function()
+	Decor.setCatColor(peek(State.CatColor))
+end)
 
 State.scope:Observer(State.Owned):onBind(function()
 	local owned = peek(State.Owned)

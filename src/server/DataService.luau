@@ -21,6 +21,7 @@ export type Data = {
 	Mastered: { [string]: boolean },
 	RadioTrack: number, -- estação escolhida no rádio (1 = bossa nova)
 	RadioVolume: number, -- 0-100
+	CatColor: string, -- pelagem do gatinho da vitrine (Catalog.CatColors)
 }
 
 local TEMPLATE: Data = {
@@ -38,6 +39,7 @@ local TEMPLATE: Data = {
 	Mastered = {},
 	RadioTrack = 1,
 	RadioVolume = 70,
+	CatColor = "Gray",
 }
 
 local Store = ProfileStore.New("CafeData_v1", TEMPLATE)
