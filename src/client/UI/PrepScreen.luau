@@ -185,7 +185,8 @@ local function buy(id: string)
 		local t0 = os.clock()
 		while os.clock() - t0 < BUY_TIMEOUT do
 			if (peek(State.Money) :: number) < before then
-				Sfx.play("CutePop")
+				Sfx.play("Cash")
+				task.delay(0.25, Sfx.play, "CutePop")
 				return
 			end
 			task.wait()

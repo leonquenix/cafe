@@ -34,10 +34,10 @@ Sfx.Sounds = {
 	-- tirar do forno (porta abrindo) e o prato pousando no balcão (começa direto no impacto)
 	OvenOut = { Id = "rbxassetid://9117180051", Volume = 0.8 } :: Def,
 	Plate = { Id = "rbxassetid://9114076521", Volume = 0.45, Start = 0.68 } :: Def,
-	-- "Assar de novo" no forno: compra efetivada (caixa registradora "ka-ching", pula o silêncio do começo)
+	-- loja: compra efetivada (caixa registradora "ka-ching", pula o silêncio do começo)
 	Cash = { Id = "rbxassetid://7112275565", Volume = 0.8, Start = 0.4 } :: Def,
-	-- menu entre os dias (melhorias, doces, decoração): pop fofinho de conquista na compra confirmada
-	CutePop = { Id = "rbxassetid://134383970285022", Volume = 0.3 } :: Def,
+	-- loja: pop fofinho de conquista logo depois do ka-ching da compra confirmada
+	CutePop = { Id = "rbxassetid://134383970285022", Volume = 0.25 } :: Def,
 	-- loja: já comprado, no limite, nível baixo ou sem moedas (negação curtinha)
 	Denied = { Id = "rbxassetid://17208353912", Volume = 0.18 } :: Def,
 	-- cliente pagou: "ka-ching" de caixa registradora (pula o silêncio inicial)
