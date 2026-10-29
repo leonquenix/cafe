@@ -7,13 +7,14 @@ local TweenService = game:GetService("TweenService")
 local GAP = 0.5 -- silêncio entre um som e outro
 local MAX_LENGTH = 4 -- gravações longas (placar, grilos) tocam só um trecho
 
--- espera a gravação acabar (ou corta com fade se for longa demais)
+-- espera a gravação acabar (ou corta com fade se for longa demais);
+-- length = trecho que o jogo toca de verdade (vale mesmo acima de MAX_LENGTH)
 local function waitFor(sound: Sound, start: number, length: number?)
 	local t0 = os.clock()
 	while not sound.IsLoaded and os.clock() - t0 < 3 do
 		task.wait()
 	end
-	local duration = math.min(length or (sound.TimeLength - start) / sound.PlaybackSpeed, MAX_LENGTH)
+	local duration = length or math.min((sound.TimeLength - start) / sound.PlaybackSpeed, MAX_LENGTH)
 	task.wait(math.max(duration, 0.2))
 	if sound.Parent and sound.IsPlaying then
 		local t = TweenService:Create(sound, TweenInfo.new(0.3), { Volume = 0 })
@@ -69,9 +70,11 @@ return {
 				waitFor(Sfx.play(name), def.Start or 0, def.Length)
 			end
 		end
-		local function day(label: string, id: string, volume: number, speed: number?, soft: boolean?)
+		local function day(label: string, id: string, volume: number, speed: number?, soft: boolean?, start: number?, length: number?)
 			return label, function()
-				waitFor(playDay(id, volume, speed, soft), 0)
+				local sound = playDay(id, volume, speed, soft)
+				sound.TimePosition = start or 0
+				waitFor(sound, start or 0, length)
 			end
 		end
 
@@ -88,8 +91,9 @@ return {
 		add(sfx("Coins", "Dinheiro: ka-ching do pagamento"))
 		add(sfx("CoinsCount", "Dinheiro: moedas do placar"))
 		add(sfx("Cash", "Dinheiro: compra na loja"))
+		add(sfx("CutePop", "Compra: pop fofo"))
 		add(day("Fim do dia: dia bom (conquista)", DaySummary.GoodSound, DaySummary.GoodVolume, 1, true))
-		add(day("Fim do dia: dia ruim", DaySummary.BadSound, DaySummary.BadVolume, 1, true))
+		add(day("Fim do dia: dia ruim", DaySummary.BadSound, DaySummary.BadVolume, 1, true, DaySummary.BadStart, DaySummary.BadLength))
 		add(day("Fim do dia: nível novo", DaySummary.LevelUpSound, DaySummary.LevelUpVolume, DaySummary.LevelUpSpeed, true))
 		add(day("Fim do dia: grilos", DaySummary.NightSound, DaySummary.NightVolume))
 
