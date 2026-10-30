@@ -24,8 +24,8 @@ TitleScreen.CameraPosition = Vector3.new(Layout.DoorX + 4.2, 7, Layout.Room.MinZ
 TitleScreen.CameraTarget = Vector3.new(Layout.DoorX, 9.5, Layout.Room.MinZ)
 TitleScreen.FieldOfView = 60
 
--- trilha da tela de início: "The Green Park" (Bruno Jose Marc Le Roux, APM), em loop com fade
-TitleScreen.MusicId = "rbxassetid://104980291895238"
+-- trilha da tela de início: "Green Park" (Bruno Jose Marc Le Roux, APM), em loop com fade
+TitleScreen.MusicId = "rbxassetid://1838831746"
 TitleScreen.MusicVolume = 0.45
 TitleScreen.MusicSpeed = 1
 
