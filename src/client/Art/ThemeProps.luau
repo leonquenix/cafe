@@ -101,6 +101,45 @@ local function snowman(ctx: Ctx, base: Vector3)
 	beam(ctx, base + Vector3.new(1.7, 3.5, 0), base + Vector3.new(1.95, 4.05, 0), 0.12, twig)
 end
 
+-- janelas da frente (vidro visto de fora): x0, x1, y0, y1 e o plano do lado de fora do vidro
+local FRONT_WINDOWS = { { -11, -4, 4, 10.5 }, { -2, 4, 4, 10.5 } }
+local GLASS_Z = R.MinZ - 0.85
+
+-- geada nas bordas dos vidros: bloquinhos que entram mais nos cantos, em escadinha (pixel)
+local function frostWindows(ctx: Ctx)
+	local cell = 0.4
+	local tones = { rgb(250, 253, 255), rgb(200, 226, 248) }
+	for _, w in FRONT_WINDOWS do
+		local x0, x1, y0, y1 = w[1], w[2], w[3], w[4]
+		local function depth(a: number, len: number): number
+			local fromCorner = math.min(a, len - a)
+			local n = ctx.Rng:NextInteger(1, 2) + (if fromCorner < 1 then 2 elseif fromCorner < 1.8 then 1 else 0)
+			return n * cell
+		end
+		local i = 0
+		local x = x0
+		while x < x1 - 0.01 do
+			local wd = math.min(cell, x1 - x)
+			for _, edge in { { y1, -1 }, { y0, 1 } } do
+				local d = depth(x - x0 + wd / 2, x1 - x0) * (if edge[2] > 0 then 0.7 else 1)
+				i += 1
+				ctx.part(Vector3.new(wd, d, 0.06), Vector3.new(x + wd / 2, edge[1] + edge[2] * d / 2, GLASS_Z), tones[i % 2 + 1], { Transparency = 0.05 })
+			end
+			x += cell
+		end
+		local y = y0
+		while y < y1 - 0.01 do
+			local hd = math.min(cell, y1 - y)
+			for _, edge in { { x0, 1 }, { x1, -1 } } do
+				local d = depth(y - y0 + hd / 2, y1 - y0)
+				i += 1
+				ctx.part(Vector3.new(d, hd, 0.06), Vector3.new(edge[1] + edge[2] * d / 2, y + hd / 2, GLASS_Z - 0.01), tones[i % 2 + 1], { Transparency = 0.05 })
+			end
+			y += cell
+		end
+	end
+end
+
 function ThemeProps.winter(ctx: Ctx)
 	-- neve em cima das folhagens e do que é reto (cerca, floreiras, banco, placa...)
 	for _, role in { "Foliage", "Cap" } do
@@ -141,7 +180,7 @@ function ThemeProps.winter(ctx: Ctx)
 	} do
 		mound(ctx, m[1], m[2], m[3], m[4])
 	end
-	snowman(ctx, Vector3.new(-4.5, GROUND, R.MinZ - 7.5))
+	frostWindows(ctx)
 end
 
 ---------------------------------------------------------------- outono
@@ -367,6 +406,7 @@ local function sleigh(ctx: Ctx): { BasePart }
 end
 
 function ThemeProps.christmas(ctx: Ctx)
+	snowman(ctx, Vector3.new(-4.5, GROUND, R.MinZ - 7.5))
 	local lights: { { Part: BasePart, Color: Color3, Group: number } } = {}
 
 	-- pisca-pisca na beirada do telhado
@@ -540,6 +580,84 @@ local function candle(ctx: Ctx, base: Vector3, h: number): BasePart
 	return ctx.part(Vector3.new(0.16, 0.24, 0.16), base + Vector3.new(0, h + 0.2, 0), FLAME, { Material = Enum.Material.Neon })
 end
 
+-- vassoura de bruxa encostada na parede: base no chão, topo do cabo apoiado na fachada
+local function broom(ctx: Ctx, foot: Vector3, top: Vector3)
+	local handle = rgb(156, 104, 64)
+	local dir = (top - foot).Unit
+	beam(ctx, foot + dir * 1.2, top, 0.24, handle)
+	-- nozinho torto na ponta do cabo
+	ctx.part(Vector3.new(0.26, 0.26, 0.26), top, rgb(80, 52, 36))
+	-- cerdas: blocos de palha abrindo pra baixo, amarrados com fita roxa
+	local up = CFrame.lookAt(foot, top) -- -Z local aponta pro topo
+	local straw = { rgb(220, 176, 92), rgb(196, 150, 70), rgb(236, 196, 110) }
+	for i, o in { Vector3.new(-0.22, 0, -0.1), Vector3.new(0.22, 0, -0.1), Vector3.new(0, 0.18, -0.1), Vector3.new(0, -0.18, -0.1), Vector3.new(0, 0, 0) } do
+		ctx.part(Vector3.new(0.3, 0.3, 1.1), up * CFrame.new(o.X, o.Y, -0.45 + o.Z), straw[(i - 1) % #straw + 1])
+	end
+	ctx.part(Vector3.new(0.55, 0.55, 0.18), up * CFrame.new(0, 0, -1.05), rgb(140, 80, 170))
+	ctx.part(Vector3.new(0.3, 0.3, 0.2), up * CFrame.new(0.32, 0.12, -1.05), rgb(170, 110, 200)) -- lacinho
+end
+
+-- teia em leque no plano da fachada: centro, raio e ângulos (graus; 0 = direita, 90 = cima)
+local function web(ctx: Ctx, center: Vector3, radius: number, a0: number, a1: number, spokes: number)
+	local silk = rgb(246, 246, 252)
+	local pts: { { Vector3 } } = {}
+	for i = 0, spokes - 1 do
+		local a = math.rad(a0 + (a1 - a0) * i / (spokes - 1))
+		local dir = Vector3.new(math.cos(a), math.sin(a), 0)
+		beam(ctx, center, center + dir * radius, 0.09, silk)
+		local ring = {}
+		for k, f in { 0.32, 0.6, 0.88 } do
+			-- fio que cede um pouquinho entre os raios (fofo, não geométrico demais)
+			ring[k] = center + dir * radius * f
+		end
+		pts[i + 1] = ring
+	end
+	for i = 1, spokes - 1 do
+		for k = 1, 3 do
+			local a, b = pts[i][k], pts[i + 1][k]
+			local mid = (a + b) / 2 + (center - (a + b) / 2) * 0.12
+			beam(ctx, a, mid, 0.07, silk)
+			beam(ctx, mid, b, 0.07, silk)
+		end
+	end
+end
+
+-- aranhinha fofa (olhões) descendo e subindo num fio; retorna a função de animação
+local function spider(ctx: Ctx, anchor: Vector3, length: number, phase: number): (t: number) -> ()
+	local body = rgb(58, 46, 70)
+	local parts: { BasePart } = {}
+	local offsets: { CFrame } = {}
+	local function add(size: Vector3, offset: Vector3, color: Color3)
+		table.insert(parts, ctx.part(size, Vector3.zero, color))
+		table.insert(offsets, CFrame.new(offset))
+	end
+	add(Vector3.new(0.5, 0.42, 0.45), Vector3.new(0, 0, 0), body)
+	add(Vector3.new(0.34, 0.3, 0.3), Vector3.new(0, -0.08, -0.32), body)
+	for _, dx in { -0.09, 0.09 } do
+		add(Vector3.new(0.12, 0.12, 0.04), Vector3.new(dx, -0.02, -0.48), rgb(250, 250, 250))
+		add(Vector3.new(0.06, 0.06, 0.04), Vector3.new(dx, -0.04, -0.5), rgb(30, 24, 36))
+	end
+	for side = -1, 1, 2 do
+		for k = 0, 3 do
+			add(Vector3.new(0.34, 0.06, 0.06), Vector3.new(side * 0.36, -0.05 - (k % 2) * 0.05, -0.18 + k * 0.13), body)
+			add(Vector3.new(0.06, 0.2, 0.06), Vector3.new(side * 0.52, -0.15, -0.18 + k * 0.13), body)
+		end
+	end
+	local thread = ctx.part(Vector3.new(0.03, length, 0.03), anchor, rgb(236, 236, 246), { Transparency = 0.2 })
+	local cfs: { CFrame } = {}
+	return function(t: number)
+		local len = length * (0.72 + 0.28 * (0.5 + 0.5 * math.sin(t * 0.7 + phase)))
+		local pos = anchor - Vector3.new(0, len + 0.2, 0)
+		local pivot = CFrame.new(pos) * CFrame.Angles(0, math.sin(t * 0.9 + phase) * 0.4, 0)
+		for i, o in offsets do
+			cfs[i] = pivot * o
+		end
+		workspace:BulkMoveTo(parts, cfs, Enum.BulkMoveMode.FireCFrameChanged)
+		thread.Size = Vector3.new(0.03, len, 0.03)
+		thread.CFrame = CFrame.new(anchor - Vector3.new(0, len / 2, 0))
+	end
+end
+
 local function scarecrow(ctx: Ctx, base: Vector3)
 	local wood, straw = rgb(120, 82, 56), rgb(236, 200, 100)
 	ctx.part(Vector3.new(0.3, 4.6, 0.3), base + Vector3.new(0, 2.3, 0), wood)
@@ -583,7 +701,7 @@ end
 function ThemeProps.halloween(ctx: Ctx)
 	-- abóboras acesas na porta e nos pilares do portão
 	local glows = {
-		jackOLantern(ctx, Vector3.new(DOOR_X - 2.2, GROUND, R.MinZ - 2.1), 1.15, true),
+		jackOLantern(ctx, Vector3.new(DOOR_X - 3.1, GROUND, R.MinZ - 3.9), 1.15, true),
 		jackOLantern(ctx, Vector3.new(DOOR_X + 1.2, GROUND, R.MinZ - 2), 1, true),
 		jackOLantern(ctx, Vector3.new(DOOR_X - 0.6 - 2, 2.55, FENCE_Z), 0.55, true),
 		jackOLantern(ctx, Vector3.new(DOOR_X + 0.6 + 2, 2.55, FENCE_Z), 0.55, true),
@@ -633,6 +751,26 @@ function ThemeProps.halloween(ctx: Ctx)
 	end)
 
 	scarecrow(ctx, Vector3.new(-5, GROUND, R.MinZ - 7))
+
+	-- vassoura de bruxa encostada do lado esquerdo da porta
+	broom(ctx, Vector3.new(DOOR_X - 1.7, GROUND + 0.05, R.MinZ - 2.2), Vector3.new(DOOR_X - 2.45, 5.1, FACE_Z - 0.6))
+
+	-- teias nos cantos de cima da fachada, no oitão e numa janela, com aranhinhas penduradas
+	local wz = FACE_Z - 0.6
+	web(ctx, Vector3.new(R.MinX - 0.3, 13.5, wz), 3.2, -90, 0, 5)
+	web(ctx, Vector3.new(R.MaxX + 0.3, 13.5, wz), 3.2, 180, 270, 5)
+	web(ctx, Vector3.new(-6.5, 17.6, wz), 1.6, 0, 360, 9)
+	web(ctx, Vector3.new(7.5, 16.6, wz), 1.2, 0, 360, 8)
+	web(ctx, Vector3.new(-11.25, 10.75, wz - 0.1), 1.4, -90, 0, 4)
+	web(ctx, Vector3.new(4.25, 10.75, wz - 0.1), 1.2, 180, 270, 4)
+	for i, s in {
+		{ Vector3.new(R.MinX + 1.1, 13.2, wz), 2.4 },
+		{ Vector3.new(-6.5, 17.4, wz - 0.05), 1.6 },
+		{ Vector3.new(R.MaxX - 1.4, 12.9, wz), 3.4 },
+		{ Vector3.new(3.4, 10.3, wz - 0.15), 1.2 },
+	} do
+		ctx.animate(spider(ctx, s[1], s[2], i * 1.9))
+	end
 
 	-- morcegos voando em roda (sobre a árvore e o telhado)
 	local bats = {}

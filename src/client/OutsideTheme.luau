@@ -76,8 +76,11 @@ local THEMES: { [string]: Spec } = {
 	},
 	Halloween = {
 		Base = "Autumn",
-		Weather = { Brightness = 0.85, Exposure = -0.05, Tint = rgb(226, 200, 255), Amount = 0.25 },
-		Atmosphere = { Density = 0.2, Color = rgb(214, 186, 230), Decay = rgb(150, 100, 150), Haze = 1 },
+		-- mais escuro e arroxeado (mistério), mas as abóboras e velinhas continuam quentinhas
+		Weather = { Brightness = 0.55, Exposure = -0.22, Tint = rgb(190, 160, 236), Amount = 0.4 },
+		Atmosphere = { Density = 0.3, Color = rgb(170, 140, 200), Decay = rgb(100, 70, 120), Haze = 1.6 },
+		Clouds = { Cover = 0.55, Density = 0.4, Color = rgb(150, 130, 170) },
+		Saturation = -0.08,
 		Build = ThemeProps.halloween,
 	},
 }
