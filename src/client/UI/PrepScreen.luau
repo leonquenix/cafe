@@ -302,16 +302,26 @@ local function catCard(scope: any, order: number, d: Catalog.Decor): Frame
 	end)
 end
 
+-- Ordem na aba: gatinho em 1º, temas da fachada em 2º e o resto do mais barato pro mais caro (empate: nível)
 local function decorCards(scope: any): { Frame }
 	local cards = {}
-	for i, id in Catalog.DecorOrder do
-		local d = Catalog.Decor[id]
+	local rest = {}
+	for _, id in Catalog.DecorOrder do
 		if id == "Cat" then
-			table.insert(cards, catCard(scope, i, d))
-			continue
+			table.insert(cards, catCard(scope, 1, Catalog.Decor[id]))
+		else
+			table.insert(rest, Catalog.Decor[id])
 		end
+	end
+	table.sort(rest, function(a, b)
+		if a.Cost ~= b.Cost then
+			return a.Cost < b.Cost
+		end
+		return a.Level < b.Level
+	end)
+	for i, d in rest do
 		local desc = `{d.Description} Aconchego +{d.Cozy}.`
-		table.insert(cards, ownableCard(scope, i, id, d.Icon, d.Name, desc, d.Cost, d.Level))
+		table.insert(cards, ownableCard(scope, i + 2, d.Id, d.Icon, d.Name, desc, d.Cost, d.Level))
 	end
 	-- temas da fachada: abre a prévia lá fora (ThemePicker)
 	local themeText = scope:Computed(function(use)
@@ -320,7 +330,7 @@ local function decorCards(scope: any): { Frame }
 	end)
 	table.insert(
 		cards,
-		shopCard(scope, #Catalog.DecorOrder + 1, "Facade", "Temas da Fachada", "Inverno, outono, chuva e festas lá fora. Só visual.", nil, themeText, true, function()
+		shopCard(scope, 2, "Facade", "Temas da Fachada", "Inverno, outono, chuva e festas lá fora. Só visual.", nil, themeText, true, function()
 			if PrepScreen.onThemes then
 				PrepScreen.onThemes()
 			end
