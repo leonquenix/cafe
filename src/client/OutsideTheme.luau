@@ -3,7 +3,7 @@
 -- com o atributo "Theme": Bloom (flores: somem), Foliage (folhas: mudam de cor e ganham neve), Cap (ganha neve
 -- em cima), Roof, Grass e Soil. Cada tema troca cores, monta peças extras (Art/ThemeProps), muda o clima e solta
 -- "partículas" de bloquinhos: um pool pequeno de Parts movido com BulkMoveTo (leve no celular).
--- Natal herda o Inverno e Halloween herda o Outono (Base).
+-- Natal herda o Inverno e Halloween herda o Outono (Base); a Páscoa usa o jardim original.
 
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -74,6 +74,13 @@ local THEMES: { [string]: Spec } = {
 		Weather = { Brightness = 0.95, Exposure = -0.08, Tint = rgb(230, 234, 255), Amount = 0.28 },
 		Build = ThemeProps.christmas,
 	},
+	-- Páscoa: o jardim original (com flores) + enfeites em tons pastel e pétalas caindo devagar
+	Easter = {
+		Fall = "Petals",
+		Weather = { Brightness = 1.05, Exposure = 0, Tint = rgb(255, 236, 246), Amount = 0.18 },
+		Atmosphere = { Density = 0.14, Color = rgb(255, 228, 240), Decay = rgb(230, 180, 210), Haze = 0.6 },
+		Build = ThemeProps.easter,
+	},
 	Halloween = {
 		Base = "Autumn",
 		-- mais escuro e arroxeado (mistério), mas as abóboras e velinhas continuam quentinhas
@@ -116,6 +123,16 @@ local FALL: { [string]: Fall } = {
 		Drift = 2.2,
 		Spin = 2.4,
 		Slant = 0.5,
+		Transparency = 0,
+	},
+	Petals = {
+		Count = 30,
+		Size = Vector3.new(0.32, 0.05, 0.28),
+		Colors = { rgb(250, 200, 220), rgb(255, 244, 248), rgb(226, 206, 248), rgb(252, 236, 170) },
+		Speed = { 1.4, 2.4 },
+		Drift = 1.8,
+		Spin = 1.8,
+		Slant = 0.35,
 		Transparency = 0,
 	},
 	Rain = {

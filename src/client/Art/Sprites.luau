@@ -939,6 +939,31 @@ Sprites.ThemeHalloween = {
 	},
 } :: Sprite
 
+Sprites.ThemeEaster = {
+	Rows = {
+		"....oooo....",
+		"...oPPPPo...",
+		"..oPPPPPPo..",
+		".oPPPPPPPPo.",
+		".oYYYYYYYYo.",
+		"oPPPPPPPPPPo",
+		"oBPBPBPBPBPo",
+		"oPBPBPBPBPBo",
+		"oPPPPPPPPPPo",
+		"oGGGGGGGGGGo",
+		".oPPPPPPPPo.",
+		"..oPPPPPPo..",
+		"...oooooo...",
+	},
+	Palette = {
+		o = OUTLINE,
+		P = rgb(250, 190, 212),
+		Y = rgb(252, 236, 160),
+		B = rgb(184, 216, 248),
+		G = rgb(184, 230, 204),
+	},
+} :: Sprite
+
 Sprites.Facade = {
 	Rows = {
 		".......oo.......",
