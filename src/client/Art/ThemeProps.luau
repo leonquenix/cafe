@@ -911,6 +911,28 @@ local function bunnyParts(ctx: Ctx, fur: Color3, scale: number): ({ BasePart }, 
 	return parts, offsets
 end
 
+-- festão de folhinhas com florzinhas pastel e laços nas pontas, no plano da fachada (z fixo)
+local function pastelSwag(ctx: Ctx, x0: number, x1: number, y: number, z: number, sag: number)
+	local leaf = { rgb(170, 214, 150), rgb(196, 230, 176) }
+	local n = math.max(4, math.floor((x1 - x0) / 0.45))
+	for i = 0, n do
+		local k = i / n
+		local x = x0 + (x1 - x0) * k
+		local yy = y - math.sin(k * math.pi) * sag
+		ctx.part(Vector3.new(0.55, 0.46, 0.3), Vector3.new(x, yy, z), leaf[i % 2 + 1])
+		if i % 2 == 1 then
+			local c = PASTEL[(i // 2) % #PASTEL + 1]
+			ctx.part(Vector3.new(0.46, 0.46, 0.12), Vector3.new(x, yy - 0.04, z - 0.18), c)
+			ctx.part(Vector3.new(0.16, 0.16, 0.06), Vector3.new(x, yy - 0.04, z - 0.26), rgb(252, 236, 160))
+		end
+	end
+	for _, x in { x0, x1 } do
+		ctx.part(Vector3.new(0.75, 0.45, 0.16), Vector3.new(x, y + 0.05, z - 0.2), rgb(250, 190, 212))
+		ctx.part(Vector3.new(0.2, 0.8, 0.12), Vector3.new(x - 0.14, y - 0.5, z - 0.22), rgb(250, 190, 212))
+		ctx.part(Vector3.new(0.2, 0.7, 0.12), Vector3.new(x + 0.16, y - 0.45, z - 0.22), rgb(250, 190, 212))
+	end
+end
+
 function ThemeProps.easter(ctx: Ctx)
 	-- bandeirolas na borda do telhado: ovinho, cenourinha e coelhinho, um de cada vez
 	local twine = rgb(250, 240, 230)
@@ -939,7 +961,7 @@ function ThemeProps.easter(ctx: Ctx)
 	end
 
 	-- cestinha de vime cheia de ovinhos ao lado da porta
-	local basket = Vector3.new(DOOR_X - 2.3, GROUND, R.MinZ - 4)
+	local basket = Vector3.new(DOOR_X + 3.6, GROUND, R.MinZ - 4.5) -- (à esquerda de quem olha, depois da folha da porta)
 	local wicker = { rgb(214, 170, 112), rgb(190, 142, 88) }
 	for i = 0, 3 do
 		ctx.part(Vector3.new(1.5, 0.18, 1.05), basket + Vector3.new(0, 0.1 + i * 0.18, 0), wicker[i % 2 + 1])
@@ -964,7 +986,7 @@ function ThemeProps.easter(ctx: Ctx)
 		{ Vector3.new(-3, BED_TOP + 0.18, FENCE_Z + 1.2), 0.9 },
 		{ Vector3.new(13.5, BED_TOP + 0.18, FENCE_Z + 1.3), 0.9 },
 		{ Vector3.new(DOOR_X - 2.9, GROUND + 0.22, R.MinZ - 3.3), 1 },
-		{ Vector3.new(DOOR_X + 3.6, GROUND + 0.22, R.MinZ - 3.4), 1 },
+		{ Vector3.new(DOOR_X + 4.7, GROUND + 0.22, R.MinZ - 3.4), 1 },
 		{ Vector3.new(-10.6, GROUND + 0.22, R.MinZ - 4.2), 1 },
 		{ Vector3.new(TREE.X - 1.9, 0.5, TREE.Z - 1.5), 1 },
 		{ Vector3.new(TREE.X + 1.2, 0.45, TREE.Z - 1.9), 0.9 },
@@ -980,42 +1002,82 @@ function ThemeProps.easter(ctx: Ctx)
 		randomEgg(ctx, cf, spot[2])
 	end
 
-	-- família de coelhinhos saltando em roda pelo gramado da frente (pai e mãe na frente, filhotes atrás)
-	local family = {
-		{ furs[1], 1.45 },
-		{ furs[2], 1.45 },
-		{ furs[1], 0.9 },
-		{ furs[2], 0.9 },
-		{ furs[3], 0.9 },
+	-- enfeites pastel na fachada: festão de florzinhas nas janelas e na porta, ovinhos nas venezianas, guirlanda
+	local fz = FACE_Z - 0.62
+	for _, w in { { -11.4, -3.6 }, { -2.4, 4.4 } } do
+		pastelSwag(ctx, w[1], w[2], 11.2, fz, 0.55)
+	end
+	-- ovinho pendurado numa fitinha no alto de cada veneziana (a do meio é compartilhada)
+	for _, x in { -12.05, -3, 5.05 } do
+		ctx.part(Vector3.new(0.05, 0.6, 0.05), Vector3.new(x, 10.2, fz + 0.12), rgb(250, 190, 212))
+		randomEgg(ctx, CFrame.new(x, 9.7, fz + 0.12), 0.7)
+	end
+	pastelSwag(ctx, DOOR_X - 2.7, DOOR_X + 2.7, 9.2, FACE_Z - 2.15, 0.45)
+	-- guirlanda de flores e ovinhos na porta aberta (face de fora da folha da porta)
+	local wreath = Vector3.new(DOOR_X + 2.5, 5.6, R.MinZ - 3.1)
+	for i = 0, 11 do
+		local ang = i / 12 * math.pi * 2
+		local at = wreath + Vector3.new(0, math.cos(ang) * 0.85, math.sin(ang) * 0.85)
+		ctx.part(Vector3.new(0.28, 0.42, 0.42), at, if i % 2 == 0 then rgb(170, 214, 150) else rgb(196, 230, 176))
+		if i % 2 == 1 then
+			ctx.part(Vector3.new(0.3, 0.3, 0.3), at + Vector3.new(0.08, 0, 0), PASTEL[(i // 2) % #PASTEL + 1])
+		end
+	end
+	ctx.part(Vector3.new(0.3, 0.35, 0.6), wreath + Vector3.new(0.06, -0.85, 0), rgb(212, 192, 244)) -- laço lilás
+	randomEgg(ctx, CFrame.new(wreath + Vector3.new(0.12, 0, 0)), 0.7)
+
+	-- pai e mãe sentadinhos à direita da porta (de quem olha da rua), vigiando os filhotes
+	local parents = {
+		{ furs[1], Vector3.new(DOOR_X - 4.6, GROUND, R.MinZ - 4.6), 0.6 },
+		{ furs[2], Vector3.new(DOOR_X - 3.0, GROUND, R.MinZ - 5.2), 0.9 },
 	}
-	local center, radiusX, radiusZ = Vector3.new(7, GROUND, R.MinZ - 5.2), 13, 0.85
-	local bunnies = {}
+	local watchers = {}
 	local all: { BasePart } = {}
-	for i, f in family do
-		local parts, offsets = bunnyParts(ctx, f[1], f[2])
+	for i, pdef in parents do
+		local parts, offsets = bunnyParts(ctx, pdef[1], 1.45)
 		for _, p in parts do
 			table.insert(all, p)
 		end
-		-- Lag: distância (em ângulo) atrás do pai; Phase: pulos um pouquinho fora de sincronia
-		table.insert(bunnies, { Offsets = offsets, Scale = f[2], Lag = if i <= 2 then (i - 1) * 0.16 else 0.42 + (i - 3) * 0.13, Phase = i * 0.17 })
+		-- olhando pra cá e um pouco pro lado dos filhotes (+X)
+		local base = CFrame.new(pdef[2]) * CFrame.Angles(0, -pdef[3], 0)
+		table.insert(watchers, { Offsets = offsets, Base = base, Phase = i * 1.3 })
 	end
+
+	-- filhotes saltando em roda no gramado do outro lado do caminho, bem espaçados
+	local kids = { furs[1], furs[2], furs[3] }
+	local center, radiusX, radiusZ = Vector3.new(15.5, GROUND, R.MinZ - 6.4), 4.2, 1.2
+	local hoppers = {}
+	for i, fur in kids do
+		local parts, offsets = bunnyParts(ctx, fur, 0.9)
+		for _, p in parts do
+			table.insert(all, p)
+		end
+		table.insert(hoppers, { Offsets = offsets, Lag = (i - 1) * (math.pi * 2 / 3), Phase = i * 0.21 })
+	end
+
 	local cfs: { CFrame } = {}
 	local HOP = 0.55 -- duração de cada pulinho (s)
 	ctx.animate(function(t)
 		table.clear(cfs)
-		for _, b in bunnies do
+		for _, w in watchers do
+			-- respirando, com a cabecinha virando devagar pra acompanhar os filhotes
+			local pivot = w.Base * CFrame.Angles(0, math.sin(t * 0.5 + w.Phase) * 0.25, 0) + Vector3.new(0, math.abs(math.sin(t * 1.6 + w.Phase)) * 0.04, 0)
+			for _, o in w.Offsets do
+				table.insert(cfs, pivot * o)
+			end
+		end
+		for _, b in hoppers do
 			-- anda só durante o pulo: o ângulo avança em degraus suaves
 			local hops = t / HOP + b.Phase
 			local n = math.floor(hops)
 			local f = hops - n
 			local stepFrac = math.clamp(f / 0.7, 0, 1)
-			local progress = (n + stepFrac * stepFrac * (3 - 2 * stepFrac)) * 0.045
+			local progress = (n + stepFrac * stepFrac * (3 - 2 * stepFrac)) * 0.1
 			local a = -progress - b.Lag
 			local pos = center + Vector3.new(math.cos(a) * radiusX, 0, math.sin(a) * radiusZ)
 			local ahead = center + Vector3.new(math.cos(a - 0.01) * radiusX, 0, math.sin(a - 0.01) * radiusZ)
-			local lift = if f < 0.7 then math.sin(f / 0.7 * math.pi) * 0.75 * b.Scale else 0
+			local lift = if f < 0.7 then math.sin(f / 0.7 * math.pi) * 0.6 else 0
 			local pivot = CFrame.lookAt(pos, Vector3.new(ahead.X, pos.Y, ahead.Z)) + Vector3.new(0, lift, 0)
-			-- corpinho inclina um pouco no ar
 			pivot *= CFrame.Angles(if f < 0.7 then math.sin(f / 0.7 * math.pi * 2) * 0.18 else 0, 0, 0)
 			for _, o in b.Offsets do
 				table.insert(cfs, pivot * o)
