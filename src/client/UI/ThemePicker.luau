@@ -70,6 +70,9 @@ function ThemePicker.show(options: Options)
 		props.Font = props.Font or Theme.Font
 		props.TextScaled = true
 		props.TextColor3 = props.TextColor3 or Theme.Ink
+		-- contorno claro: o painel é translúcido, o texto precisa continuar legível em cima da cena
+		props.TextStrokeColor3 = Theme.Paper
+		props.TextStrokeTransparency = 0
 		props.Text = text
 		return scope:New("TextLabel")(props)
 	end
@@ -186,10 +189,12 @@ function ThemePicker.show(options: Options)
 		AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.fromScale(0.5, 1.6),
 		Size = UDim2.fromScale(0.62, 0.3),
+		-- painel 70% transparente pra não esconder a fachada; botões, textos e o ícone continuam opacos
 		BackgroundColor3 = Theme.Paper,
+		BackgroundTransparency = 0.7,
 		[Children] = {
 			scope:New("UICorner")({ CornerRadius = UDim.new(0, 16) }),
-			scope:New("UIStroke")({ Thickness = 4, Color = Theme.Ink }),
+			scope:New("UIStroke")({ Thickness = 4, Color = Theme.Ink, Transparency = 0.7 }),
 			scope:New("UIAspectRatioConstraint")({ AspectRatio = 3.1 }),
 			scope:New("UISizeConstraint")({ MaxSize = Vector2.new(820, 265) }),
 			arrow("Prev", "<", 0.05, -1),
@@ -240,9 +245,10 @@ function ThemePicker.show(options: Options)
 				Position = UDim2.new(1, 0, 0, -10),
 				Size = UDim2.fromScale(0.2, 0.2),
 				BackgroundColor3 = Theme.Paper,
+				BackgroundTransparency = 0.7,
 				[Children] = {
 					scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
-					scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink }),
+					scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink, Transparency = 0.7 }),
 					coin,
 					label(scope:Computed(function(use)
 						return `${use(State.Money)}`
