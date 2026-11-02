@@ -1,6 +1,7 @@
 --!strict
 -- Balões sobre a cabeça dos clientes: pedido, agradecimento e humor (paciência).
--- Também o balãozinho de coração do gato do balcão quando ganha carinho.
+-- Também o balãozinho de coração do gato do balcão quando ganha carinho
+-- e o balão de fala do próprio barista (a fala da vovó no primeiro dia).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -183,6 +184,26 @@ function Bubble.sad(head: BasePart, text: string?): BillboardGui
 	label.Parent = panel
 	gui.Parent = head
 	return gui
+end
+
+-- balão de fala do barista: o texto começa escondido (MaxVisibleGraphemes = 0) pra aparecer letra por letra;
+-- o "Hint" (toque para continuar) começa transparente
+function Bubble.speech(head: BasePart, text: string): (BillboardGui, TextLabel, TextLabel)
+	local gui, panel = base(head, 9, 3.6, 1.2)
+	local label = Theme.label(text, Theme.Ink)
+	label.Size = UDim2.fromScale(0.88, 0.64)
+	label.Position = UDim2.fromScale(0.06, 0.08)
+	label.MaxVisibleGraphemes = 0
+	label.Parent = panel
+	local hint = Theme.label("toque para continuar", Theme.WoodDark)
+	hint.Name = "Hint"
+	hint.AnchorPoint = Vector2.new(0.5, 0)
+	hint.Size = UDim2.fromScale(0.5, 0.16)
+	hint.Position = UDim2.fromScale(0.5, 0.76)
+	hint.TextTransparency = 1
+	hint.Parent = panel
+	gui.Parent = head
+	return gui, label, hint
 end
 
 function Bubble.pop(gui: BillboardGui)

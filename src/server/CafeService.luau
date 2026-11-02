@@ -134,6 +134,7 @@ local function sendState(player: Player)
 		catColor = if Catalog.CatColors[data.CatColor] then data.CatColor else Catalog.DefaultCatColor,
 		themes = themes,
 		theme = if Catalog.Themes[data.Theme] then data.Theme else Catalog.DefaultTheme,
+		introSeen = data.IntroSeen == true,
 	}, player)
 end
 
@@ -326,6 +327,8 @@ local function onStartDay(action: number, player: Player?)
 		return
 	end
 	Barista.setWalking(player, false)
+	-- a fala da vovó (primeiro dia) já passou: o cliente só manda começar depois dela
+	data.IntroSeen = true
 	local fresh = newSession()
 	fresh.dayActive = true
 	fresh.plan = makePlan(data)

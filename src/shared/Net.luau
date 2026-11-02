@@ -122,6 +122,7 @@ return ByteNet.defineNamespace("Cafe", function()
 				catColor = ByteNet.string, -- pelagem do gatinho da vitrine
 				themes = ByteNet.array(ByteNet.string), -- temas da fachada comprados
 				theme = ByteNet.string, -- tema da fachada em uso
+				introSeen = ByteNet.bool, -- já viu a fala da vovó do primeiro dia
 			}),
 		}),
 		-- servidor -> cliente: resumo do dia que acabou

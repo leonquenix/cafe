@@ -25,6 +25,7 @@ export type Data = {
 	CatColor: string, -- pelagem do gatinho da vitrine (Catalog.CatColors)
 	Themes: { [string]: boolean }, -- temas da fachada comprados (Catalog.Themes)
 	Theme: string, -- tema da fachada em uso
+	IntroSeen: boolean, -- já viu a fala da vovó no começo do primeiro dia
 }
 
 local TEMPLATE: Data = {
@@ -45,6 +46,7 @@ local TEMPLATE: Data = {
 	CatColor = "Gray",
 	Themes = {},
 	Theme = "Original",
+	IntroSeen = false,
 }
 
 local Store = ProfileStore.New("CafeData_v1", TEMPLATE)

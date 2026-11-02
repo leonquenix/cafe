@@ -2,6 +2,8 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local Fusion = require(ReplicatedStorage.Packages.Fusion)
 local Catalog = require(ReplicatedStorage.Shared.Catalog)
@@ -9,6 +11,7 @@ local Characters = require(ReplicatedStorage.Shared.Characters)
 local Net = require(ReplicatedStorage.Shared.Net)
 local Recipes = require(ReplicatedStorage.Shared.Recipes)
 local BackButton = require(script.UI.BackButton)
+local Bubble = require(script.UI.Bubble)
 local CameraController = require(script.CameraController)
 local Customers = require(script.Customers)
 local DayCycle = require(script.DayCycle)
@@ -167,6 +170,51 @@ State.scope:Observer(State.Stats):onChange(function()
 	lastStats = table.clone(stats)
 end)
 
+local INTRO_LINE = "Preciso fazer isso pela vovó, ela amava tanto esse lugar, talvez eu só precise de uma cidadezinha tranquila e um novo começo."
+
+-- Primeiro dia: o barista pensa em voz alta antes de abrir (só uma vez, salvo no perfil).
+-- O texto aparece letra por letra; um toque completa o texto, outro fecha o balão.
+local function introLine()
+	local character = player.Character or player.CharacterAdded:Wait()
+	local head = character:WaitForChild("Head", 5) :: BasePart?
+	if not head then
+		return
+	end
+	local gui, label, hint = Bubble.speech(head, INTRO_LINE)
+	Sfx.play("CutePop")
+	local tapped = false
+	local conn = UserInputService.InputBegan:Connect(function(input)
+		local kind = input.UserInputType
+		if kind == Enum.UserInputType.MouseButton1 or kind == Enum.UserInputType.Touch then
+			tapped = true
+		end
+	end)
+	task.wait(0.45)
+	local count = utf8.len(INTRO_LINE) or #INTRO_LINE
+	local shown = 0
+	for _, code in utf8.codes(INTRO_LINE) do
+		if tapped then
+			break
+		end
+		shown += 1
+		label.MaxVisibleGraphemes = shown
+		local ch = utf8.char(code)
+		task.wait(if ch == "," then 0.3 else 0.035)
+	end
+	label.MaxVisibleGraphemes = -1
+	-- respiro pra o toque que completou o texto não fechar o balão junto
+	task.wait(0.2)
+	tapped = false
+	TweenService:Create(hint, TweenInfo.new(0.4), { TextTransparency = 0 }):Play()
+	local t0 = os.clock()
+	while not tapped and os.clock() - t0 < (if shown >= count then 3.5 else 6) do
+		task.wait()
+	end
+	conn:Disconnect()
+	Bubble.pop(gui)
+	task.wait(0.4)
+end
+
 local function startDay(day: number)
 	if startingDay then
 		return
@@ -183,6 +231,10 @@ local function startDay(day: number)
 		-- música da gameplay: toca durante o expediente
 		Radio.play()
 	end, function()
+		-- os clientes (e o dia) só começam depois da fala da vovó
+		if day <= 1 and not peek(State.IntroSeen) then
+			introLine()
+		end
 		Net.StartDay.send(1)
 	end)
 end

@@ -26,6 +26,7 @@ local State = {
 	CatColor = scope:Value("Gray"),
 	Themes = scope:Value({} :: { [string]: boolean }), -- temas da fachada comprados
 	Theme = scope:Value("Original"), -- tema da fachada em uso
+	IntroSeen = scope:Value(false), -- já viu a fala da vovó do primeiro dia
 }
 
 function State.apply(s: any)
@@ -72,6 +73,7 @@ function State.apply(s: any)
 	end
 	State.Themes:set(themes)
 	State.Theme:set(s.theme)
+	State.IntroSeen:set(s.introSeen)
 	State.Loaded:set(true)
 end
 
