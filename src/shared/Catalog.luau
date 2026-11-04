@@ -138,7 +138,7 @@ export type WallColor = { Id: string, Name: string, Description: string, Plaster
 
 Catalog.WallPaint = {
 	Id = "WallPaint",
-	Name = "Tintas Pastel",
+	Name = "Cor das paredes",
 	Description = "Pinte as paredes de dentro. Só visual.",
 	Icon = "WallPaint",
 	Cost = 300,

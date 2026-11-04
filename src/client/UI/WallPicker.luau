@@ -250,7 +250,7 @@ function WallPicker.show(options: Options)
 				elseif s == "Level" then
 					return `Libera no nível {kit.Level}`
 				end
-				return `O kit libera todas as cores · {use(index)}/{#order}`
+				return `Uma compra libera todas · {use(index)}/{#order}`
 			end), {
 				Name = "Status",
 				Position = UDim2.fromScale(0.29, 0.47),

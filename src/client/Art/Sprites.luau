@@ -991,7 +991,7 @@ Sprites.Facade = {
 	},
 } :: Sprite
 
--- Tintas Pastel (cores das paredes): três amostras de tinta lado a lado
+-- Cor das paredes: três amostras de tinta lado a lado
 Sprites.WallPaint = {
 	Rows = {
 		".....ooooo....",

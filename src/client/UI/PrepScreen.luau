@@ -303,7 +303,7 @@ local function catCard(scope: any, order: number, d: Catalog.Decor): Frame
 	end)
 end
 
--- Tintas Pastel: o botão abre a prévia por dentro da loja (WallPicker); lá dentro compra o kit ou troca a cor.
+-- Cor das paredes: o botão abre a prévia por dentro da loja (WallPicker); lá dentro compra o kit ou troca a cor.
 -- Antes do nível mostra o nível; sem o kit mostra o preço; com o kit mostra a cor em uso.
 local function wallCard(scope: any, order: number): Frame
 	local kit = Catalog.WallPaint
