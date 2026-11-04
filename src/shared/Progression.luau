@@ -52,8 +52,18 @@ function Progression.orderXp(tier: number): number
 	return 10 + tier * 5
 end
 
+-- XP pra sair de cada nível, pensado em ~185 XP por dia jogando bem: nível 2 no dia 2,
+-- 3 no dia 5, 4 no 9, 5 no 13, 6 no 18, 7 no 24, 8 no 31, 9 no 38, 10 no 46 ... 20 no 169.
+-- O dia 1 rende no máximo 175 XP (sem criança nem crítico), então o nível 2 nunca sai no primeiro dia.
+-- Só encarece em relação à curva antiga, e o save guarda o nível (não o XP total): ninguém é rebaixado.
+Progression.XpTable = {
+	350, 550, 750, 750, 900, 1100, 1300, 1300, 1500, 1650,
+	1850, 1850, 2050, 2200, 2400, 2400, 2600, 2800, 2950,
+}
+
 function Progression.xpToNext(level: number): number
-	return 100 + (level - 1) * 75
+	local n = #Progression.XpTable
+	return Progression.XpTable[level] or Progression.XpTable[n] + (level - n) * 150
 end
 
 -- Aplica XP ganho: retorna (novoLevel, novoXpDentroDoLevel)
