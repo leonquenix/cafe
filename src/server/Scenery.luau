@@ -2,6 +2,7 @@
 -- Gera o café inteiro com Parts: chão, paredes, janelas, balcão, mesas, plantas e luzes.
 -- Tudo minimalista ("pixel 3D"), SmoothPlastic e cores quentes.
 
+local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -190,7 +191,12 @@ local function buildWall(
 				local y0 = math.max(s[1], band[1])
 				local y1 = math.min(s[2], band[2])
 				if y1 - y0 > 0.01 then
-					part(parent, sizeOf(cb - ca, y1 - y0), toWorld(mid, (y0 + y1) / 2), band[3])
+					local p = part(parent, sizeOf(cb - ca, y1 - y0), toWorld(mid, (y0 + y1) / 2), band[3])
+					-- reboco das paredes de dentro: o jogador escolhe a cor (client/WallPaint)
+					if not bands and (band[3] == C.Plaster or band[3] == C.PlasterShade) then
+						p:SetAttribute("WallPaint", if band[3] == C.Plaster then "Plaster" else "Shade")
+						CollectionService:AddTag(p, "WallPaint")
+					end
 				end
 			end
 		end

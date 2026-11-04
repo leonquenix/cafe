@@ -991,4 +991,29 @@ Sprites.Facade = {
 	},
 } :: Sprite
 
+-- Tintas Pastel (cores das paredes): três amostras de tinta lado a lado
+Sprites.WallPaint = {
+	Rows = {
+		".....ooooo....",
+		".....oLLLo....",
+		".oooooLLLo....",
+		".oPPPoLLLooooo",
+		".oPPPoLLLoBBBo",
+		".oPPPoLLLoBBBo",
+		".oPPPoLLLoBBBo",
+		".oPPPoLLLoBBBo",
+		".oPPPoLLLoBBBo",
+		".oWWWoWWWoWWWo",
+		".oPPPoLLLoBBBo",
+		".ooooooooooooo",
+	},
+	Palette = {
+		o = OUTLINE,
+		P = rgb(240, 186, 190),
+		L = rgb(206, 186, 230),
+		B = rgb(170, 204, 230),
+		W = rgb(252, 248, 240),
+	},
+} :: Sprite
+
 return Sprites

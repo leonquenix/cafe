@@ -27,6 +27,7 @@ PrepScreen.onSetCatColor = nil :: ((color: string) -> ())?
 PrepScreen.onOpenBook = nil :: (() -> ())?
 PrepScreen.onWalk = nil :: (() -> ())?
 PrepScreen.onThemes = nil :: (() -> ())?
+PrepScreen.onWalls = nil :: (() -> ())?
 
 -- fecha a tela atual sem abrir o café (usado pela animação de decoração nova)
 local closeCurrent: ((onClosed: () -> ()) -> ())? = nil
@@ -302,6 +303,30 @@ local function catCard(scope: any, order: number, d: Catalog.Decor): Frame
 	end)
 end
 
+-- Tintas Pastel: o botão abre a prévia por dentro da loja (WallPicker); lá dentro compra o kit ou troca a cor.
+-- Antes do nível mostra o nível; sem o kit mostra o preço; com o kit mostra a cor em uso.
+local function wallCard(scope: any, order: number): Frame
+	local kit = Catalog.WallPaint
+	local text = scope:Computed(function(use)
+		if use(State.Level) < kit.Level then
+			return `Nível {kit.Level}`
+		elseif not use(State.WallPaint) then
+			return `${kit.Cost}`
+		end
+		local current = Catalog.WallColors[use(State.WallColor)]
+		return if current then current.Name else "Ver cores"
+	end)
+	local enabled = scope:Computed(function(use)
+		return use(State.Level) >= kit.Level
+	end)
+	local desc = "Laranja, verde, rosa, lilás e azul, tudo pastel. Só visual."
+	return shopCard(scope, order, kit.Icon, kit.Name, desc, nil, text, enabled, function()
+		if PrepScreen.onWalls then
+			PrepScreen.onWalls()
+		end
+	end)
+end
+
 -- Ordem na aba: gatinho em 1º, temas da fachada em 2º e o resto do mais barato pro mais caro (empate: nível)
 local function decorCards(scope: any): { Frame }
 	local cards = {}
@@ -313,6 +338,8 @@ local function decorCards(scope: any): { Frame }
 			table.insert(rest, Catalog.Decor[id])
 		end
 	end
+	-- tintas das paredes entram na fila pelo preço, como uma decoração (mas abrem a prévia por dentro)
+	table.insert(rest, Catalog.WallPaint :: any)
 	table.sort(rest, function(a, b)
 		if a.Cost ~= b.Cost then
 			return a.Cost < b.Cost
@@ -320,6 +347,10 @@ local function decorCards(scope: any): { Frame }
 		return a.Level < b.Level
 	end)
 	for i, d in rest do
+		if d.Id == Catalog.WallPaint.Id then
+			table.insert(cards, wallCard(scope, i + 2))
+			continue
+		end
 		local desc = `{d.Description} Aconchego +{d.Cozy}.`
 		table.insert(cards, ownableCard(scope, i + 2, d.Id, d.Icon, d.Name, desc, d.Cost, d.Level))
 	end

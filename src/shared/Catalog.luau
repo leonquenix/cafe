@@ -130,6 +130,67 @@ Catalog.Themes = {
 	Easter = { Id = "Easter", Name = "Páscoa", Description = "Ovinhos escondidos e coelhinhos no jardim.", Icon = "ThemeEaster", Cost = 400, Level = 7 },
 } :: { [string]: Theme }
 
+-- Cores das paredes de dentro (só visual, sem aconchego): o kit de tintas é comprado uma vez na aba Decoração
+-- e libera todas as cores; depois a troca é de graça. "Cream" é a cor de sempre, grátis.
+-- Plaster = parede; Shade = faixa de cima, perto do teto (um tom mais escuro). O visual fica em client/WallPaint.
+-- Os tons são um pouco mais fortes do que parecem: a luz quente do café puxa tudo pro amarelo.
+export type WallColor = { Id: string, Name: string, Description: string, Plaster: Color3, Shade: Color3 }
+
+Catalog.WallPaint = {
+	Id = "WallPaint",
+	Name = "Tintas Pastel",
+	Description = "Pinte as paredes de dentro. Só visual.",
+	Icon = "WallPaint",
+	Cost = 300,
+	Level = 5,
+}
+Catalog.DefaultWallColor = "Cream"
+Catalog.WallColorOrder = { "Cream", "Peach", "Mint", "Pink", "Lilac", "Blue" }
+Catalog.WallColors = {
+	Cream = {
+		Id = "Cream",
+		Name = "Creme",
+		Description = "O reboco clarinho de sempre.",
+		Plaster = Color3.fromRGB(244, 230, 206),
+		Shade = Color3.fromRGB(226, 206, 178),
+	},
+	Peach = {
+		Id = "Peach",
+		Name = "Laranja Pastel",
+		Description = "Pêssego quentinho, cor de fim de tarde.",
+		Plaster = Color3.fromRGB(250, 204, 172),
+		Shade = Color3.fromRGB(234, 180, 148),
+	},
+	Mint = {
+		Id = "Mint",
+		Name = "Verde Pastel",
+		Description = "Sálvia suave, combina com as plantinhas.",
+		Plaster = Color3.fromRGB(190, 224, 186),
+		Shade = Color3.fromRGB(164, 202, 160),
+	},
+	Pink = {
+		Id = "Pink",
+		Name = "Rosa Pastel",
+		Description = "Rosinha de confeitaria.",
+		Plaster = Color3.fromRGB(246, 190, 214),
+		Shade = Color3.fromRGB(228, 166, 194),
+	},
+	Lilac = {
+		Id = "Lilac",
+		Name = "Lilás Pastel",
+		Description = "Lavanda delicada, pra um café sonhador.",
+		Plaster = Color3.fromRGB(192, 182, 246),
+		Shade = Color3.fromRGB(170, 158, 230),
+	},
+	Blue = {
+		Id = "Blue",
+		Name = "Azul Pastel",
+		Description = "Azul de céu limpo pela manhã.",
+		Plaster = Color3.fromRGB(162, 198, 240),
+		Shade = Color3.fromRGB(138, 176, 222),
+	},
+} :: { [string]: WallColor }
+
 Catalog.CozyBonus = 0.02 -- cada ponto de aconchego: +2% em todos os pagamentos
 
 -- Resultado do pop-up do forno (o cliente manda; o servidor paga de acordo)

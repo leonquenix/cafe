@@ -33,6 +33,8 @@ local ThemePicker = require(script.UI.ThemePicker)
 local TitleScreen = require(script.UI.TitleScreen)
 local Transition = require(script.UI.Transition)
 local WalkHud = require(script.UI.WalkHud)
+local WallPicker = require(script.UI.WallPicker)
+local WallPaint = require(script.WallPaint)
 
 local peek = Fusion.peek
 local Kind = Characters.Kind
@@ -51,6 +53,7 @@ CameraController.focus(TitleScreen.CameraPosition, TitleScreen.CameraTarget, 0, 
 DayCycle.morning(0)
 Decor.start()
 OutsideTheme.start()
+WallPaint.start()
 -- pop de bolha em todos os botões (antes das telas serem criadas)
 Sfx.init(playerGui)
 TitleScreen.init(playerGui)
@@ -61,6 +64,7 @@ Transition.init(playerGui)
 DaySummary.init(playerGui)
 PrepScreen.init(playerGui)
 ThemePicker.init(playerGui)
+WallPicker.init(playerGui)
 RecipeBook.init(playerGui)
 Hud.new(playerGui)
 PastryPopup.init(playerGui)
@@ -138,6 +142,14 @@ local previewingTheme = false
 State.scope:Observer(State.Theme):onBind(function()
 	if not previewingTheme then
 		OutsideTheme.set(peek(State.Theme))
+	end
+end)
+
+-- cor das paredes salva (a prévia do pop-up das paredes manda enquanto está aberto)
+local previewingWalls = false
+State.scope:Observer(State.WallColor):onBind(function()
+	if not previewingWalls then
+		WallPaint.set(peek(State.WallColor), 0.6)
 	end
 end)
 
@@ -291,6 +303,51 @@ PrepScreen.onThemes = function()
 			OnClose = function()
 				previewingTheme = false
 				OutsideTheme.set(peek(State.Theme))
+				DayCycle.night(1.6)
+				CameraController.release(1.6)
+				task.wait(1.6)
+				prepareDay(peek(State.Day), "Decor")
+			end,
+		})
+	end)
+end
+
+-- Cores das paredes: a câmera olha a loja por dentro e o pop-up pinta as paredes ao vivo
+PrepScreen.onWalls = function()
+	PrepScreen.close(function()
+		previewingWalls = true
+		-- entre os dias é noite: a prévia acontece de dia pra dar pra ver a cor de verdade
+		DayCycle.setProgress(0.5, 1.6)
+		CameraController.focus(WallPicker.CameraPosition, WallPicker.CameraTarget, 1.6, WallPicker.FieldOfView)
+		task.wait(1.5)
+		WallPicker.show({
+			OnPreview = function(id)
+				WallPaint.set(id, 0.5)
+			end,
+			OnBuy = function(id)
+				local before = peek(State.Money) :: number
+				-- o servidor processa em ordem: se o kit for comprado, a cor escolhida já entra em uso
+				Net.Buy.send(Catalog.WallPaint.Id)
+				Net.SetWallColor.send(id)
+				task.spawn(function()
+					local t0 = os.clock()
+					while os.clock() - t0 < 2 do
+						if (peek(State.Money) :: number) < before then
+							Sfx.play("Cash")
+							task.delay(0.25, Sfx.play, "CutePop")
+							return
+						end
+						task.wait()
+					end
+					Sfx.play("Denied")
+				end)
+			end,
+			OnUse = function(id)
+				Net.SetWallColor.send(id)
+			end,
+			OnClose = function()
+				previewingWalls = false
+				WallPaint.set(peek(State.WallColor), 0.5)
 				DayCycle.night(1.6)
 				CameraController.release(1.6)
 				task.wait(1.6)

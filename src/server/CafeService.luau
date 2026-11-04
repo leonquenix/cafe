@@ -134,6 +134,8 @@ local function sendState(player: Player)
 		catColor = if Catalog.CatColors[data.CatColor] then data.CatColor else Catalog.DefaultCatColor,
 		themes = themes,
 		theme = if Catalog.Themes[data.Theme] then data.Theme else Catalog.DefaultTheme,
+		wallPaint = data.WallPaint == true,
+		wallColor = if Catalog.WallColors[data.WallColor] then data.WallColor else Catalog.DefaultWallColor,
 		introSeen = data.IntroSeen == true,
 	}, player)
 end
@@ -626,6 +628,11 @@ local function onBuy(id: string, player: Player?)
 			data.Themes[id] = true
 			data.Theme = id
 		end
+	elseif id == Catalog.WallPaint.Id and not data.WallPaint and Catalog.WallPaint.Level <= data.Level then
+		cost = Catalog.WallPaint.Cost
+		apply = function()
+			data.WallPaint = true
+		end
 	end
 
 	if cost and apply and data.Money >= cost then
@@ -750,6 +757,14 @@ function CafeService.start()
 			return
 		end
 		data.Theme = id
+		sendState(player)
+	end)
+	Net.SetWallColor.listen(function(id: string, player: Player?)
+		local data = player and DataService.get(player)
+		if not player or not data or not Catalog.WallColors[id] or (id ~= Catalog.DefaultWallColor and not data.WallPaint) then
+			return
+		end
+		data.WallColor = id
 		sendState(player)
 	end)
 	Net.SetRadio.listen(function(value, player: Player?)
