@@ -96,6 +96,13 @@ return ByteNet.defineNamespace("Cafe", function()
 		SetWallColor = ByteNet.definePacket({
 			value = ByteNet.string,
 		}),
+		-- cliente -> servidor: liga/desliga uma decoração já comprada (Catalog.Decor), salvo no perfil
+		SetDecorShown = ByteNet.definePacket({
+			value = ByteNet.struct({
+				id = ByteNet.string,
+				shown = ByteNet.bool,
+			}),
+		}),
 		-- cliente -> servidor: cardápio do dia
 		SetMenu = ByteNet.definePacket({
 			value = ByteNet.array(ByteNet.string),
@@ -120,6 +127,7 @@ return ByteNet.defineNamespace("Cafe", function()
 				cozy = ByteNet.uint8,
 				upgrades = ByteNet.array(ByteNet.struct({ id = ByteNet.string, level = ByteNet.uint8 })),
 				owned = ByteNet.array(ByteNet.string), -- doces e decoração comprados
+				hidden = ByteNet.array(ByteNet.string), -- decorações compradas que estão desligadas
 				menu = ByteNet.array(ByteNet.string),
 				stats = ByteNet.array(ByteNet.struct({ drink = ByteNet.string, count = ByteNet.uint16 })),
 				mastered = ByteNet.array(ByteNet.string), -- recompensas de maestria já coletadas

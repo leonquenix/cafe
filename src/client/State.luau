@@ -20,6 +20,7 @@ local State = {
 	Cozy = scope:Value(0),
 	Upgrades = scope:Value({} :: { [string]: number }),
 	Owned = scope:Value({} :: { [string]: boolean }),
+	Hidden = scope:Value({} :: { [string]: boolean }), -- decorações compradas que estão desligadas
 	Menu = scope:Value({} :: { string }),
 	Stats = scope:Value({} :: { [string]: number }),
 	Mastered = scope:Value({} :: { [string]: boolean }),
@@ -48,6 +49,13 @@ function State.apply(s: any)
 		upgrades[u.id] = u.level
 	end
 	State.Upgrades:set(upgrades)
+
+	-- antes do Owned: o café já se monta sem as decorações desligadas
+	local hidden = {}
+	for _, id in s.hidden do
+		hidden[id] = true
+	end
+	State.Hidden:set(hidden)
 
 	local owned = {}
 	for _, id in s.owned do

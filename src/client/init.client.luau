@@ -111,6 +111,9 @@ end
 PrepScreen.onSetCatColor = function(color)
 	Net.SetCatColor.send(color)
 end
+PrepScreen.onSetDecorShown = function(id, shown)
+	Net.SetDecorShown.send({ id = id, shown = shown })
+end
 
 -- Decoração nova: fecha o menu, a câmera voa até o lugar, a peça se monta, volta e reabre o menu
 local function showcaseDecor(id: string)
@@ -151,6 +154,12 @@ State.scope:Observer(State.WallColor):onBind(function()
 	if not previewingWalls then
 		WallPaint.set(peek(State.WallColor), 0.6)
 	end
+end)
+
+-- decorações ligadas/desligadas na loja (antes do Owned: o café já nasce sem as desligadas)
+State.scope:Observer(State.Hidden):onBind(function()
+	Decor.setHidden(peek(State.Hidden))
+	Decor.apply(peek(State.Owned), pendingDecor)
 end)
 
 State.scope:Observer(State.Owned):onBind(function()

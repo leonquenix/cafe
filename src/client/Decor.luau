@@ -1,6 +1,7 @@
 --!strict
 -- Decoração comprada na loja, construída com Parts só para o jogador (cada um tem o seu café).
--- Alguns itens têm animaçãozinha: gato respirando, disco girando, fogo piscando, lanternas balançando.
+-- Alguns itens têm animaçãozinha: gato respirando, disco girando, fogo piscando, lanternas balançando,
+-- pisca-pisca de Natal, abóboras tremulando, fantasminhas flutuando. Cada uma pode ser desligada na loja (Decor.setHidden).
 -- Clicar no gato faz carinho: ele mia e solta um balãozinho de coração. O gato tem várias pelagens (Decor.CatCoats).
 
 local Players = game:GetService("Players")
@@ -37,6 +38,15 @@ Decor.Focus = {
 	Lanterns = { Vector3.new(-1, 6.5, 3), Vector3.new(-1, 9.6, -10) },
 	Record = { Vector3.new(10, 6, -7), Vector3.new(16.8, 3, -12.5) },
 	Stove = { Vector3.new(-6, 5.5, -11), Vector3.new(-12, 2.2, -19.8) },
+	ChristmasTree = { Vector3.new(-8, 6.5, -4), Vector3.new(-15.2, 3.8, -12.5) },
+	ChristmasWreath = { Vector3.new(2, 7.5, -13), Vector3.new(1, 8, -21.5) },
+	ChristmasGarland = { Vector3.new(2, 8, 2), Vector3.new(0, 12, -9) },
+	HalloweenPumpkins = { Vector3.new(10, 4.5, -13), Vector3.new(12.6, 1, -20.5) },
+	HalloweenWall = { Vector3.new(4, 8.5, -7), Vector3.new(12, 11.6, -21.8) },
+	HalloweenGhosts = { Vector3.new(0.5, 8.5, 2), Vector3.new(-1.5, 11.2, -6.5) },
+	EasterWreath = { Vector3.new(5, 6.5, -14), Vector3.new(5.45, 7.2, -21.8) },
+	EasterBunting = { Vector3.new(1, 8, -3), Vector3.new(0, 12.2, -14) },
+	EasterBasket = { Vector3.new(6, 6.2, 5), Vector3.new(7.55, 3.9, 0.55) },
 } :: { [string]: { Vector3 } }
 
 local function part(parent: Instance, size: Vector3, cf: CFrame | Vector3, color: Color3, props: { [string]: any }?): BasePart
@@ -390,6 +400,486 @@ BUILDERS.Stove = function(m)
 	end)
 end
 
+---------------------------------------------------------------- festas (Páscoa, Halloween, Natal)
+-- Cada enfeite é um item separado: pode ser ligado/desligado na loja (Decor.setHidden).
+
+local NEON = { Material = Enum.Material.Neon, CastShadow = false }
+local BALL = { Shape = Enum.PartType.Ball }
+local WALL_Z = Layout.Room.MinZ + 0.15 -- enfeites de parede: colados na parede da porta (fundo)
+local BEAM_Y = Layout.Room.Height - 0.8 -- parte de baixo das vigas do teto
+
+-- peça fina entre dois pontos (cordões, fios, teias)
+local function beam(parent: Instance, a: Vector3, b: Vector3, thick: number, color: Color3, props: { [string]: any }?): BasePart
+	local d = b - a
+	return part(parent, Vector3.new(thick, thick, d.Magnitude), CFrame.lookAt((a + b) / 2, b), color, props)
+end
+
+-- vira a frente (+Z) da peça para a câmera do café
+local function faceCamera(pos: Vector3): CFrame
+	local cam = Layout.Camera.Position
+	return CFrame.new(pos) * CFrame.Angles(0, math.atan2(cam.X - pos.X, cam.Z - pos.Z), 0)
+end
+
+-- grupo de peças que se mexe junto em volta de um pivô: guarda a posição de cada uma relativa ao pivô
+type Rig = { Pivot: CFrame, Parts: { BasePart }, Rel: { CFrame } }
+local function rig(pivot: CFrame, parts: { BasePart }): Rig
+	local rel = {}
+	for i, p in parts do
+		rel[i] = pivot:ToObjectSpace(p.CFrame)
+	end
+	return { Pivot = pivot, Parts = parts, Rel = rel }
+end
+local function moveRig(r: Rig, offset: CFrame)
+	local pivot = r.Pivot * offset
+	for i, p in r.Parts do
+		p.CFrame = pivot * r.Rel[i]
+	end
+end
+
+-- pisca-pisca: cada luzinha passa pelas cores da lista, em passos (só troca quando muda o passo)
+local function twinkle(bulbs: { BasePart }, colors: { Color3 }, speed: number)
+	local last = -1
+	addAnimator(function(t)
+		local step = math.floor(t * speed)
+		if step == last then
+			return
+		end
+		last = step
+		for i, b in bulbs do
+			b.Color = colors[(i + step) % #colors + 1]
+		end
+	end)
+end
+
+local XMAS_LIGHTS = { rgb(255, 214, 140), rgb(255, 120, 120), rgb(140, 220, 150), rgb(150, 190, 255) }
+local PASTELS = { rgb(246, 178, 200), rgb(250, 226, 140), rgb(166, 206, 240), rgb(176, 226, 190), rgb(204, 182, 240) }
+
+local function gift(m: Model, pos: Vector3, size: Vector3, color: Color3, ribbon: Color3)
+	local c = pos + Vector3.new(0, size.Y / 2, 0)
+	part(m, size, c, color)
+	part(m, Vector3.new(size.X + 0.04, size.Y + 0.02, 0.14), c, ribbon)
+	part(m, Vector3.new(0.14, size.Y + 0.02, size.Z + 0.04), c, ribbon)
+	part(m, Vector3.new(0.34, 0.18, 0.34), CFrame.new(pos + Vector3.new(0, size.Y + 0.09, 0)) * CFrame.Angles(0, math.rad(45), 0), ribbon)
+end
+
+-- Árvore de Natal: no canto da esquerda, na frente da janela de trás (longe do caminho dos clientes)
+BUILDERS.ChristmasTree = function(m)
+	local base = Vector3.new(-15.2, 0, -12.5)
+	part(m, Vector3.new(1.7, 1, 1.7), base + Vector3.new(0, 0.5, 0), rgb(196, 70, 64)) -- vaso
+	part(m, Vector3.new(1.9, 0.2, 1.9), base + Vector3.new(0, 1.05, 0), rgb(236, 220, 196))
+	part(m, Vector3.new(0.6, 0.7, 0.6), base + Vector3.new(0, 1.45, 0), rgb(110, 70, 46)) -- tronco
+	local greens = { rgb(66, 130, 80), rgb(84, 150, 92) }
+	local balls = { rgb(214, 70, 70), rgb(240, 196, 90), rgb(110, 150, 220), rgb(236, 236, 240) }
+	local faces = { Vector3.new(0, 0, 1), Vector3.new(1, 0, 0), Vector3.new(-1, 0, 0), Vector3.new(0, 0, -1) }
+	local bulbs = {}
+	-- andares (largura, altura, centro Y), do maior pro menor
+	local tiers = { { 3.3, 1.3, 2.4 }, { 2.7, 1.2, 3.5 }, { 2.1, 1.1, 4.5 }, { 1.5, 1, 5.4 }, { 0.8, 0.9, 6.2 } }
+	for i, tier in tiers do
+		local w, h, y = tier[1], tier[2], tier[3]
+		part(m, Vector3.new(w, h, w), base + Vector3.new(0, y, 0), greens[i % 2 + 1])
+		-- galhos mais largos embaixo de cada andar: dá a silhueta de pinheirinho
+		part(m, Vector3.new(w + 0.5, 0.3, w + 0.5), base + Vector3.new(0, y - h / 2 + 0.15, 0), rgb(54, 108, 70))
+		if i == #tiers then
+			continue
+		end
+		for k, dir in faces do
+			local side = Vector3.new(dir.Z, 0, -dir.X)
+			local off = ((k + i) % 3 - 1) * w * 0.25
+			local at = base + Vector3.new(0, y - 0.15, 0) + dir * (w / 2 + 0.08) + side * off
+			part(m, Vector3.new(0.38, 0.38, 0.38), at, balls[(i + k) % #balls + 1], BALL)
+			for _, s in { -1, 1 } do
+				local b = part(m, Vector3.new(0.2, 0.2, 0.2), base + Vector3.new(0, y + h * 0.25, 0) + dir * (w / 2 + 0.06) + side * (s * w * 0.3), XMAS_LIGHTS[1], NEON)
+				table.insert(bulbs, b)
+			end
+		end
+	end
+	-- estrela no topo (dois quadrados girando devagar) com luz
+	local starAt = base + Vector3.new(0, 7.15, 0)
+	local star1 = part(m, Vector3.new(0.75, 0.75, 0.2), CFrame.new(starAt) * CFrame.Angles(0, 0, math.rad(45)), rgb(255, 214, 90), NEON)
+	local star2 = part(m, Vector3.new(0.75, 0.75, 0.2), starAt, rgb(255, 236, 150), NEON)
+	local glow = Instance.new("PointLight")
+	glow.Color = rgb(255, 214, 140)
+	glow.Range = 10
+	glow.Brightness = 0.7
+	glow.Parent = star1
+	-- presentes embaixo
+	gift(m, base + Vector3.new(1.9, 0, 1.2), Vector3.new(0.9, 0.7, 0.9), rgb(214, 90, 90), rgb(250, 230, 160))
+	gift(m, base + Vector3.new(1.1, 0, 2.2), Vector3.new(0.7, 0.5, 0.7), rgb(120, 170, 220), rgb(246, 246, 246))
+	gift(m, base + Vector3.new(-0.4, 0, 2.1), Vector3.new(0.6, 0.6, 0.6), rgb(150, 200, 130), rgb(214, 90, 90))
+
+	twinkle(bulbs, XMAS_LIGHTS, 1.5)
+	addAnimator(function(t)
+		local spin = CFrame.Angles(0, t * 0.8, 0)
+		star1.CFrame = CFrame.new(starAt) * spin * CFrame.Angles(0, 0, math.rad(45))
+		star2.CFrame = CFrame.new(starAt) * spin
+		glow.Brightness = 0.6 + math.sin(t * 2) * 0.2
+	end)
+end
+
+-- Guirlanda de Natal: pendurada por uma fita no meio da janela da direita do fundo (na frente do vidro)
+BUILDERS.ChristmasWreath = function(m)
+	local c = Vector3.new(1, 8.3, Layout.Room.MinZ + 0.5)
+	part(m, Vector3.new(0.22, 0.9, 0.06), c + Vector3.new(0, 1.65, 0), rgb(214, 64, 64)) -- fita até o topo da janela
+	part(m, Vector3.new(0.5, 0.16, 0.2), c + Vector3.new(0, 2.05, 0), rgb(186, 50, 54))
+	local greens = { rgb(66, 130, 80), rgb(84, 150, 92), rgb(54, 108, 70) }
+	local red = rgb(214, 64, 64)
+	local bulbs = {}
+	for i = 0, 11 do
+		local a = i / 12 * math.pi * 2
+		local dir = Vector3.new(math.cos(a), math.sin(a), 0)
+		part(m, Vector3.new(0.75, 0.55, 0.3), CFrame.new(c + dir) * CFrame.Angles(0, 0, a + math.pi / 2), greens[i % 3 + 1])
+		part(m, Vector3.new(0.45, 0.35, 0.32), CFrame.new(c + dir * 1.3) * CFrame.Angles(0, 0, a + 0.5), greens[(i + 1) % 3 + 1])
+		if i % 3 == 0 then
+			part(m, Vector3.new(0.2, 0.2, 0.2), c + dir * 0.85 + Vector3.new(0.08, 0, 0.2), red, BALL)
+			part(m, Vector3.new(0.2, 0.2, 0.2), c + dir * 0.85 + Vector3.new(-0.08, -0.12, 0.2), red, BALL)
+		elseif i % 3 == 1 then
+			table.insert(bulbs, part(m, Vector3.new(0.18, 0.18, 0.18), c + dir * 1.08 + Vector3.new(0, 0, 0.2), XMAS_LIGHTS[1], NEON))
+		end
+	end
+	-- laço vermelho embaixo
+	local b = c + Vector3.new(0, -1.05, 0.25)
+	part(m, Vector3.new(0.34, 0.34, 0.22), b, red)
+	part(m, Vector3.new(0.6, 0.45, 0.16), CFrame.new(b + Vector3.new(-0.42, 0.05, 0)) * CFrame.Angles(0, 0, math.rad(-15)), red)
+	part(m, Vector3.new(0.6, 0.45, 0.16), CFrame.new(b + Vector3.new(0.42, 0.05, 0)) * CFrame.Angles(0, 0, math.rad(15)), red)
+	part(m, Vector3.new(0.2, 0.7, 0.14), CFrame.new(b + Vector3.new(-0.18, -0.45, 0)) * CFrame.Angles(0, 0, math.rad(-15)), rgb(186, 50, 54))
+	part(m, Vector3.new(0.2, 0.7, 0.14), CFrame.new(b + Vector3.new(0.18, -0.45, 0)) * CFrame.Angles(0, 0, math.rad(15)), rgb(186, 50, 54))
+	twinkle(bulbs, XMAS_LIGHTS, 2)
+end
+
+-- Festão de Natal: pendurado na viga do meio da sala, com bolinhas balançando entre as lanternas
+BUILDERS.ChristmasGarland = function(m)
+	local z = Layout.Room.MinZ + 13 -- viga em z = -9
+	local anchors = { -17.5, -15, -11, -7, -3, 1, 5, 9, 13, 17.5 }
+	local greens = { rgb(66, 130, 80), rgb(84, 150, 92), rgb(54, 108, 70) }
+	local bulbs = {}
+	local ornaments: { Rig } = {}
+	local ballColors = { rgb(214, 70, 70), rgb(240, 196, 90), rgb(110, 150, 220), rgb(236, 236, 240) }
+	for s = 1, #anchors - 1 do
+		local a, b = anchors[s], anchors[s + 1]
+		local n = math.max(4, math.floor((b - a) / 0.4))
+		for k = 0, n do
+			local u = k / n
+			local p = Vector3.new(a + (b - a) * u, BEAM_Y - 0.15 - 0.8 * math.sin(math.pi * u), z)
+			part(m, Vector3.new(0.5, 0.42, 0.42), CFrame.new(p) * CFrame.Angles(k * 0.7, k * 1.3, k * 0.4), greens[k % 3 + 1])
+			if k % 3 == 1 then
+				table.insert(bulbs, part(m, Vector3.new(0.17, 0.17, 0.17), p + Vector3.new(0, -0.18, 0.24), XMAS_LIGHTS[1], NEON))
+			end
+		end
+	end
+	-- lacinho em cada ponto de apoio + bolinha pendurada (entre as lanternas)
+	for i = 2, #anchors - 1 do
+		local top = Vector3.new(anchors[i], BEAM_Y - 0.15, z)
+		part(m, Vector3.new(0.5, 0.3, 0.2), top + Vector3.new(0, 0, 0.3), rgb(214, 64, 64))
+		local len = 0.7 + (i % 3) * 0.3
+		local pivot = CFrame.new(top)
+		local thread = part(m, Vector3.new(0.04, len, 0.04), top - Vector3.new(0, len / 2, 0), rgb(210, 200, 170))
+		local cap = part(m, Vector3.new(0.16, 0.12, 0.16), top - Vector3.new(0, len + 0.05, 0), rgb(220, 190, 110))
+		local ball = part(m, Vector3.new(0.5, 0.5, 0.5), top - Vector3.new(0, len + 0.34, 0), ballColors[i % #ballColors + 1], BALL)
+		local shine = part(m, Vector3.new(0.12, 0.12, 0.05), top - Vector3.new(0.1, len + 0.24, -0.25), rgb(255, 255, 255))
+		table.insert(ornaments, rig(pivot, { thread, cap, ball, shine }))
+	end
+	twinkle(bulbs, XMAS_LIGHTS, 1.6)
+	addAnimator(function(t)
+		for i, o in ornaments do
+			moveRig(o, CFrame.Angles(math.sin(t * 1.1 + i) * 0.08, 0, math.sin(t * 0.9 + i * 1.7) * 0.06))
+		end
+	end)
+end
+
+-- abóbora com carinha acesa virada pra câmera; retorna a carinha e a luz (para tremular)
+local function pumpkin(m: Model, pos: Vector3, s: number): ({ BasePart }, PointLight)
+	local cf = faceCamera(pos)
+	local orange, dark = rgb(236, 138, 54), rgb(206, 108, 40)
+	part(m, Vector3.new(1.3, 1, 1.2) * s, cf * CFrame.new(0, 0.5 * s, 0), orange)
+	for _, sx in { -1, 1 } do
+		part(m, Vector3.new(0.35, 0.85, 1.05) * s, cf * CFrame.new(sx * 0.75 * s, 0.45 * s, 0), dark)
+		part(m, Vector3.new(0.12, 0.96, 1.22) * s, cf * CFrame.new(sx * 0.5 * s, 0.5 * s, 0), dark) -- gomos
+	end
+	part(m, Vector3.new(0.22, 0.32, 0.22) * s, cf * CFrame.new(0, 1.12 * s, 0) * CFrame.Angles(0, 0, 0.25), rgb(100, 130, 60)) -- cabinho
+	local glow = rgb(255, 200, 90)
+	local face = {}
+	for _, dx in { -0.28, 0.28 } do
+		table.insert(face, part(m, Vector3.new(0.24, 0.22, 0.05) * s, cf * CFrame.new(dx * s, 0.66 * s, 0.61 * s), glow, NEON))
+	end
+	table.insert(face, part(m, Vector3.new(0.12, 0.1, 0.05) * s, cf * CFrame.new(0, 0.5 * s, 0.61 * s), glow, NEON)) -- narizinho
+	table.insert(face, part(m, Vector3.new(0.66, 0.14, 0.05) * s, cf * CFrame.new(0, 0.3 * s, 0.61 * s), glow, NEON)) -- boca
+	for _, dx in { -0.14, 0.14 } do
+		part(m, Vector3.new(0.1, 0.07, 0.06) * s, cf * CFrame.new(dx * s, 0.35 * s, 0.615 * s), orange) -- dentinhos
+	end
+	local light = Instance.new("PointLight")
+	light.Color = rgb(255, 150, 60)
+	light.Range = 5 + s * 2
+	light.Brightness = 0.8
+	light.Parent = face[#face]
+	return face, light
+end
+
+-- Abóboras: três do lado direito da porta (na frente do quadro-negro) e uma pequenininha do lado esquerdo
+BUILDERS.HalloweenPumpkins = function(m)
+	local z = Layout.Room.MinZ
+	local spots = {
+		{ Vector3.new(12.6, 0, z + 1.5), 1.25 },
+		{ Vector3.new(14.6, 0, z + 1.2), 0.9 },
+		{ Vector3.new(13.4, 0, z + 2.8), 0.65 },
+		{ Vector3.new(5.95, 0, z + 1.6), 0.6 },
+	}
+	local lit = {}
+	for i, spot in spots do
+		local face, light = pumpkin(m, spot[1], spot[2])
+		table.insert(lit, { face = face, light = light, seed = i * 3.7 })
+	end
+	addAnimator(function(t)
+		for _, l in lit do
+			local n = math.noise(t * 3, l.seed)
+			l.light.Brightness = 0.75 + n * 0.6
+			local c = rgb(255, 180 + math.floor(n * 50), 70 + math.floor(n * 30))
+			for _, p in l.face do
+				p.Color = c
+			end
+		end
+	end)
+end
+
+-- teia no canto de cima da parede da porta (sx = 1: canto esquerdo, a teia abre pra direita)
+local function web(m: Model, corner: Vector3, sx: number): { Vector3 }
+	local col = rgb(236, 232, 240)
+	local props = { Transparency = 0.15, CastShadow = false }
+	local dirs = {}
+	for i, a in { -6, -30, -55, -82 } do
+		dirs[i] = Vector3.new(math.cos(math.rad(a)) * sx, math.sin(math.rad(a)), 0)
+		beam(m, corner, corner + dirs[i] * 2.6, 0.09, col, props)
+	end
+	for _, r in { 0.8, 1.5, 2.2 } do
+		for i = 1, #dirs - 1 do
+			beam(m, corner + dirs[i] * r, corner + dirs[i + 1] * r, 0.08, col, props)
+		end
+	end
+	return dirs
+end
+
+-- morceguinho de parede; as asas batem devagar (pivô no ombro)
+local function bat(m: Model, pos: Vector3, s: number, flaps: { any }, phase: number)
+	local dark, darker = rgb(96, 76, 120), rgb(70, 56, 92)
+	local cf = CFrame.new(pos)
+	part(m, Vector3.new(0.4, 0.5, 0.2) * s, cf, dark)
+	part(m, Vector3.new(0.36, 0.3, 0.22) * s, cf * CFrame.new(0, 0.36 * s, 0), dark)
+	for _, sx in { -1, 1 } do
+		part(m, Vector3.new(0.1, 0.16, 0.18) * s, cf * CFrame.new(sx * 0.12 * s, 0.56 * s, 0), dark) -- orelhinha
+		part(m, Vector3.new(0.07, 0.07, 0.05) * s, cf * CFrame.new(sx * 0.08 * s, 0.38 * s, 0.12 * s), rgb(255, 214, 110), NEON) -- olhinho
+		local shoulder = cf * CFrame.new(sx * 0.2 * s, 0.1 * s, 0)
+		local wing = {
+			part(m, Vector3.new(0.45, 0.3, 0.12) * s, shoulder * CFrame.new(sx * 0.22 * s, 0, 0), darker),
+			part(m, Vector3.new(0.4, 0.22, 0.12) * s, shoulder * CFrame.new(sx * 0.6 * s, 0.07 * s, 0), darker),
+			part(m, Vector3.new(0.22, 0.14, 0.12) * s, shoulder * CFrame.new(sx * 0.32 * s, -0.17 * s, 0), darker),
+			part(m, Vector3.new(0.2, 0.14, 0.12) * s, shoulder * CFrame.new(sx * 0.68 * s, -0.1 * s, 0), darker),
+		}
+		table.insert(flaps, { r = rig(shoulder, wing), side = sx, phase = phase })
+	end
+end
+
+-- Morceguinhos e Teias: teias nos dois cantos de cima da parede da porta, morcegos em cima do quadro-negro
+-- e um em cima da estante; uma aranhinha desce e sobe pelo fio
+BUILDERS.HalloweenWall = function(m)
+	local R = Layout.Room
+	local top = R.Height - 0.05
+	local left = Vector3.new(R.MinX + 0.05, top, WALL_Z)
+	local dirs = web(m, left, 1)
+	web(m, Vector3.new(R.MaxX - 0.05, top, WALL_Z), -1)
+	local flaps = {}
+	for i, b in { { 12.4, 10.6, 1.1 }, { 14.2, 11.7, 1 }, { 16, 10.5, 1.1 }, { -13.6, 10.9, 1 } } do
+		bat(m, Vector3.new(b[1], b[2], WALL_Z), b[3], flaps, i * 1.3)
+	end
+	-- aranhinha pendurada na teia da esquerda
+	local hang = left + dirs[3] * 1.5 + Vector3.new(0, 0, 0.1)
+	local thread = part(m, Vector3.new(0.03, 1, 0.03), hang, rgb(236, 232, 240), { CastShadow = false })
+	local spider = { part(m, Vector3.new(0.3, 0.3, 0.3), hang, rgb(44, 40, 52), BALL) }
+	for _, sx in { -1, 1 } do
+		for _, dy in { -0.05, 0.08 } do
+			table.insert(spider, part(m, Vector3.new(0.34, 0.05, 0.05), hang + Vector3.new(sx * 0.22, dy, 0), rgb(44, 40, 52)))
+		end
+		table.insert(spider, part(m, Vector3.new(0.06, 0.06, 0.04), hang + Vector3.new(sx * 0.06, 0.04, 0.15), rgb(255, 255, 255)))
+	end
+	local spiderRig = rig(CFrame.new(hang), spider)
+	addAnimator(function(t)
+		for _, f in flaps do
+			local amount = 0.5 + 0.5 * math.sin(t * 0.6 + f.phase)
+			moveRig(f.r, CFrame.Angles(0, 0, f.side * math.sin(t * 5 + f.phase) * 0.35 * amount))
+		end
+		local len = 1.1 + math.sin(t * 0.7) * 0.5
+		thread.Size = Vector3.new(0.03, len, 0.03)
+		thread.CFrame = CFrame.new(hang - Vector3.new(0, len / 2, 0))
+		moveRig(spiderRig, CFrame.new(0, -len - 0.12, 0))
+	end)
+end
+
+-- fantasminha pendurado num fio, carinha pra câmera; retorna as peças com o pivô no topo
+local function ghost(m: Model, top: Vector3, s: number): Rig
+	local white = rgb(248, 246, 252)
+	local cf = faceCamera(top)
+	local props = { Transparency = 0.08 }
+	local parts = {
+		-- o fio entra no teto: quando o fantasma flutua pra baixo não aparece buraco
+		part(m, Vector3.new(0.04, Layout.Room.Height + 0.5 - top.Y, 0.04), top + Vector3.new(0, (Layout.Room.Height + 0.5 - top.Y) / 2, 0), rgb(210, 200, 190)),
+		part(m, Vector3.new(0.8, 0.3, 0.7) * s, cf * CFrame.new(0, -0.15 * s, 0), white, props),
+		part(m, Vector3.new(1.1, 1, 0.9) * s, cf * CFrame.new(0, -0.8 * s, 0), white, props),
+	}
+	for i, dx in { -0.385, 0, 0.385 } do
+		local h = if i == 2 then 0.18 else 0.32
+		table.insert(parts, part(m, Vector3.new(0.33, h, 0.9) * s, cf * CFrame.new(dx * s, (-1.3 - h / 2) * s, 0), white, props))
+	end
+	for _, sx in { -1, 1 } do
+		table.insert(parts, part(m, Vector3.new(0.25, 0.3, 0.3) * s, cf * CFrame.new(sx * 0.65 * s, -0.85 * s, 0.1 * s), white, props)) -- bracinho
+		table.insert(parts, part(m, Vector3.new(0.14, 0.2, 0.05) * s, cf * CFrame.new(sx * 0.2 * s, -0.6 * s, 0.46 * s), rgb(58, 36, 30))) -- olho
+		table.insert(parts, part(m, Vector3.new(0.16, 0.08, 0.05) * s, cf * CFrame.new(sx * 0.38 * s, -0.8 * s, 0.46 * s), rgb(246, 170, 190))) -- bochecha
+	end
+	table.insert(parts, part(m, Vector3.new(0.16, 0.12, 0.05) * s, cf * CFrame.new(0, -0.86 * s, 0.46 * s), rgb(120, 70, 80))) -- boquinha "o"
+	return rig(cf, parts)
+end
+
+-- Fantasminhas: entre as vigas da frente, flutuando devagar (longe das luminárias)
+BUILDERS.HalloweenGhosts = function(m)
+	local z = -6.5
+	local ghosts = {}
+	for i, g in { { -15.5, 11.6, 1 }, { -8, 12, 0.9 }, { -1.5, 11.4, 1 }, { 8, 11.8, 0.9 }, { 15.8, 11.5, 1 } } do
+		table.insert(ghosts, ghost(m, Vector3.new(g[1], g[2], z), g[3]))
+	end
+	addAnimator(function(t)
+		for i, g in ghosts do
+			moveRig(g, CFrame.new(0, math.sin(t * 1.3 + i * 1.9) * 0.25, 0) * CFrame.Angles(0, math.sin(t * 0.8 + i) * 0.18, 0))
+		end
+	end)
+end
+
+-- Guirlanda de Páscoa: na parede da porta, entre a janela e a porta; o coelhinho mexe a orelha de vez em quando
+BUILDERS.EasterWreath = function(m)
+	local c = Vector3.new(5.45, 7.3, WALL_Z)
+	for i = 0, 9 do
+		local a = i / 10 * math.pi * 2
+		local dir = Vector3.new(math.cos(a), math.sin(a), 0)
+		local leaf = a + math.pi / 10
+		part(m, Vector3.new(0.36, 0.22, 0.24), CFrame.new(c + Vector3.new(math.cos(leaf), math.sin(leaf), 0) * 0.74) * CFrame.Angles(0, 0, leaf + math.pi / 2), rgb(134, 186, 104))
+		local cf = CFrame.new(c + dir * 0.72) * CFrame.Angles(0, 0, a - math.pi / 2)
+		part(m, Vector3.new(0.36, 0.48, 0.28), cf, PASTELS[i % #PASTELS + 1])
+		part(m, Vector3.new(0.37, 0.08, 0.29), cf, rgb(252, 250, 250)) -- listrinha
+	end
+	-- coelhinho no meio
+	local white, pink = rgb(252, 250, 250), rgb(240, 160, 180)
+	local h = c + Vector3.new(0, -0.08, 0.06)
+	part(m, Vector3.new(0.55, 0.45, 0.25), h, white)
+	for _, sx in { -1, 1 } do
+		part(m, Vector3.new(0.07, 0.07, 0.04), h + Vector3.new(sx * 0.12, 0.05, 0.14), rgb(58, 36, 30))
+		part(m, Vector3.new(0.12, 0.06, 0.04), h + Vector3.new(sx * 0.2, -0.08, 0.14), rgb(246, 190, 200))
+	end
+	part(m, Vector3.new(0.08, 0.06, 0.04), h + Vector3.new(0, -0.05, 0.14), pink)
+	local ears = {}
+	for _, sx in { -1, 1 } do
+		local base = CFrame.new(h + Vector3.new(sx * 0.14, 0.2, 0))
+		local ear = {
+			part(m, Vector3.new(0.14, 0.42, 0.2), base * CFrame.new(0, 0.21, 0), white),
+			part(m, Vector3.new(0.07, 0.3, 0.04), base * CFrame.new(0, 0.2, 0.1), pink),
+		}
+		table.insert(ears, { r = rig(base, ear), side = sx })
+	end
+	-- lacinho lilás embaixo
+	local b = c + Vector3.new(0, -0.95, 0.15)
+	part(m, Vector3.new(0.24, 0.24, 0.16), b, rgb(184, 160, 230))
+	part(m, Vector3.new(0.4, 0.3, 0.12), CFrame.new(b + Vector3.new(-0.28, 0.03, 0)) * CFrame.Angles(0, 0, math.rad(-15)), rgb(204, 182, 240))
+	part(m, Vector3.new(0.4, 0.3, 0.12), CFrame.new(b + Vector3.new(0.28, 0.03, 0)) * CFrame.Angles(0, 0, math.rad(15)), rgb(204, 182, 240))
+	addAnimator(function(t)
+		for i, e in ears do
+			local cycle = (t + i * 0.9) % 3.4
+			local flick = if cycle < 0.3 then math.sin(cycle / 0.3 * math.pi) * 0.5 else 0
+			moveRig(e.r, CFrame.Angles(0, 0, -e.side * flick))
+		end
+	end)
+end
+
+-- Bandeirinhas de Páscoa: varal de bandeirinhas pastel pendurado na viga do fundo, com ovinhos nos apoios
+BUILDERS.EasterBunting = function(m)
+	local z = Layout.Room.MinZ + 8 -- viga em z = -14
+	local anchors = { -17.5, -12, -6, 0, 6, 12, 17.5 }
+	local rope = rgb(236, 220, 196)
+	local flags: { Rig } = {}
+	local eggs: { Rig } = {}
+	local count = 0
+	for s = 1, #anchors - 1 do
+		local a, b = anchors[s], anchors[s + 1]
+		local function at(u: number): Vector3
+			return Vector3.new(a + (b - a) * u, BEAM_Y - 0.1 - 0.9 * math.sin(math.pi * u), z)
+		end
+		for k = 0, 7 do
+			beam(m, at(k / 8), at((k + 1) / 8), 0.06, rope)
+		end
+		local n = math.floor((b - a) / 0.9)
+		for f = 1, n - 1 do
+			count += 1
+			local p = at(f / n)
+			local color = PASTELS[count % #PASTELS + 1]
+			local pieces = {}
+			for row, w in { 0.7, 0.46, 0.22 } do
+				table.insert(pieces, part(m, Vector3.new(w, 0.2, 0.05), p - Vector3.new(0, row * 0.2 - 0.06, 0), color))
+			end
+			table.insert(flags, rig(CFrame.new(p), pieces))
+		end
+	end
+	for i = 2, #anchors - 1 do
+		local top = Vector3.new(anchors[i], BEAM_Y - 0.1, z)
+		local len = 0.6 + (i % 2) * 0.35
+		local color = PASTELS[(i + 2) % #PASTELS + 1]
+		local thread = part(m, Vector3.new(0.04, len, 0.04), top - Vector3.new(0, len / 2, 0), rope)
+		local egg = part(m, Vector3.new(0.42, 0.56, 0.42), top - Vector3.new(0, len + 0.28, 0), color)
+		local band = part(m, Vector3.new(0.44, 0.1, 0.44), top - Vector3.new(0, len + 0.3, 0), rgb(252, 250, 250))
+		local dot = part(m, Vector3.new(0.12, 0.12, 0.05), top - Vector3.new(0, len + 0.12, -0.22), PASTELS[(i + 4) % #PASTELS + 1])
+		table.insert(eggs, rig(CFrame.new(top), { thread, egg, band, dot }))
+	end
+	addAnimator(function(t)
+		for i, f in flags do
+			moveRig(f, CFrame.Angles(math.sin(t * 1.4 + i * 0.6) * 0.14, 0, 0))
+		end
+		for i, e in eggs do
+			moveRig(e, CFrame.Angles(math.sin(t * 1 + i) * 0.07, 0, math.sin(t * 0.8 + i * 2) * 0.06))
+		end
+	end)
+end
+
+-- Cesta de Ovinhos: no canto direito do balcão, atrás do pote de gorjetas; o pintinho espia de vez em quando
+BUILDERS.EasterBasket = function(m)
+	local base = Vector3.new(7.55, Layout.CounterHeight, Layout.CounterZ + 0.55)
+	local straw, strawDark = rgb(222, 178, 110), rgb(190, 142, 82)
+	part(m, Vector3.new(1.2, 0.55, 0.8), base + Vector3.new(0, 0.28, 0), straw)
+	for i = -2, 2 do
+		part(m, Vector3.new(0.12, 0.57, 0.82), base + Vector3.new(i * 0.24, 0.28, 0), strawDark) -- trançado
+	end
+	part(m, Vector3.new(1.28, 0.12, 0.88), base + Vector3.new(0, 0.58, 0), strawDark) -- borda
+	part(m, Vector3.new(1.1, 0.1, 0.7), base + Vector3.new(0, 0.64, 0), rgb(150, 200, 110)) -- palhinha
+	local last = base + Vector3.new(0.55, 0.62, 0)
+	for k = 1, 8 do
+		local a = k / 8 * math.pi
+		local p = base + Vector3.new(math.cos(a) * 0.55, 0.62 + math.sin(a) * 0.6, 0)
+		beam(m, last, p, 0.1, strawDark)
+		last = p
+	end
+	for i, e in { { -0.36, 0.1, 0 }, { -0.05, -0.12, 0.3 }, { 0.12, 0.16, -0.25 } } do
+		part(m, Vector3.new(0.26, 0.34, 0.26), CFrame.new(base + Vector3.new(e[1], 0.82, e[2])) * CFrame.Angles(0, 0, e[3]), PASTELS[i * 2 % #PASTELS + 1])
+	end
+	-- pintinho
+	local chickAt = base + Vector3.new(0.36, 0.7, 0.05)
+	local yellow = rgb(250, 220, 90)
+	local chick = {
+		part(m, Vector3.new(0.3, 0.26, 0.28), chickAt + Vector3.new(0, 0.13, 0), yellow),
+		part(m, Vector3.new(0.24, 0.22, 0.22), chickAt + Vector3.new(0, 0.36, 0.02), yellow),
+		part(m, Vector3.new(0.09, 0.06, 0.08), chickAt + Vector3.new(0, 0.34, 0.15), rgb(240, 150, 60)),
+		part(m, Vector3.new(0.05, 0.05, 0.03), chickAt + Vector3.new(-0.06, 0.4, 0.13), rgb(58, 36, 30)),
+		part(m, Vector3.new(0.05, 0.05, 0.03), chickAt + Vector3.new(0.06, 0.4, 0.13), rgb(58, 36, 30)),
+	}
+	local chickRig = rig(faceCamera(chickAt), chick)
+	addAnimator(function(t)
+		local cycle = t % 4
+		local pop = if cycle < 0.6 then math.sin(cycle / 0.6 * math.pi) * 0.12 else 0
+		moveRig(chickRig, CFrame.new(0, pop, 0) * CFrame.Angles(0, 0, math.sin(t * 2) * 0.08))
+	end)
+end
+
 local function build(id: string): Model
 	local m = Instance.new("Model")
 	m.Name = id
@@ -401,11 +891,42 @@ local function build(id: string): Model
 	return m
 end
 
--- Constrói (sem animação) tudo que já foi comprado, exceto os ids em `skip`
+-- Desmonta uma decoração (sem animação): tira as animações e os cliques dela
+local function unbuild(id: string)
+	local old = built[id]
+	if not old then
+		return
+	end
+	for i = #animators, 1, -1 do
+		if animators[i].Id == id then
+			table.remove(animators, i)
+		end
+	end
+	for p in clickables do
+		if p:IsDescendantOf(old) then
+			clickables[p] = nil
+		end
+	end
+	old:Destroy()
+	built[id] = nil
+end
+
+-- decorações compradas que o jogador desligou na loja (não aparecem no café)
+local hidden: { [string]: boolean } = {}
+
+function Decor.setHidden(list: { [string]: boolean })
+	hidden = list
+end
+
+-- Deixa o café igual ao que foi comprado e está ligado: constrói (sem animação) o que falta, exceto os ids
+-- em `skip`, e desmonta o que foi desligado
 function Decor.apply(owned: { [string]: boolean }, skip: { [string]: boolean }?)
 	for id in BUILDERS do
-		if owned[id] and not built[id] and not (skip and skip[id]) then
+		local wanted = owned[id] and not hidden[id]
+		if wanted and not built[id] and not (skip and skip[id]) then
 			build(id)
+		elseif not wanted and built[id] and not appearing[id] then
+			unbuild(id)
 		end
 	end
 end
@@ -497,18 +1018,7 @@ function Decor.setCatColor(coatId: string)
 	if not old or appearing.Cat or builtCatColor == coatId then
 		return
 	end
-	for i = #animators, 1, -1 do
-		if animators[i].Id == "Cat" then
-			table.remove(animators, i)
-		end
-	end
-	for p in clickables do
-		if p:IsDescendantOf(old) then
-			clickables[p] = nil
-		end
-	end
-	old:Destroy()
-	built.Cat = nil
+	unbuild("Cat")
 	build("Cat")
 end
 

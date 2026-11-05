@@ -116,6 +116,12 @@ local function sendState(player: Player)
 	for id in data.Themes do
 		table.insert(themes, id)
 	end
+	local hidden = {}
+	for id in data.DecorHidden or {} do
+		if data.Decor[id] then
+			table.insert(hidden, id)
+		end
+	end
 
 	Net.PlayerState.sendTo({
 		money = math.clamp(data.Money, 0, 4294967295),
@@ -128,6 +134,7 @@ local function sendState(player: Player)
 		cozy = math.clamp(cozy(data), 0, 255),
 		upgrades = upgrades,
 		owned = owned,
+		hidden = hidden,
 		menu = menuOf(data),
 		stats = stats,
 		mastered = mastered,
@@ -757,6 +764,16 @@ function CafeService.start()
 			return
 		end
 		data.Theme = id
+		sendState(player)
+	end)
+	-- liga/desliga uma decoração já comprada (só visual: o aconchego continua valendo)
+	Net.SetDecorShown.listen(function(value, player: Player?)
+		local data = player and DataService.get(player)
+		if not player or not data or not Catalog.Decor[value.id] or not data.Decor[value.id] then
+			return
+		end
+		data.DecorHidden = data.DecorHidden or {}
+		data.DecorHidden[value.id] = if value.shown then nil else true
 		sendState(player)
 	end)
 	Net.SetWallColor.listen(function(id: string, player: Player?)

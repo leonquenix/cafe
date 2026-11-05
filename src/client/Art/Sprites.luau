@@ -1016,4 +1016,161 @@ Sprites.WallPaint = {
 	},
 } :: Sprite
 
+-- decorações de festas (Páscoa, Halloween, Natal)
+Sprites.ChristmasTree = {
+	Rows = {
+		".....yY.....",
+		"....yYYY....",
+		".....YY.....",
+		".....oo.....",
+		"....oGGo....",
+		"...oGRGGo...",
+		"...ogGGgo...",
+		"..oGGBGGGo..",
+		"..oGgGGYgo..",
+		".oGGGGRGGGo.",
+		".oRGgGGGBgo.",
+		"oGGGGYGGGGGo",
+		"oooooooooooo",
+		"....oTTo....",
+		"...oPPPPo...",
+		"...oooooo...",
+	},
+	Palette = { o = OUTLINE, G = rgb(84, 150, 92), g = rgb(54, 108, 70), R = rgb(220, 74, 74), B = rgb(120, 160, 230), Y = rgb(255, 214, 90), y = rgb(255, 240, 170), T = rgb(110, 70, 46), P = rgb(196, 70, 64) },
+} :: Sprite
+
+Sprites.ChristmasWreath = {
+	Rows = {
+		"...oooooo...",
+		"..oGGYGGGo..",
+		".oGgooooRGo.",
+		"oGRo....oGGo",
+		"oGGo....oYgo",
+		"ogGo....oGGo",
+		"oGYo....oRGo",
+		".oGGooooGgo.",
+		"..oGRRRRGo..",
+		"...oRooRo...",
+		"..oRo..oRo..",
+		"..oo....oo..",
+	},
+	Palette = { o = OUTLINE, G = rgb(84, 150, 92), g = rgb(54, 108, 70), R = rgb(220, 74, 74), Y = rgb(255, 214, 90) },
+} :: Sprite
+
+Sprites.ChristmasGarland = {
+	Rows = {
+		"oo..........oo",
+		"GGo........oGG",
+		"oGGo......oGGo",
+		".oGGoooooGGGo.",
+		"..oGGRGGYGGo..",
+		"...oooooooo...",
+		"....o.....o...",
+		"...oRo...oYo..",
+		"..oRRRo.oYYYo.",
+		"..oRrRo.oYyYo.",
+		"...ooo...ooo..",
+	},
+	Palette = { o = OUTLINE, G = rgb(84, 150, 92), R = rgb(220, 74, 74), r = rgb(250, 160, 150), Y = rgb(240, 196, 90), y = rgb(255, 240, 170) },
+} :: Sprite
+
+Sprites.HalloweenPumpkins = {
+	Rows = {
+		".....oo.....",
+		".....oS.....",
+		"..oooooooo..",
+		".oOOoOOoOOo.",
+		"oOOOOOOOOOOo",
+		"oOYYOOOOYYOo",
+		"oOOOOYYOOOOo",
+		"oOYOYYYYOYOo",
+		"oOOYOYYOYOOo",
+		".oOOOOOOOOo.",
+		"..oooooooo..",
+	},
+	Palette = { o = OUTLINE, O = rgb(236, 138, 54), S = rgb(110, 140, 70), Y = rgb(255, 214, 110) },
+} :: Sprite
+
+Sprites.HalloweenWall = {
+	Rows = {
+		"w.w.........",
+		".ww.........",
+		"www.o..o....",
+		"...ooKKo...o",
+		"o..oKKKKo.oo",
+		"oo.KKYKYKoKo",
+		"oKKKKKKKKKKo",
+		".oKKKKKKKKo.",
+		"..oKo..oKo..",
+		"...o....o...",
+	},
+	Palette = { o = OUTLINE, K = rgb(96, 76, 120), Y = rgb(255, 214, 110), w = rgb(220, 216, 228) },
+} :: Sprite
+
+Sprites.HalloweenGhosts = {
+	Rows = {
+		"...oooo...",
+		"..oWWWWo..",
+		".oWWWWWWo.",
+		".oWkWWkWo.",
+		".oWWWWWWo.",
+		".oWpWWpWo.",
+		"oWWWkkWWWo",
+		"oWWWWWWWWo",
+		"oWWWWWWWWo",
+		"oWWoWWoWWo",
+		".oo.oo.oo.",
+	},
+	Palette = { o = OUTLINE, W = rgb(248, 246, 252), k = rgb(58, 36, 30), p = rgb(246, 170, 190) },
+} :: Sprite
+
+Sprites.EasterWreath = {
+	Rows = {
+		"...oooooo...",
+		"..oPPoYYYo..",
+		".oPPooooYYo.",
+		"oMMo.ww.oBBo",
+		"oMMowwwwoBBo",
+		"oooowkwkoooo",
+		"oLLowwwwoPPo",
+		"oLLo.pp.oPPo",
+		".oLLooooMMo.",
+		"..oYYoBBBo..",
+		"...oooooo...",
+	},
+	Palette = { o = OUTLINE, P = rgb(246, 178, 200), p = rgb(240, 140, 170), Y = rgb(250, 226, 140), B = rgb(166, 206, 240), M = rgb(176, 226, 190), L = rgb(204, 182, 240), w = rgb(252, 250, 250), k = rgb(58, 36, 30) },
+} :: Sprite
+
+Sprites.EasterBunting = {
+	Rows = {
+		"ooooooooooooo",
+		"oPPPoMMMoBBBo",
+		".oPo.oMo.oBo.",
+		"..o...o...o..",
+		"......o......",
+		".....oYo.....",
+		"....oYYYo....",
+		"....oLLLo....",
+		"....oYYYo....",
+		".....ooo.....",
+	},
+	Palette = { o = OUTLINE, P = rgb(246, 178, 200), M = rgb(176, 226, 190), B = rgb(166, 206, 240), Y = rgb(250, 226, 140), L = rgb(204, 182, 240) },
+} :: Sprite
+
+Sprites.EasterBasket = {
+	Rows = {
+		"...oooooo...",
+		"..o......o..",
+		".o.oPo.oBo.o",
+		".ooPPooBBoo.",
+		"oYYoooMMoLLo",
+		"oooooooooooo",
+		"oWwWwWwWwWwo",
+		".owWwWwWwWo.",
+		".oWwWwWwWwo.",
+		"..oooooooo..",
+	},
+	Palette = { o = OUTLINE, P = rgb(246, 178, 200), B = rgb(166, 206, 240), Y = rgb(250, 226, 140), M = rgb(176, 226, 190), L = rgb(204, 182, 240), W = rgb(222, 178, 110), w = rgb(190, 142, 82) },
+} :: Sprite
+
 return Sprites

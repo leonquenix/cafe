@@ -1,5 +1,7 @@
 --!strict
 -- Tela "Antes de abrir": loja (melhorias, doces, decoração) e cardápio do dia.
+-- A aba Decoração vem em blocos por grupo (Café, Páscoa, Halloween, Natal); cada decoração comprada tem uma
+-- chavinha de ligar/desligar.
 -- Compras e cardápio vão pro servidor; a tela reage ao State que volta.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -24,6 +26,7 @@ local PrepScreen = {}
 PrepScreen.onBuy = nil :: ((id: string) -> ())?
 PrepScreen.onSetMenu = nil :: ((list: { string }) -> ())?
 PrepScreen.onSetCatColor = nil :: ((color: string) -> ())?
+PrepScreen.onSetDecorShown = nil :: ((id: string, shown: boolean) -> ())?
 PrepScreen.onOpenBook = nil :: (() -> ())?
 PrepScreen.onWalk = nil :: (() -> ())?
 PrepScreen.onThemes = nil :: (() -> ())?
@@ -266,6 +269,69 @@ local function pastryCards(scope: any): { Frame }
 	return cards
 end
 
+-- Liga/desliga uma decoração já comprada (chavinha no canto de baixo do card; só aparece depois de comprar)
+local function decorToggle(scope: any, id: string): TextButton
+	local owned = scope:Computed(function(use)
+		return use(State.Owned)[id] == true
+	end)
+	local shown = scope:Computed(function(use)
+		return not use(State.Hidden)[id]
+	end)
+	return scope:New("TextButton")({
+		Name = "Toggle",
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.fromScale(0.04, 0.93),
+		Size = UDim2.fromScale(0.4, 0.2),
+		Visible = owned,
+		Text = "",
+		BackgroundColor3 = scope:Computed(function(use)
+			return if use(shown) then Theme.Sage else Theme.PaperShade
+		end),
+		[Children] = {
+			scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
+			scope:New("UIStroke")({ Thickness = 2, Color = Theme.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+			scope:New("Frame")({
+				Name = "Knob",
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = scope:Computed(function(use)
+					return if use(shown) then UDim2.fromScale(0.84, 0.5) else UDim2.fromScale(0.16, 0.5)
+				end),
+				Size = UDim2.fromScale(0.72, 0.72),
+				SizeConstraint = Enum.SizeConstraint.RelativeYY,
+				BackgroundColor3 = Theme.Paper,
+				[Children] = {
+					scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
+					scope:New("UIStroke")({ Thickness = 2, Color = Theme.Ink }),
+				},
+			}),
+			label(scope, scope:Computed(function(use)
+				return if use(shown) then "Ligado" else "Desligado"
+			end), {
+				Position = scope:Computed(function(use)
+					return if use(shown) then UDim2.fromScale(0.08, 0.2) else UDim2.fromScale(0.3, 0.2)
+				end),
+				Size = UDim2.fromScale(0.62, 0.6),
+				TextColor3 = scope:Computed(function(use)
+					return if use(shown) then Theme.Ink else Theme.WoodDark
+				end),
+			}),
+		},
+		[OnEvent("Activated")] = function()
+			if PrepScreen.onSetDecorShown then
+				PrepScreen.onSetDecorShown(id, not peek(shown))
+			end
+		end,
+	})
+end
+
+-- card de decoração comum: comprar e, depois, ligar/desligar
+local function decorCard(scope: any, order: number, d: Catalog.Decor): Frame
+	local desc = `{d.Description} Aconchego +{d.Cozy}.`
+	local card = ownableCard(scope, order, d.Id, d.Icon, d.Name, desc, d.Cost, d.Level)
+	decorToggle(scope, d.Id).Parent = card
+	return card
+end
+
 -- Gatinho: o botão abre o pop-up de cores (comprar já escolhendo a pelagem; depois, trocar de graça)
 local function catCard(scope: any, order: number, d: Catalog.Decor): Frame
 	local owned = scope:Computed(function(use)
@@ -283,7 +349,7 @@ local function catCard(scope: any, order: number, d: Catalog.Decor): Frame
 		return use(owned) or (use(State.Level) >= d.Level and use(State.Money) >= d.Cost)
 	end)
 	local desc = `{d.Description} Aconchego +{d.Cozy}.`
-	return shopCard(scope, order, d.Icon, d.Name, desc, nil, text, enabled, function()
+	local card = shopCard(scope, order, d.Icon, d.Name, desc, nil, text, enabled, function()
 		local wasOwned = peek(owned) :: boolean
 		CatPicker.show({
 			Owned = wasOwned,
@@ -301,6 +367,8 @@ local function catCard(scope: any, order: number, d: Catalog.Decor): Frame
 			end,
 		})
 	end)
+	decorToggle(scope, d.Id).Parent = card
+	return card
 end
 
 -- Cor das paredes: o botão abre a prévia por dentro da loja (WallPicker); lá dentro compra o kit ou troca a cor.
@@ -327,15 +395,16 @@ local function wallCard(scope: any, order: number): Frame
 	end)
 end
 
--- Ordem na aba: gatinho em 1º, temas da fachada em 2º e o resto do mais barato pro mais caro (empate: nível)
-local function decorCards(scope: any): { Frame }
+-- Cards do grupo "Café" (a decoração de sempre): gatinho em 1º, temas da fachada em 2º e o resto do mais barato
+-- pro mais caro (empate: nível)
+local function cafeCards(scope: any, items: { Catalog.Decor }): { Frame }
 	local cards = {}
 	local rest = {}
-	for _, id in Catalog.DecorOrder do
-		if id == "Cat" then
-			table.insert(cards, catCard(scope, 1, Catalog.Decor[id]))
+	for _, d in items do
+		if d.Id == "Cat" then
+			table.insert(cards, catCard(scope, 1, d))
 		else
-			table.insert(rest, Catalog.Decor[id])
+			table.insert(rest, d)
 		end
 	end
 	-- tintas das paredes entram na fila pelo preço, como uma decoração (mas abrem a prévia por dentro)
@@ -349,10 +418,9 @@ local function decorCards(scope: any): { Frame }
 	for i, d in rest do
 		if d.Id == Catalog.WallPaint.Id then
 			table.insert(cards, wallCard(scope, i + 2))
-			continue
+		else
+			table.insert(cards, decorCard(scope, i + 2, d))
 		end
-		local desc = `{d.Description} Aconchego +{d.Cozy}.`
-		table.insert(cards, ownableCard(scope, i + 2, d.Id, d.Icon, d.Name, desc, d.Cost, d.Level))
 	end
 	-- temas da fachada: abre a prévia lá fora (ThemePicker)
 	local themeText = scope:Computed(function(use)
@@ -368,6 +436,103 @@ local function decorCards(scope: any): { Frame }
 		end)
 	)
 	return cards
+end
+
+-- Aba Decoração: um bloco por grupo (Catalog.DecorGroups), com título e a grade de cards.
+-- Nas festas os cards vão do mais barato pro mais caro.
+local function decorSections(scope: any, cellHeight: number): { Frame }
+	local byGroup: { [string]: { Catalog.Decor } } = {}
+	for _, id in Catalog.DecorOrder do
+		local d = Catalog.Decor[id]
+		local g = d.Group or "Cafe"
+		byGroup[g] = byGroup[g] or {}
+		table.insert(byGroup[g], d)
+	end
+	local sections = {}
+	for gi, groupId in Catalog.DecorGroupOrder do
+		local group = Catalog.DecorGroups[groupId]
+		local items = byGroup[groupId]
+		if not items then
+			continue
+		end
+		local cards
+		if groupId == "Cafe" then
+			cards = cafeCards(scope, items)
+		else
+			table.sort(items, function(a, b)
+				if a.Cost ~= b.Cost then
+					return a.Cost < b.Cost
+				end
+				return a.Level < b.Level
+			end)
+			cards = {}
+			for i, d in items do
+				table.insert(cards, decorCard(scope, i, d))
+			end
+		end
+		table.insert(
+			sections,
+			scope:New("Frame")({
+				Name = groupId,
+				LayoutOrder = gi,
+				BackgroundTransparency = 1,
+				Size = UDim2.fromScale(1, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
+				[Children] = {
+					scope:New("UIListLayout")({
+						Padding = UDim.new(0, 6),
+						SortOrder = Enum.SortOrder.LayoutOrder,
+					}),
+					scope:New("Frame")({
+						Name = "Header",
+						LayoutOrder = 1,
+						BackgroundTransparency = 1,
+						Size = UDim2.new(1, 0, 0, 34),
+						[Children] = {
+							scope:New("Frame")({
+								Name = "Icon",
+								BackgroundTransparency = 1,
+								Size = UDim2.fromScale(1, 1),
+								SizeConstraint = Enum.SizeConstraint.RelativeYY,
+								[Children] = icon(group.Icon),
+							}),
+							label(scope, group.Name, {
+								Position = UDim2.new(0, 42, 0, 2),
+								Size = UDim2.new(0.4, 0, 1, -4),
+								TextXAlignment = Enum.TextXAlignment.Left,
+							}),
+							if groupId ~= "Cafe"
+								then label(scope, "Cada enfeite liga e desliga quando você quiser", {
+									AnchorPoint = Vector2.new(1, 0),
+									Position = UDim2.new(1, 0, 0, 8),
+									Size = UDim2.new(0.5, 0, 1, -14),
+									TextXAlignment = Enum.TextXAlignment.Right,
+									TextColor3 = Theme.WoodDark,
+									Font = Enum.Font.Gotham,
+								})
+								else {},
+						},
+					}),
+					scope:New("Frame")({
+						Name = "Grid",
+						LayoutOrder = 2,
+						BackgroundTransparency = 1,
+						Size = UDim2.fromScale(1, 0),
+						AutomaticSize = Enum.AutomaticSize.Y,
+						[Children] = {
+							scope:New("UIGridLayout")({
+								CellSize = UDim2.new(0.32, 0, 0, cellHeight),
+								CellPadding = UDim2.new(0.015, 0, 0, 12),
+								SortOrder = Enum.SortOrder.LayoutOrder,
+							}),
+							cards,
+						},
+					}),
+				},
+			})
+		)
+	end
+	return sections
 end
 
 local function menuCards(scope: any, selection: any): { Frame }
@@ -490,7 +655,7 @@ function PrepScreen.show(onOpen: () -> (), initialTab: string?)
 	local pages = {
 		Upgrades = upgradeCards(scope),
 		Pastries = pastryCards(scope),
-		Decor = decorCards(scope),
+		Decor = decorSections(scope, 150),
 		Menu = menuCards(scope, selection),
 	}
 
@@ -543,11 +708,17 @@ function PrepScreen.show(onOpen: () -> (), initialTab: string?)
 				return use(tab) == id
 			end),
 			[Children] = {
-				scope:New("UIGridLayout")({
-					CellSize = UDim2.new(0.32, 0, 0, cellHeight),
-					CellPadding = UDim2.new(0.015, 0, 0, 12),
-					SortOrder = Enum.SortOrder.LayoutOrder,
-				}),
+				-- decoração vem em blocos (um por grupo, cada um com a sua grade); o resto é uma grade só
+				if id == "Decor"
+					then scope:New("UIListLayout")({
+						Padding = UDim.new(0, 14),
+						SortOrder = Enum.SortOrder.LayoutOrder,
+					})
+					else scope:New("UIGridLayout")({
+						CellSize = UDim2.new(0.32, 0, 0, cellHeight),
+						CellPadding = UDim2.new(0.015, 0, 0, 12),
+						SortOrder = Enum.SortOrder.LayoutOrder,
+					}),
 				scope:New("UIPadding")({
 					PaddingTop = UDim.new(0, 6),
 					PaddingLeft = UDim.new(0, 6),

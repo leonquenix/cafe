@@ -17,6 +17,7 @@ export type Data = {
 	Upgrades: { [string]: number },
 	Pastries: { [string]: boolean },
 	Decor: { [string]: boolean },
+	DecorHidden: { [string]: boolean }, -- decorações compradas que o jogador desligou na loja
 	Menu: { string },
 	DrinkStats: { [string]: number },
 	Mastered: { [string]: boolean },
@@ -40,6 +41,7 @@ local TEMPLATE: Data = {
 	Upgrades = {},
 	Pastries = {},
 	Decor = {},
+	DecorHidden = {},
 	Menu = {},
 	DrinkStats = {},
 	Mastered = {},
