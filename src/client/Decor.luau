@@ -54,7 +54,7 @@ Decor.Focus = {
 	EasterFootprints = { Vector3.new(4, 9, 2), Vector3.new(5, 0, -13) },
 	ChristmasCatHat = { Vector3.new(0.5, 7.2, 5.5), Vector3.new(-2.6, 5.8, 0) },
 	HalloweenMummy = { Vector3.new(2, 8, 2), Vector3.new(-18, 6.5, -8) },
-	HalloweenZombieHand = { Vector3.new(5, 7.5, 0), Vector3.new(18, 6, -13) },
+	HalloweenZombieHand = { Vector3.new(5, 7.5, 2), Vector3.new(18, 6.5, -5) },
 } :: { [string]: { Vector3 } }
 
 local function part(parent: Instance, size: Vector3, cf: CFrame | Vector3, color: Color3, props: { [string]: any }?): BasePart
@@ -1395,18 +1395,18 @@ BUILDERS.HalloweenMummy = function(m)
 	end)
 end
 
--- Mão de Zumbi: lá fora, na primeira janela da parede da direita (a do fundo), uma mão verde sobe devagar por trás
+-- Mão de Zumbi: lá fora, na segunda janela da parede da direita (a da frente), uma mão verde sobe devagar por trás
 -- da floreira, abre e fecha os dedos, dá um tchauzinho e afunda de novo. Em loop, com uma pausa escondida.
 BUILDERS.HalloweenZombieHand = function(m)
-	local win = WINDOWS.RightBack
-	-- do lado de fora, atrás do vidro da frente da janela (a câmera vê esse pedaço entre o mainel e a borda,
-	-- abaixo da luminária e acima da floreira)
-	local base = Vector3.new(Layout.Room.MaxX + 1.9, 0, win.Frame.Position.Z - 0.75)
-	local HS = 1.5 -- tamanho da mão (maior que a real: fica longe, atrás do vidro)
+	local win = WINDOWS.RightFront
+	-- do lado de fora, atrás do vidro de trás da janela: é o pedaço dela que a câmera vê (a janela fica na beirada
+	-- direita da tela do celular; o vidro da frente já sai da tela)
+	local base = Vector3.new(Layout.Room.MaxX + 1.9, 0, win.Frame.Position.Z - 3.2)
+	local HS = 1.05 -- tamanho da mão
 	local skin, skinDark = rgb(190, 224, 150), rgb(122, 166, 98) -- verde clarinho: destaca das árvores lá fora
 	local sleeve, sleeveDark = rgb(120, 96, 140), rgb(92, 72, 110)
 	-- espaço da mão: +Y pra cima, palma virada pra dentro do café (-X), dedos abertos ao longo de Z
-	local wrist0 = CFrame.new(base + Vector3.new(0, 5.2, 0))
+	local wrist0 = CFrame.new(base + Vector3.new(0, 6.6, 0))
 	local ps: { BasePart } = {}
 	local rel: { CFrame } = {}
 	-- `at` no tamanho 1 (a posição é escalada por HS)
@@ -1446,7 +1446,7 @@ BUILDERS.HalloweenZombieHand = function(m)
 	-- ciclo: escondida -> sobe -> mexe os dedos e acena -> afunda
 	local HIDE, RISE, WAVE, SINK = 3.2, 1.6, 2.6, 0.9
 	local period = HIDE + RISE + WAVE + SINK
-	local DOWN = -4.4 -- quanto ela afunda pra sumir atrás da parede
+	local DOWN = -4 -- quanto ela afunda pra sumir atrás da parede
 	local function smooth(a: number): number
 		return a * a * (3 - 2 * a)
 	end
