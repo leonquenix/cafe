@@ -36,6 +36,7 @@ export type Customer = {
 
 local WALK_SPEED = 8
 local ADVANCE_DELAY = 0.35 -- espera o atendido sair do balcão antes da fila andar
+local ORDER_BUBBLE_TIME = 3
 local rng = Random.new()
 local Kind = Characters.Kind
 
@@ -217,7 +218,15 @@ function Customers.showOrder(c: Customer, info: Bubble.OrderInfo)
 	if c.Bubble then
 		c.Bubble:Destroy()
 	end
-	c.Bubble = Bubble.order(c.Art.Head, info)
+	local gui = Bubble.order(c.Art.Head, info)
+	c.Bubble = gui
+	-- o balão do pedido fica 3s na tela e depois some
+	task.delay(ORDER_BUBBLE_TIME, function()
+		if c.Bubble == gui then
+			c.Bubble = nil
+			Bubble.pop(gui)
+		end
+	end)
 end
 
 -- Entrega a bebida ao cliente da frente: ele dá um passo pro lado, reage e vai embora.
