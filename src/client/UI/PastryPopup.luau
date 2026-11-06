@@ -28,6 +28,8 @@ local Quality = Catalog.PastryQuality
 local RAW_END = 0.5
 local PERFECT_START, PERFECT_END = 0.62, 0.82
 local BURN_START = 0.9
+-- dificuldade: quando o ponteiro entra na 1ª zona amarela, a barra anda 15% mais rápido até o fim
+local YELLOW_SPEEDUP = 1.15
 
 local AUTO_DELIVER_DELAY = 0.8 -- tempo para ler "Perfeito!" / "Tá bom!" antes de entregar sozinho
 
@@ -733,6 +735,9 @@ function PastryPopup.init(playerGui: PlayerGui)
 			return
 		end
 		local t = (Pause.clock() - bakeStart) / Catalog.Pastries[id].BakeTime
+		if t > RAW_END then
+			t = RAW_END + (t - RAW_END) * YELLOW_SPEEDUP
+		end
 		needle:set(math.min(t, 1))
 		if t >= 1 then
 			finish(Quality.Burnt)
