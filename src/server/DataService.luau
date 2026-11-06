@@ -87,6 +87,15 @@ local function onPlayerAdded(player: Player)
 
 	profile:AddUserId(player.UserId)
 	profile:Reconcile()
+	-- "Morceguinhos e Teias" (HalloweenWall) virou dois itens: quem já tinha ganha as Teias de Aranha também
+	-- (e, se tinha desligado, as teias começam desligadas)
+	local data = profile.Data
+	if data.Decor.HalloweenWall and data.Decor.HalloweenWebs == nil then
+		data.Decor.HalloweenWebs = true
+		if data.DecorHidden.HalloweenWall then
+			data.DecorHidden.HalloweenWebs = true
+		end
+	end
 	profile.OnSessionEnd:Connect(function()
 		profiles[player] = nil
 		player:Kick("Sua sessão foi aberta em outro servidor.")

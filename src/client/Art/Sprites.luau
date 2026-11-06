@@ -1093,18 +1093,33 @@ Sprites.HalloweenPumpkins = {
 
 Sprites.HalloweenWall = {
 	Rows = {
-		"w.w.........",
-		".ww.........",
-		"www.o..o....",
-		"...ooKKo...o",
-		"o..oKKKKo.oo",
-		"oo.KKYKYKoKo",
+		"....o..o....",
+		"...ooKKoo...",
+		"o..oKKKKo..o",
+		"oo.KKYKYKo.o",
+		"oKoKKKKKKoKo",
 		"oKKKKKKKKKKo",
 		".oKKKKKKKKo.",
 		"..oKo..oKo..",
 		"...o....o...",
 	},
 	Palette = { o = OUTLINE, K = rgb(96, 76, 120), Y = rgb(255, 214, 110), w = rgb(220, 216, 228) },
+} :: Sprite
+
+Sprites.HalloweenWebs = {
+	Rows = {
+		"wwwwwwwwwww.",
+		"w..w...w....",
+		"w.ww..w.....",
+		"ww..www.....",
+		"w..w..w..k..",
+		"w.w..w...k..",
+		"www.w...kKk.",
+		"w..w...kKKKk",
+		"w.w.....kKk.",
+		"ww.....k.k.k",
+	},
+	Palette = { w = rgb(220, 216, 228), k = OUTLINE, K = rgb(70, 64, 84) },
 } :: Sprite
 
 Sprites.HalloweenGhosts = {
@@ -1171,6 +1186,41 @@ Sprites.EasterBasket = {
 		"..oooooooo..",
 	},
 	Palette = { o = OUTLINE, P = rgb(246, 178, 200), B = rgb(166, 206, 240), Y = rgb(250, 226, 140), M = rgb(176, 226, 190), L = rgb(204, 182, 240), W = rgb(222, 178, 110), w = rgb(190, 142, 82) },
+} :: Sprite
+
+Sprites.EasterWindowGarland = {
+	Rows = {
+		"GgGgGgGgGgGgG",
+		"PoG.gYgG.oGB.",
+		".o.gGgGgG.o..",
+		".o..oo.o..o..",
+		"oGo..o.o.oMo.",
+		"OOOo.oWo.MMMo",
+		"oOOowWWwoMwMo",
+		".oOowkWkoMMMo",
+		".oOoWWpWo.oo.",
+		"..oo.oo......",
+	},
+	Palette = { o = OUTLINE, G = rgb(134, 186, 104), g = rgb(96, 150, 84), P = rgb(246, 178, 200), Y = rgb(250, 226, 140), B = rgb(166, 206, 240), O = rgb(240, 140, 60), W = rgb(252, 250, 250), w = rgb(240, 160, 180), k = rgb(58, 36, 30), p = rgb(240, 140, 170), M = rgb(176, 226, 190) },
+} :: Sprite
+
+Sprites.EasterPlantBunny = {
+	Rows = {
+		"...oo..oo...",
+		"..oWo.oWo...",
+		"..oPo.oPWo..",
+		"..oWooWWo...",
+		".oWWWWWWWo..",
+		".oWkWWWkWo..",
+		".opWWPWWpo..",
+		"oGoWWWWWoGo.",
+		"GGGGoooGGGGo",
+		"gGGgGGGgGGgo",
+		".oTTTTTTTo..",
+		"..oTTTTTo...",
+		"...ooooo....",
+	},
+	Palette = { o = OUTLINE, W = rgb(252, 250, 250), P = rgb(240, 160, 180), p = rgb(246, 190, 200), k = rgb(58, 36, 30), G = rgb(96, 150, 84), g = rgb(66, 116, 64), T = rgb(196, 110, 76) },
 } :: Sprite
 
 return Sprites
