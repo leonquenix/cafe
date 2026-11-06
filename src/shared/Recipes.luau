@@ -179,20 +179,52 @@ function Recipes.orderPortions(drinkId: string, modifierId: string?): { string }
 	return list
 end
 
--- Maestria: quantas vezes servir a bebida para virar "Mestre" nela.
--- Receitas mais avançadas aparecem menos, então pedem menos.
-Recipes.MasteryBonus = 0.1 -- bebidas dominadas pagam +10% para sempre
+-- Conquistas do livro de receitas: toda receita (bebida ou doce) tem marcos de "sirva N vezes",
+-- cada um com recompensa em moedas. Os marcos são resgatados um de cada vez, do menor para o maior
+-- (perfil: DrinkClaims / PastryClaims = quantos marcos daquela receita já foram resgatados).
+-- Bebidas viram "Dominadas" (pagam +10% para sempre) ao resgatar o marco de 50 (MasteryMilestone).
+Recipes.MasteryBonus = 0.1
+Recipes.Milestones = {
+	{ Count = 5, Reward = 20 },
+	{ Count = 10, Reward = 30 },
+	{ Count = 25, Reward = 50 },
+	{ Count = 50, Reward = 100 },
+	{ Count = 100, Reward = 200 },
+} :: { { Count: number, Reward: number } }
+Recipes.MasteryMilestone = 4
 
-function Recipes.masteryTarget(drinkId: string): number
-	if Recipes.Drinks[drinkId].Secret then
-		return math.huge
+-- Índice do próximo marco a resgatar, se já foi alcançado (nil = nada pronto)
+function Recipes.claimableMilestone(count: number, claimed: number): number?
+	local index = claimed + 1
+	local m = Recipes.Milestones[index]
+	if m and count >= m.Count then
+		return index
 	end
-	local level = Recipes.Drinks[drinkId].Level
-	return if level <= 2 then 50 elseif level <= 4 then 35 else 25
+	return nil
 end
 
-function Recipes.masteryReward(drinkId: string): number
-	return Recipes.Drinks[drinkId].Price * 15
+-- Quantos marcos a contagem já alcançou (resgatados ou não)
+function Recipes.milestonesReached(count: number): number
+	local n = 0
+	for i, m in Recipes.Milestones do
+		if count >= m.Count then
+			n = i
+		end
+	end
+	return n
+end
+
+-- Bebida que entra nas conquistas (as secretas ficam de fora)
+function Recipes.hasMilestones(drinkId: string): boolean
+	local d = Recipes.Drinks[drinkId]
+	return d ~= nil and not d.Secret
+end
+
+-- Meta da maestria antiga (uma missão só por bebida, antes dos marcos). Usada só na migração do save:
+-- quem tinha resgatado ganha como resgatados os marcos até essa meta.
+function Recipes.legacyMasteryTarget(drinkId: string): number
+	local level = Recipes.Drinks[drinkId].Level
+	return if level <= 2 then 50 elseif level <= 4 then 35 else 25
 end
 
 function Recipes.count(list: { string }): { [string]: number }

@@ -10,6 +10,7 @@ local Catalog = require(ReplicatedStorage.Shared.Catalog)
 local Characters = require(ReplicatedStorage.Shared.Characters)
 local Net = require(ReplicatedStorage.Shared.Net)
 local Recipes = require(ReplicatedStorage.Shared.Recipes)
+local Achievements = require(script.Achievements)
 local BackButton = require(script.UI.BackButton)
 local Bubble = require(script.UI.Bubble)
 local CameraController = require(script.CameraController)
@@ -175,21 +176,26 @@ State.scope:Observer(State.Owned):onBind(function()
 	end
 end)
 
--- avisa quando uma missão de maestria fica pronta para coletar
-local lastStats: { [string]: number }? = nil
-State.scope:Observer(State.Stats):onChange(function()
-	local stats = peek(State.Stats)
-	local mastered = peek(State.Mastered)
-	if lastStats then
-		for id, count in stats do
-			local target = Recipes.masteryTarget(id)
-			if not mastered[id] and count >= target and (lastStats[id] or 0) < target then
-				Hud.toast(`Missão completa: {Recipes.Drinks[id].Name}! Colete no livro`, Theme.Mustard)
+-- avisa quando uma receita (bebida ou doce) alcança um marco de conquista novo para resgatar
+local function watchMilestones(kind: Achievements.Kind, value: any)
+	local last: { [string]: number }? = nil
+	State.scope:Observer(value):onChange(function()
+		local stats = peek(value) :: { [string]: number }
+		if last then
+			for _, id in Achievements.ids(kind) do
+				local count = stats[id] or 0
+				local reached = Recipes.milestonesReached(count)
+				if reached > Recipes.milestonesReached(last[id] or 0) and reached > (peek(State.Claims)[id] or 0) then
+					local m = Recipes.Milestones[reached]
+					Hud.toast(`Conquista: {m.Count}x {Achievements.name(kind, id)}! Colete no livro`, Theme.Mustard)
+				end
 			end
 		end
-	end
-	lastStats = table.clone(stats)
-end)
+		last = table.clone(stats)
+	end)
+end
+watchMilestones("Drink", State.Stats)
+watchMilestones("Pastry", State.PastryStats)
 
 local INTRO_LINE = "Preciso fazer isso pela vovó, ela amava tanto esse lugar, talvez eu só precise de uma cidadezinha tranquila e um novo começo."
 

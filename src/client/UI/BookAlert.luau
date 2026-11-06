@@ -1,17 +1,18 @@
 --!strict
--- Bolinha "!" do botão do livro de receitas: aparece quando tem recompensa de maestria para coletar
--- e some quando todas forem resgatadas. Usada no livro do HUD (expediente) e no do menu "Antes de abrir".
+-- Bolinha "!" do botão do livro de receitas: aparece quando algum marco de conquista (bebida ou doce)
+-- está pronto para resgatar e some quando todos forem resgatados. Usada no livro do HUD (expediente),
+-- no do menu "Antes de abrir" e nas abas Bebidas/Doces do próprio livro (kind = só aquela aba).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Fusion = require(ReplicatedStorage.Packages.Fusion)
-local Recipes = require(ReplicatedStorage.Shared.Recipes)
+local Achievements = require(script.Parent.Parent.Achievements)
 local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
 
 local Children = Fusion.Children
 
-return function(scope: any): Frame
+return function(scope: any, kind: Achievements.Kind?): Frame
 	return scope:New("Frame")({
 		Name = "Alert",
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -21,13 +22,10 @@ return function(scope: any): Frame
 		BackgroundColor3 = Theme.Rose,
 		ZIndex = 3,
 		Visible = scope:Computed(function(use)
-			local stats, mastered = use(State.Stats), use(State.Mastered)
-			for id in Recipes.Drinks do
-				if not mastered[id] and (stats[id] or 0) >= Recipes.masteryTarget(id) then
-					return true
-				end
-			end
-			return false
+			local claims = use(State.Claims)
+			local drinks = if kind ~= "Pastry" then Achievements.pending("Drink", use(State.Stats), claims) else 0
+			local pastries = if kind ~= "Drink" then Achievements.pending("Pastry", use(State.PastryStats), claims) else 0
+			return drinks + pastries > 0
 		end),
 		[Children] = {
 			scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),

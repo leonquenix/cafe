@@ -22,8 +22,10 @@ local State = {
 	Owned = scope:Value({} :: { [string]: boolean }),
 	Hidden = scope:Value({} :: { [string]: boolean }), -- decorações compradas que estão desligadas
 	Menu = scope:Value({} :: { string }),
-	Stats = scope:Value({} :: { [string]: number }),
-	Mastered = scope:Value({} :: { [string]: boolean }),
+	Stats = scope:Value({} :: { [string]: number }), -- bebidas servidas por receita
+	PastryStats = scope:Value({} :: { [string]: number }), -- doces servidos por receita
+	Claims = scope:Value({} :: { [string]: number }), -- marcos de conquista resgatados (bebidas e doces)
+	Mastered = scope:Value({} :: { [string]: boolean }), -- bebidas dominadas (+10%)
 	CatColor = scope:Value("Gray"),
 	Themes = scope:Value({} :: { [string]: boolean }), -- temas da fachada comprados
 	Theme = scope:Value("Original"), -- tema da fachada em uso
@@ -70,6 +72,18 @@ function State.apply(s: any)
 		stats[st.drink] = st.count
 	end
 	State.Stats:set(stats)
+
+	local pastryStats = {}
+	for _, st in s.pastryStats do
+		pastryStats[st.drink] = st.count
+	end
+	State.PastryStats:set(pastryStats)
+
+	local claims = {}
+	for _, c in s.claims do
+		claims[c.id] = c.count
+	end
+	State.Claims:set(claims)
 
 	local mastered = {}
 	for _, id in s.mastered do
