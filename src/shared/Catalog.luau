@@ -29,6 +29,7 @@ export type Decor = {
 	Cozy: number,
 	Level: number,
 	Group: string?, -- grupo na aba Decoração (Catalog.DecorGroups); nil = "Cafe"
+	Requires: string?, -- só pode comprar depois desta outra decoração (ex.: gorro precisa do gato)
 }
 
 local Catalog = {}
@@ -90,10 +91,14 @@ Catalog.DecorOrder = {
 	"EasterBunting",
 	"EasterPlantBunny",
 	"EasterWindowGarland",
+	"EasterFootprints",
 	"HalloweenWebs",
 	"HalloweenWall",
 	"HalloweenPumpkins",
 	"HalloweenGhosts",
+	"HalloweenZombieHand",
+	"HalloweenMummy",
+	"ChristmasCatHat",
 	"ChristmasWreath",
 	"ChristmasGarland",
 	"ChristmasTree",
@@ -165,6 +170,16 @@ Catalog.Decor = {
 		Level = 7,
 		Group = "Easter",
 	},
+	EasterFootprints = {
+		Id = "EasterFootprints",
+		Name = "Pegadas de Coelhinho",
+		Description = "Um caminho de pegadinhas da porta até o balcão.",
+		Icon = "EasterFootprints",
+		Cost = 240,
+		Cozy = 1,
+		Level = 6,
+		Group = "Easter",
+	},
 	-- HalloweenWall era "Morceguinhos e Teias"; as teias viraram o HalloweenWebs (quem já tinha ganhou as duas)
 	HalloweenWebs = {
 		Id = "HalloweenWebs",
@@ -205,6 +220,38 @@ Catalog.Decor = {
 		Cozy = 1,
 		Level = 9,
 		Group = "Halloween",
+	},
+	HalloweenZombieHand = {
+		Id = "HalloweenZombieHand",
+		Name = "Mão de Zumbi",
+		Description = "Uma mão sobe e desce lá fora, na janela da direita.",
+		Icon = "HalloweenZombieHand",
+		Cost = 300,
+		Cozy = 1,
+		Level = 9,
+		Group = "Halloween",
+	},
+	HalloweenMummy = {
+		Id = "HalloweenMummy",
+		Name = "Múmia Passeando",
+		Description = "Uma múmia passa lá fora pelas janelas da esquerda.",
+		Icon = "HalloweenMummy",
+		Cost = 400,
+		Cozy = 1,
+		Level = 9,
+		Group = "Halloween",
+	},
+	-- precisa do gatinho da vitrine (Requires): o gorro vai na cabeça dele
+	ChristmasCatHat = {
+		Id = "ChristmasCatHat",
+		Name = "Gorro do Gatinho",
+		Description = "Gorro de Papai Noel pro gato da vitrine.",
+		Icon = "ChristmasCatHat",
+		Cost = 200,
+		Cozy = 1,
+		Level = 10,
+		Group = "Christmas",
+		Requires = "Cat",
 	},
 	ChristmasWreath = {
 		Id = "ChristmasWreath",

@@ -1223,4 +1223,75 @@ Sprites.EasterPlantBunny = {
 	Palette = { o = OUTLINE, W = rgb(252, 250, 250), P = rgb(240, 160, 180), p = rgb(246, 190, 200), k = rgb(58, 36, 30), G = rgb(96, 150, 84), g = rgb(66, 116, 64), T = rgb(196, 110, 76) },
 } :: Sprite
 
+Sprites.EasterFootprints = {
+	Rows = {
+		"......oo.oo.",
+		".....oPPoPPo",
+		".....oPPoPPo",
+		"......oo.oo.",
+		".......oPo..",
+		"..oo.oo.o...",
+		".oPPoPPo....",
+		".oPPoPPo....",
+		"..oo.oo.....",
+		"...oPo......",
+		"....o.......",
+		"............",
+	},
+	Palette = { o = OUTLINE, P = rgb(240, 160, 180) },
+} :: Sprite
+
+Sprites.ChristmasCatHat = {
+	Rows = {
+		"........oo..",
+		"......ooWWo.",
+		"....ooRRoWo.",
+		"...oRRRRo...",
+		"..oRRRRRo...",
+		".oWWWWWWWo..",
+		".oWWWWWWWo..",
+		".oGGGGGGGo..",
+		".oGeGGGeGo..",
+		".oGGGpGGGo..",
+		"..oGGGGGo...",
+		"...ooooo....",
+	},
+	Palette = { o = OUTLINE, R = rgb(214, 64, 64), W = rgb(252, 250, 250), G = rgb(160, 160, 172), e = rgb(40, 30, 30), p = rgb(240, 140, 150) },
+} :: Sprite
+
+Sprites.HalloweenMummy = {
+	Rows = {
+		"...oooooo...",
+		"..oWWwWWWo..",
+		"..owWWWwWo..",
+		"..oWYoWYWo..",
+		"..oWWWwWWo..",
+		"oooowWWWoooo",
+		"oWwWWWwWWWwo",
+		"ooooWwWWoooo",
+		"...oWWWwo...",
+		"...owWWWo...",
+		"...oWWoWWo..",
+		"...ooo.ooo..",
+	},
+	Palette = { o = OUTLINE, W = rgb(236, 228, 206), w = rgb(196, 184, 156), Y = rgb(255, 214, 110) },
+} :: Sprite
+
+Sprites.HalloweenZombieHand = {
+	Rows = {
+		"..o.o.o.....",
+		".oGoGoGo....",
+		".oGoGoGo.o..",
+		".oGoGoGooGo.",
+		".oGGGGGGGGo.",
+		".oGgGGGGGo..",
+		"..oGGGGGo...",
+		"..oGGgGGo...",
+		"..oPPPPPo...",
+		"bbbbbbbbbbbb",
+		"BBBBBBBBBBBB",
+	},
+	Palette = { o = OUTLINE, G = rgb(150, 196, 120), g = rgb(110, 156, 90), P = rgb(120, 96, 140), b = rgb(150, 98, 62), B = rgb(110, 70, 46) },
+} :: Sprite
+
 return Sprites

@@ -1,7 +1,8 @@
 --!strict
 -- Decoração comprada na loja, construída com Parts só para o jogador (cada um tem o seu café).
 -- Alguns itens têm animaçãozinha: gato respirando, disco girando, fogo piscando, lanternas balançando,
--- pisca-pisca de Natal, abóboras tremulando, fantasminhas flutuando, coelhinho espiando da planta. Cada uma pode ser desligada na loja (Decor.setHidden).
+-- pisca-pisca de Natal, abóboras tremulando, fantasminhas flutuando, coelhinho espiando da planta, múmia passando
+-- lá fora, mão de zumbi na janela, gorro no gato. Cada uma pode ser desligada na loja (Decor.setHidden).
 -- Clicar no gato faz carinho: ele mia e solta um balãozinho de coração. O gato tem várias pelagens (Decor.CatCoats).
 
 local Players = game:GetService("Players")
@@ -50,6 +51,10 @@ Decor.Focus = {
 	EasterBasket = { Vector3.new(6, 6.2, 5), Vector3.new(7.55, 3.9, 0.55) },
 	EasterWindowGarland = { Vector3.new(3.2, 8.5, 7), Vector3.new(0, 8.5, -16) },
 	EasterPlantBunny = { Vector3.new(-6.5, 5.6, 6.5), Vector3.new(-9, 3.8, 1.5) },
+	EasterFootprints = { Vector3.new(4, 9, 2), Vector3.new(5, 0, -13) },
+	ChristmasCatHat = { Vector3.new(0.5, 7.2, 5.5), Vector3.new(-2.6, 5.8, 0) },
+	HalloweenMummy = { Vector3.new(2, 8, 2), Vector3.new(-18, 6.5, -8) },
+	HalloweenZombieHand = { Vector3.new(5, 7.5, 0), Vector3.new(18, 6, -13) },
 } :: { [string]: { Vector3 } }
 
 local function part(parent: Instance, size: Vector3, cf: CFrame | Vector3, color: Color3, props: { [string]: any }?): BasePart
@@ -217,11 +222,16 @@ Decor.CatCoats = {
 local catColor = "Gray" -- pelagem escolhida
 local builtCatColor = "" -- pelagem do gato que está no balcão agora
 
+local CAT_BASE = Vector3.new(-3, Layout.CounterHeight + 1.63, Layout.CounterZ - 0.1)
+local CAT_S = 1.3
+local CAT_HEAD = CFrame.new(CAT_BASE + Vector3.new(0.85, 0.75, 0.15) * CAT_S) -- cabeça do gato parada (o gorro vai nela)
+local catHead: BasePart? = nil -- cabeça do gato que está no balcão agora (o gorro acompanha)
+
 -- Monta o gatinho (pelagem `coatId`) em `m`, deitado em cima da vitrine. Retorna a cabeça e a animação de respirar.
 local function buildCat(m: Model, coatId: string): (BasePart, (t: number) -> (), (x: number, y: number, z: number) -> Vector3)
 	local coat = Decor.CatCoats[coatId] or Decor.CatCoats.Gray
-	local base = Vector3.new(-3, Layout.CounterHeight + 1.63, Layout.CounterZ - 0.1)
-	local S = 1.3
+	local base = CAT_BASE
+	local S = CAT_S
 	local fur = coat.Fur
 	local function at(x: number, y: number, z: number): Vector3
 		return base + Vector3.new(x, y, z) * S
@@ -279,6 +289,7 @@ BUILDERS.Cat = function(m)
 	-- gatinho dormindo em cima da vitrine de doces, carinha virada pra câmera (+Z), na pelagem escolhida
 	local head, animate, at = buildCat(m, catColor)
 	builtCatColor = catColor
+	catHead = head
 	local S = 1.3
 
 	-- carinho: área invisível cobrindo o gato inteiro, clique = miado + coração
@@ -1167,6 +1178,310 @@ BUILDERS.EasterPlantBunny = function(m)
 	end)
 end
 
+-- Pegadas de Coelhinho: um caminho de pegadinhas cor-de-rosa da porta até o balcão (entre a fila e a saída).
+-- Uma "pegada fresca" (mais clarinha) vai pulando da porta até o balcão, como se um coelhinho invisível passasse.
+BUILDERS.EasterFootprints = function(m)
+	-- curva do caminho (no chão), da porta até a frente do balcão
+	local pts = {
+		Vector3.new(8.9, 0, -21.4),
+		Vector3.new(8.4, 0, -19.2),
+		Vector3.new(6.6, 0, -16.6),
+		Vector3.new(4.2, 0, -14.4),
+		Vector3.new(2.9, 0, -11.2),
+		Vector3.new(2.6, 0, -7.6),
+		Vector3.new(2.5, 0, -3.4),
+	}
+	-- amostra a curva (Catmull-Rom) bem fininha e anda por ela de pulo em pulo
+	local samples = {}
+	for i = 1, #pts - 1 do
+		local p0, p1, p2, p3 = pts[math.max(i - 1, 1)], pts[i], pts[i + 1], pts[math.min(i + 2, #pts)]
+		for k = 0, 19 do
+			local u = k / 20
+			local u2, u3 = u * u, u * u * u
+			table.insert(samples, 0.5 * ((2 * p1) + (-p0 + p2) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u2 + (-p0 + 3 * p1 - 3 * p2 + p3) * u3))
+		end
+	end
+	table.insert(samples, pts[#pts])
+	local HOP = 2.1
+	local hops: { CFrame } = {}
+	local walked, nextHop = 0, 0.6
+	for i = 2, #samples do
+		local a, b = samples[i - 1], samples[i]
+		local d = (b - a).Magnitude
+		while walked + d >= nextHop do
+			local p = a:Lerp(b, (nextHop - walked) / d)
+			table.insert(hops, CFrame.lookAt(p, p + (b - a)))
+			nextHop += HOP
+		end
+		walked += d
+	end
+
+	local PINK, FRESH = rgb(226, 120, 152), rgb(255, 196, 214)
+	local F = 1.6 -- tamanho das pegadas
+	local Y = 0.03 -- em cima do chão (o tapete não fica no caminho)
+	local prints: { { BasePart } } = {}
+	local function pad(list: { BasePart }, cf: CFrame, size: Vector3)
+		table.insert(list, part(m, Vector3.new(size.X * F, 0.04, size.Z * F), cf + Vector3.new(0, Y, 0), PINK, { CastShadow = false, CanQuery = false }))
+	end
+	for i, cf in hops do
+		local list = {}
+		local wiggle = CFrame.Angles(0, math.rad(((i * 37) % 11) - 5), 0) -- cada pulo um tiquinho torto
+		local hop = cf * wiggle
+		-- patas de trás (compridas, na frente: o coelho pousa com elas à frente das da frente)
+		for _, sx in { -1, 1 } do
+			local foot = hop * CFrame.new(sx * 0.2 * F, 0, -0.15 * F) * CFrame.Angles(0, sx * 0.12, 0)
+			pad(list, foot, Vector3.new(0.2, 0, 0.44))
+			for _, tx in { -0.075, 0, 0.075 } do
+				pad(list, foot * CFrame.new(tx * F, 0, (-0.32 - (if tx == 0 then 0.03 else 0)) * F), Vector3.new(0.07, 0, 0.08))
+			end
+		end
+		-- patinhas da frente (redondinhas, atrás, uma na frente da outra)
+		pad(list, hop * CFrame.new(-0.07 * F, 0, 0.42 * F), Vector3.new(0.17, 0, 0.17))
+		pad(list, hop * CFrame.new(0.08 * F, 0, 0.66 * F), Vector3.new(0.17, 0, 0.17))
+		prints[i] = list
+	end
+
+	-- a pegada fresca pula 4 vezes por segundo; depois do balcão dá uma pausa e recomeça da porta
+	local lit = 0
+	addAnimator(function(t)
+		local step = math.floor(t * 4) % (#prints + 10) + 1
+		if step == lit then
+			return
+		end
+		if prints[lit] then
+			for _, p in prints[lit] do
+				p.Color = PINK
+			end
+		end
+		lit = step
+		if prints[lit] then
+			for _, p in prints[lit] do
+				p.Color = FRESH
+			end
+		end
+	end)
+end
+
+-- Gorro do Gatinho: gorro de Papai Noel na cabeça do gato da vitrine, meio de lado, com o pompom caindo pro lado
+-- do rabo. Acompanha a cabeça dele (respirando, montando, trocando de pelagem) e some quando o gato não está lá.
+BUILDERS.ChristmasCatHat = function(m)
+	local S = CAT_S
+	local head = CAT_HEAD * CFrame.Angles(0, 0, math.rad(12)) -- inclinadinho pro lado do rabo
+	local red, redDark, white = rgb(214, 64, 64), rgb(186, 50, 54), rgb(252, 250, 250)
+	local function at(x: number, y: number, z: number): CFrame
+		return head * CFrame.new(x * S, y * S, z * S)
+	end
+	local ps = {
+		part(m, Vector3.new(0.98, 0.2, 0.86) * S, at(0, 0.4, 0.02), white), -- barra branca
+		part(m, Vector3.new(0.8, 0.22, 0.68) * S, at(0, 0.58, 0), red),
+		part(m, Vector3.new(0.64, 0.2, 0.54) * S, at(-0.04, 0.76, 0), red),
+		part(m, Vector3.new(0.48, 0.18, 0.42) * S, at(-0.12, 0.92, 0), redDark),
+		part(m, Vector3.new(0.34, 0.16, 0.3) * S, at(-0.26, 1.02, 0), red),
+		part(m, Vector3.new(0.24, 0.14, 0.22) * S, at(-0.42, 1.0, 0), redDark),
+		part(m, Vector3.new(0.18, 0.18, 0.18) * S, at(-0.56, 0.92, 0), red),
+		part(m, Vector3.new(0.3, 0.3, 0.3) * S, at(-0.66, 0.78, 0.02), white, BALL), -- pompom
+		-- pontinhos de pelúcia na barra (dão o ar fofinho)
+		part(m, Vector3.new(0.16, 0.16, 0.06) * S, at(-0.3, 0.42, 0.45), rgb(240, 236, 236)),
+		part(m, Vector3.new(0.16, 0.16, 0.06) * S, at(0.28, 0.4, 0.45), rgb(240, 236, 236)),
+	}
+	local hat = rig(CAT_HEAD, ps)
+	local goal = {}
+	for i, p in ps do
+		goal[i] = p.Transparency
+	end
+	local showing = true
+	addAnimator(function()
+		local h = catHead
+		local on = h ~= nil and h.Parent ~= nil and h:IsDescendantOf(container)
+		if on ~= showing then
+			showing = on
+			for i, p in ps do
+				p.Transparency = if on then goal[i] else 1
+			end
+		end
+		if on and h then
+			moveRig(hat, CAT_HEAD:ToObjectSpace(h.CFrame))
+		end
+	end)
+end
+
+-- Múmia Passeando: lá fora, do lado de fora das janelas da esquerda, uma múmia passa andando devagar de um lado
+-- pro outro (braços esticados, perninhas duras). Ela vira nas pontas, escondida atrás da parede.
+BUILDERS.HalloweenMummy = function(m)
+	local X = Layout.Room.MinX - 2.8 -- colada na parede de fora (perto do vidro: aparece maior)
+	-- passa pela janela de trás da esquerda (a da frente quase não aparece na tela, nem no celular): vai do canto
+	-- do café até o pedaço de parede entre as janelas e vira escondida nas duas pontas. Da câmera, o que aparece
+	-- pela janela é a faixa de altura entre a luminária e a floreira, por isso ela é do tamanho de uma pessoa.
+	local Z0, Z1 = Layout.Room.MinZ - 0.5, -9.5
+	local SPEED, TURN = 1.5, 1.2
+	local S = 1.15
+	local wrap, wrapDark = rgb(236, 228, 206), rgb(196, 184, 156)
+	local root0 = CFrame.new(X, 0, Z0)
+
+	-- cada pedaço do corpo gira em volta de uma junta (pivô no espaço da múmia, frente = -Z)
+	type Limb = { Joint: CFrame, Parts: { BasePart }, Rel: { CFrame } }
+	local limbs: { [string]: Limb } = {}
+	local function limb(name: string, joint: Vector3, build: (add: (size: Vector3, at: Vector3, color: Color3, props: { [string]: any }?) -> BasePart) -> ())
+		local jcf = CFrame.new(joint * S)
+		local l: Limb = { Joint = jcf, Parts = {}, Rel = {} }
+		build(function(size, at, color, props)
+			local p = part(m, size * S, root0 * CFrame.new(at * S), color, props)
+			table.insert(l.Parts, p)
+			table.insert(l.Rel, jcf:Inverse() * CFrame.new(at * S))
+			return p
+		end)
+		limbs[name] = l
+	end
+	limb("Body", Vector3.new(0, 3, 0), function(add)
+		add(Vector3.new(1.5, 2.3, 0.95), Vector3.new(0, 4.05, 0), wrap) -- tronco
+		for i, y in { 3.2, 3.75, 4.3, 4.85 } do
+			add(Vector3.new(1.54, 0.13, 0.99), Vector3.new(0, y + (i % 2) * 0.08, 0), wrapDark) -- faixas
+		end
+		add(Vector3.new(1.15, 1.15, 1.05), Vector3.new(0, 5.85, -0.05), wrap) -- cabeça
+		add(Vector3.new(1.19, 0.14, 1.09), Vector3.new(0, 6.25, -0.05), wrapDark)
+		add(Vector3.new(1.19, 0.12, 1.09), Vector3.new(0, 5.45, -0.05), wrapDark)
+		add(Vector3.new(1.0, 0.26, 0.1), Vector3.new(0, 5.92, -0.6), rgb(60, 44, 40)) -- frestinha dos olhos
+		for _, sx in { -1, 1 } do
+			add(Vector3.new(0.18, 0.16, 0.08), Vector3.new(sx * 0.24, 5.92, -0.64), rgb(255, 214, 110), NEON) -- olhinhos
+		end
+		add(Vector3.new(0.3, 1.0, 0.1), Vector3.new(0.35, 3.6, 0.52), wrapDark) -- ponta de faixa solta nas costas
+	end)
+	for _, sx in { -1, 1 } do
+		limb(if sx < 0 then "ArmL" else "ArmR", Vector3.new(sx * 0.95, 4.8, 0), function(add)
+			add(Vector3.new(0.45, 0.45, 1.7), Vector3.new(sx * 0.95, 4.8, -0.75), wrap)
+			add(Vector3.new(0.49, 0.1, 0.4), Vector3.new(sx * 0.95, 4.83, -0.4), wrapDark)
+			add(Vector3.new(0.49, 0.1, 0.35), Vector3.new(sx * 0.95, 4.77, -1.15), wrapDark)
+		end)
+		limb(if sx < 0 then "LegL" else "LegR", Vector3.new(sx * 0.38, 2.9, 0), function(add)
+			add(Vector3.new(0.6, 2.9, 0.62), Vector3.new(sx * 0.38, 1.45, 0), wrap)
+			add(Vector3.new(0.64, 0.12, 0.66), Vector3.new(sx * 0.38, 2.0, 0), wrapDark)
+			add(Vector3.new(0.64, 0.12, 0.66), Vector3.new(sx * 0.38, 0.9, 0), wrapDark)
+		end)
+	end
+	-- faixa solta pendurada no braço direito (balança)
+	limb("Strip", Vector3.new(0.95, 4.6, -1.3), function(add)
+		add(Vector3.new(0.12, 0.8, 0.22), Vector3.new(0.95, 4.2, -1.3), wrapDark)
+	end)
+
+	local function pose(l: Limb, root: CFrame, rot: CFrame)
+		local j = root * l.Joint * rot
+		for i, p in l.Parts do
+			p.CFrame = j * l.Rel[i]
+		end
+	end
+	local walkTime = (Z1 - Z0) / SPEED
+	local period = (walkTime + TURN) * 2
+	addAnimator(function(t)
+		local c = t % period
+		local z, yaw, walking
+		if c < walkTime then
+			z, yaw, walking = Z0 + c * SPEED, math.pi, true -- indo pra frente (+Z)
+		elseif c < walkTime + TURN then
+			z, yaw, walking = Z1, math.pi - (c - walkTime) / TURN * math.pi, false
+		elseif c < walkTime * 2 + TURN then
+			z, yaw, walking = Z1 - (c - walkTime - TURN) * SPEED, 0, true -- voltando (-Z)
+		else
+			z, yaw, walking = Z0, -(c - walkTime * 2 - TURN) / TURN * math.pi, false
+		end
+		local stride = if walking then math.sin(t * 3.2) else 0
+		local bob = math.abs(stride) * 0.12
+		local root = CFrame.new(X, bob, z) * CFrame.Angles(0, yaw, 0)
+		pose(limbs.Body, root, CFrame.Angles(0, 0, stride * 0.06))
+		pose(limbs.LegL, root, CFrame.Angles(stride * 0.38, 0, 0))
+		pose(limbs.LegR, root, CFrame.Angles(-stride * 0.38, 0, 0))
+		pose(limbs.ArmL, root, CFrame.Angles(math.sin(t * 1.6) * 0.06 - 0.05, 0, 0))
+		pose(limbs.ArmR, root, CFrame.Angles(math.sin(t * 1.6 + 1) * 0.06 - 0.05, 0, 0))
+		pose(limbs.Strip, root, CFrame.Angles(math.sin(t * 2.4) * 0.3, 0, math.sin(t * 1.7) * 0.15))
+	end)
+end
+
+-- Mão de Zumbi: lá fora, na primeira janela da parede da direita (a do fundo), uma mão verde sobe devagar por trás
+-- da floreira, abre e fecha os dedos, dá um tchauzinho e afunda de novo. Em loop, com uma pausa escondida.
+BUILDERS.HalloweenZombieHand = function(m)
+	local win = WINDOWS.RightBack
+	-- do lado de fora, atrás do vidro da frente da janela (a câmera vê esse pedaço entre o mainel e a borda,
+	-- abaixo da luminária e acima da floreira)
+	local base = Vector3.new(Layout.Room.MaxX + 1.9, 0, win.Frame.Position.Z - 0.75)
+	local HS = 1.5 -- tamanho da mão (maior que a real: fica longe, atrás do vidro)
+	local skin, skinDark = rgb(190, 224, 150), rgb(122, 166, 98) -- verde clarinho: destaca das árvores lá fora
+	local sleeve, sleeveDark = rgb(120, 96, 140), rgb(92, 72, 110)
+	-- espaço da mão: +Y pra cima, palma virada pra dentro do café (-X), dedos abertos ao longo de Z
+	local wrist0 = CFrame.new(base + Vector3.new(0, 5.2, 0))
+	local ps: { BasePart } = {}
+	local rel: { CFrame } = {}
+	-- `at` no tamanho 1 (a posição é escalada por HS)
+	local function scaled(at: CFrame): CFrame
+		return at - at.Position + at.Position * HS
+	end
+	local function add(size: Vector3, at0: CFrame, color: Color3): BasePart
+		local at = scaled(at0)
+		local p = part(m, size * HS, wrist0 * at, color)
+		table.insert(ps, p)
+		table.insert(rel, at)
+		return p
+	end
+	add(Vector3.new(0.75, 3, 0.75), CFrame.new(0, -1.7, 0), sleeve) -- manga
+	add(Vector3.new(0.8, 0.3, 0.8), CFrame.new(0, -0.3, 0), sleeveDark) -- punho rasgado
+	add(Vector3.new(0.3, 0.35, 0.25), CFrame.new(-0.2, -0.55, 0.42), sleeveDark) -- farrapo
+	add(Vector3.new(0.6, 0.6, 0.65), CFrame.new(0, 0.05, 0), skin) -- pulso
+	add(Vector3.new(0.4, 0.95, 1.0), CFrame.new(0, 0.7, 0), skin) -- palma
+	add(Vector3.new(0.06, 0.3, 0.3), CFrame.new(-0.22, 0.55, 0.15), skinDark) -- manchinha
+	add(Vector3.new(0.3, 0.5, 0.26), CFrame.new(0, 0.55, -0.62) * CFrame.Angles(math.rad(-35), 0, 0), skin) -- dedão
+	-- dedos: cada um dobra na junta (rodando em Z: a ponta vai pra dentro do café)
+	type Finger = { Knuckle: CFrame, Parts: { BasePart }, Rel: { CFrame }, Phase: number }
+	local fingers: { Finger } = {}
+	for i, z in { -0.36, -0.12, 0.12, 0.36 } do
+		local len = if i == 2 or i == 3 then 0.72 else 0.6
+		local knuckle = scaled(CFrame.new(0, 1.18, z) * CFrame.Angles(math.rad(z * 18), 0, 0))
+		local f: Finger = { Knuckle = knuckle, Parts = {}, Rel = {}, Phase = i * 0.5 }
+		for _, spec in { { Vector3.new(0.2, len, 0.18), len / 2, skin }, { Vector3.new(0.21, 0.12, 0.19), len * 0.55, skinDark } } do
+			local at = knuckle * CFrame.new(0, spec[2] * HS, 0)
+			local p = part(m, spec[1] * HS, wrist0 * at, spec[3])
+			table.insert(f.Parts, p)
+			table.insert(f.Rel, CFrame.new(0, spec[2] * HS, 0))
+		end
+		table.insert(fingers, f)
+	end
+
+	-- ciclo: escondida -> sobe -> mexe os dedos e acena -> afunda
+	local HIDE, RISE, WAVE, SINK = 3.2, 1.6, 2.6, 0.9
+	local period = HIDE + RISE + WAVE + SINK
+	local DOWN = -4.4 -- quanto ela afunda pra sumir atrás da parede
+	local function smooth(a: number): number
+		return a * a * (3 - 2 * a)
+	end
+	addAnimator(function(t)
+		local c = t % period
+		local up, curl, sway
+		if c < HIDE then
+			up, curl, sway = 0, 0.9, 0
+		elseif c < HIDE + RISE then
+			local a = (c - HIDE) / RISE
+			up, curl, sway = smooth(a), 0.9 * (1 - a), math.sin(a * math.pi * 3) * 0.08
+		elseif c < HIDE + RISE + WAVE then
+			local a = (c - HIDE - RISE) / WAVE
+			up = 1
+			curl = math.max(0, math.sin(a * math.pi * 4)) * 0.9 -- abre e fecha (agarrando o ar)
+			sway = math.sin(a * math.pi * 2) * 0.22 -- tchauzinho
+		else
+			local a = (c - HIDE - RISE - WAVE) / SINK
+			up, curl, sway = 1 - smooth(a), 0.9 * a, 0
+		end
+		local wobble = math.sin(t * 7) * 0.03 * up
+		local wrist = wrist0 * CFrame.new(0, (1 - up) * DOWN, 0) * CFrame.Angles(sway + wobble, 0, 0)
+		for i, p in ps do
+			p.CFrame = wrist * rel[i]
+		end
+		for _, f in fingers do
+			local bend = curl + math.sin(t * 9 + f.Phase) * 0.08 * up
+			local k = wrist * f.Knuckle * CFrame.Angles(0, 0, bend)
+			for i, p in f.Parts do
+				p.CFrame = k * f.Rel[i]
+			end
+		end
+	end)
+end
+
 local function build(id: string): Model
 	local m = Instance.new("Model")
 	m.Name = id
@@ -1196,6 +1511,9 @@ local function unbuild(id: string)
 	end
 	old:Destroy()
 	built[id] = nil
+	if id == "Cat" then
+		catHead = nil
+	end
 end
 
 -- decorações compradas que o jogador desligou na loja (não aparecem no café)
