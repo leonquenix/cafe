@@ -623,7 +623,7 @@ local function onBuy(id: string, player: Player?)
 		apply = function()
 			data.Pastries[id] = true
 		end
-	elseif decor and not data.Decor[id] and decor.Level <= data.Level then
+	elseif decor and not data.Decor[id] and decor.Level <= data.Level and (not decor.Requires or data.Decor[decor.Requires]) then
 		cost = decor.Cost
 		apply = function()
 			data.Decor[id] = true

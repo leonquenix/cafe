@@ -240,20 +240,37 @@ local function upgradeCards(scope: any): { Frame }
 	return cards
 end
 
-local function ownableCard(scope: any, order: number, id: string, iconName: string, title: string, description: string, cost: number, level: number): Frame
+-- `requires`: outro item que precisa ter antes (o botão mostra `requiresText` enquanto não tiver)
+local function ownableCard(
+	scope: any,
+	order: number,
+	id: string,
+	iconName: string,
+	title: string,
+	description: string,
+	cost: number,
+	level: number,
+	requires: string?,
+	requiresText: string?
+): Frame
 	local owned = scope:Computed(function(use)
 		return use(State.Owned)[id] == true
+	end)
+	local missing = scope:Computed(function(use)
+		return requires ~= nil and use(State.Owned)[requires] ~= true
 	end)
 	local text = scope:Computed(function(use)
 		if use(owned) then
 			return "Comprado"
 		elseif use(State.Level) < level then
 			return `Nível {level}`
+		elseif use(missing) then
+			return requiresText or "Bloqueado"
 		end
 		return `${cost}`
 	end)
 	local enabled = scope:Computed(function(use)
-		return not use(owned) and use(State.Level) >= level and use(State.Money) >= cost
+		return not use(owned) and not use(missing) and use(State.Level) >= level and use(State.Money) >= cost
 	end)
 	return shopCard(scope, order, iconName, title, description, nil, text, enabled, function()
 		buy(id)
@@ -328,7 +345,11 @@ end
 -- card de decoração comum: comprar e, depois, ligar/desligar
 local function decorCard(scope: any, order: number, d: Catalog.Decor): Frame
 	local desc = `{d.Description} Aconchego +{d.Cozy}.`
-	local card = ownableCard(scope, order, d.Id, d.Icon, d.Name, desc, d.Cost, d.Level)
+	local needs = d.Requires and Catalog.Decor[d.Requires]
+	if needs then
+		desc = `{d.Description} Precisa do {needs.Name}. Aconchego +{d.Cozy}.`
+	end
+	local card = ownableCard(scope, order, d.Id, d.Icon, d.Name, desc, d.Cost, d.Level, d.Requires, if needs then "Sem gatinho" else nil)
 	decorToggle(scope, d.Id).Parent = card
 	return card
 end
