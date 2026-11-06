@@ -33,6 +33,13 @@ local YELLOW_SPEEDUP = 1.15
 
 local AUTO_DELIVER_DELAY = 0.8 -- tempo para ler "Perfeito!" / "Tá bom!" antes de entregar sozinho
 
+-- No celular (toque sem mouse) os doces da bandeja ficam 35% maiores. As cartas já ocupam
+-- o máximo que cabe na bandeja, então o pop-up inteiro cresce 35% (sem passar da tela)
+-- e a bandeja, proporcional, dá cartas 35% maiores. No computador fica igual.
+local ICON_SCALE = if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then 1.35 else 1
+local PANEL_MIN = Vector2.new(360, 260)
+local TRAY_PAD = math.round(6 * ICON_SCALE) -- espaços da bandeja crescem junto, pra proporção ficar igual
+
 type Status = "idle" | "flying" | "baking" | "done" | "waiting"
 
 local PastryPopup = {}
@@ -426,7 +433,7 @@ local function layoutTray()
 			count += 1
 		end
 	end
-	local pad = 6
+	local pad = TRAY_PAD
 	local w, h = tray.AbsoluteSize.X - 2 * pad, tray.AbsoluteSize.Y - 2 * pad
 	local best = 0
 	for cols = 1, math.max(count, 1) do
@@ -540,29 +547,51 @@ function PastryPopup.init(playerGui: PlayerGui)
 		[Children] = {
 			scope:New("UICorner")({ CornerRadius = UDim.new(0, 8) }),
 			scope:New("UIPadding")({
-				PaddingTop = UDim.new(0, 6),
-				PaddingBottom = UDim.new(0, 6),
-				PaddingLeft = UDim.new(0, 6),
-				PaddingRight = UDim.new(0, 6),
+				PaddingTop = UDim.new(0, TRAY_PAD),
+				PaddingBottom = UDim.new(0, TRAY_PAD),
+				PaddingLeft = UDim.new(0, TRAY_PAD),
+				PaddingRight = UDim.new(0, TRAY_PAD),
 			}),
 		},
 	}) :: Frame
 	trayGrid = scope:New("UIGridLayout")({
-		CellPadding = UDim2.fromOffset(6, 6),
+		CellPadding = UDim2.fromOffset(TRAY_PAD, TRAY_PAD),
 		HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = tray,
 	}) :: UIGridLayout
 	tray:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutTray)
 
+	-- tamanho mínimo do pop-up (no celular 35% maior, mas nunca maior que a tela)
+	local minSize = scope:Value(PANEL_MIN)
+	if ICON_SCALE ~= 1 then
+		local function fitMin()
+			local camera = workspace.CurrentCamera
+			local view = if camera then camera.ViewportSize else Vector2.new(1e4, 1e4)
+			local want = PANEL_MIN * ICON_SCALE
+			minSize:set(Vector2.new(math.min(want.X, view.X * 0.96), math.min(want.Y, view.Y * 0.94)))
+		end
+		local viewConn: RBXScriptConnection?
+		local function watchCamera()
+			if viewConn then
+				viewConn:Disconnect()
+			end
+			local camera = workspace.CurrentCamera
+			viewConn = if camera then camera:GetPropertyChangedSignal("ViewportSize"):Connect(fitMin) else nil
+			fitMin()
+		end
+		workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(watchCamera)
+		watchCamera()
+	end
+
 	panel = scope:New("Frame")({
 		Name = "Panel",
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromScale(0.6, 0.6),
+		Size = UDim2.fromScale(0.6 * ICON_SCALE, 0.6 * ICON_SCALE),
 		BackgroundColor3 = Theme.Wood,
 		[Children] = {
-			scope:New("UISizeConstraint")({ MinSize = Vector2.new(360, 260) }),
+			scope:New("UISizeConstraint")({ MinSize = minSize }),
 			scope:New("UIScale")({ Scale = scale }),
 			scope:New("UICorner")({ CornerRadius = UDim.new(0, 14) }),
 			scope:New("UIStroke")({ Thickness = 4, Color = Theme.Ink }),
