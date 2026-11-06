@@ -102,10 +102,12 @@ type Fall = {
 	Spin: number,
 	Slant: number, -- vento: velocidade em X proporcional à queda
 	Transparency: number,
+	Sides: boolean?, -- também cai do lado de fora das janelas laterais
 }
 
 local FALL: { [string]: Fall } = {
 	Snow = {
+		Sides = true,
 		Count = 140,
 		Size = Vector3.new(0.32, 0.32, 0.32),
 		Colors = { rgb(255, 255, 255), rgb(234, 242, 255) },
@@ -116,6 +118,7 @@ local FALL: { [string]: Fall } = {
 		Transparency = 0,
 	},
 	Leaves = {
+		Sides = true,
 		Count = 36,
 		Size = Vector3.new(0.55, 0.07, 0.42),
 		Colors = AUTUMN_LEAVES,
@@ -136,6 +139,7 @@ local FALL: { [string]: Fall } = {
 		Transparency = 0,
 	},
 	Rain = {
+		Sides = true,
 		Count = 150,
 		Size = Vector3.new(0.07, 1.7, 0.07),
 		Colors = { rgb(204, 218, 236) },
@@ -148,7 +152,26 @@ local FALL: { [string]: Fall } = {
 }
 
 -- (Z0 fica uns studs na frente das câmeras de fora, pra nenhum bloquinho passar colado na lente)
-local BOX = { X0 = -46, X1 = 46, Z0 = -44, Z1 = Layout.Room.MinZ - 1.6, Y0 = -0.1, Y1 = 36 }
+type Box = { X0: number, X1: number, Z0: number, Z1: number, Y0: number, Y1: number }
+local BOX: Box = { X0 = -46, X1 = 46, Z0 = -44, Z1 = Layout.Room.MinZ - 1.6, Y0 = -0.1, Y1 = 36 }
+
+-- Caixas finas do lado de fora das paredes laterais (janelas em Z -16..0): o mesmo clima visto de dentro.
+-- Começam a 3,5 studs da parede (o balanço lateral não encosta nela) e param antes das árvores (X ±30).
+local SIDE_W, SIDE_Z0, SIDE_Z1, SIDE_Y1 = 6, Layout.Room.MinZ + 3, 3, 14
+local SIDE_BOXES: { Box } = {
+	{ X0 = Layout.Room.MinX - 3.5 - SIDE_W, X1 = Layout.Room.MinX - 3.5, Z0 = SIDE_Z0, Z1 = SIDE_Z1, Y0 = -0.1, Y1 = SIDE_Y1 },
+	{ X0 = Layout.Room.MaxX + 3.5, X1 = Layout.Room.MaxX + 3.5 + SIDE_W, Z0 = SIDE_Z0, Z1 = SIDE_Z1, Y0 = -0.1, Y1 = SIDE_Y1 },
+}
+
+local function volume(b: Box): number
+	return (b.X1 - b.X0) * (b.Z1 - b.Z0) * (b.Y1 - b.Y0)
+end
+
+-- quantos bloquinhos vão numa caixa lateral: proporcional ao volume, mas 6x mais denso que a frente (pela
+-- janela só se vê uma fatia rasa de 6 studs, enquanto a frente é vista com uns 20 de profundidade)
+local function sideCount(f: Fall, b: Box): number
+	return math.max(8, math.floor(f.Count * volume(b) / volume(BOX) * 6 + 0.5))
+end
 
 local OutsideTheme = {}
 
@@ -243,8 +266,10 @@ local function clear()
 	setClouds(nil)
 end
 
--- monta o pool de bloquinhos caindo; retorna o passo por frame
-local function makeFall(f: Fall, parent: Folder, rng: Random): (t: number, dt: number) -> ()
+-- monta o pool de bloquinhos caindo dentro da caixa; retorna o passo por frame
+local function makeFall(f: Fall, box: Box, count: number, parent: Folder, rng: Random): (t: number, dt: number) -> ()
+	local BOX = box
+	local width = BOX.X1 - BOX.X0
 	local parts: { BasePart } = {}
 	local pos: { Vector3 } = {}
 	local speed: { number } = {}
@@ -254,7 +279,7 @@ local function makeFall(f: Fall, parent: Folder, rng: Random): (t: number, dt: n
 		pos[i] = Vector3.new(rng:NextNumber(BOX.X0, BOX.X1), y, rng:NextNumber(BOX.Z0, BOX.Z1))
 		speed[i] = rng:NextNumber(f.Speed[1], f.Speed[2])
 	end
-	for i = 1, f.Count do
+	for i = 1, count do
 		local p = Instance.new("Part")
 		p.Anchored = true
 		p.CanCollide = false
@@ -272,10 +297,17 @@ local function makeFall(f: Fall, parent: Folder, rng: Random): (t: number, dt: n
 	end
 	local tilt = CFrame.Angles(0, 0, math.atan(f.Slant))
 	return function(t: number, dt: number)
-		for i = 1, f.Count do
+		for i = 1, count do
 			local p = pos[i]
 			local s = speed[i]
-			p = Vector3.new(p.X - s * f.Slant * dt, p.Y - s * dt, p.Z)
+			local x = p.X - s * f.Slant * dt
+			-- o vento leva pro lado: dá a volta dentro da caixa (nas laterais, nunca entra no café)
+			if x > BOX.X1 then
+				x -= width
+			elseif x < BOX.X0 then
+				x += width
+			end
+			p = Vector3.new(x, p.Y - s * dt, p.Z)
 			if p.Y < BOX.Y0 then
 				spawnAt(i, BOX.Y1 + rng:NextNumber(0, 3))
 				p = pos[i]
@@ -387,7 +419,13 @@ local function build(id: string)
 		end
 	end
 	if fall and FALL[fall] then
-		table.insert(animators, makeFall(FALL[fall], f, rng))
+		local spec = FALL[fall]
+		table.insert(animators, makeFall(spec, BOX, spec.Count, f, rng))
+		if spec.Sides then
+			for _, b in SIDE_BOXES do
+				table.insert(animators, makeFall(spec, b, sideCount(spec, b), f, rng))
+			end
+		end
 	end
 	if atmosphere then
 		setEffect("Atmosphere", atmosphere)
