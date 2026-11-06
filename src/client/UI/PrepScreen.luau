@@ -16,6 +16,7 @@ local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
 local Sfx = require(script.Parent.Parent.Sfx)
 local State = require(script.Parent.Parent.State)
+local BookAlert = require(script.Parent.BookAlert)
 local CatPicker = require(script.Parent.CatPicker)
 local Theme = require(script.Parent.Theme)
 
@@ -914,6 +915,8 @@ function PrepScreen.show(onOpen: () -> (), initialTab: string?)
 									scope:New("UICorner")({ CornerRadius = UDim.new(0.3, 0) }),
 									scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 									icon("Book"),
+									-- mesma bolinha "!" do livro do HUD (tem maestria para coletar)
+									BookAlert(scope),
 								},
 								[OnEvent("Activated")] = function()
 									if PrepScreen.onOpenBook then

@@ -7,11 +7,11 @@ local Workspace = game:GetService("Workspace")
 
 local Fusion = require(ReplicatedStorage.Packages.Fusion)
 local Progression = require(ReplicatedStorage.Shared.Progression)
-local Recipes = require(ReplicatedStorage.Shared.Recipes)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
 local Sfx = require(script.Parent.Parent.Sfx)
 local State = require(script.Parent.Parent.State)
+local BookAlert = require(script.Parent.BookAlert)
 local Radio = require(script.Parent.Radio)
 local Theme = require(script.Parent.Theme)
 
@@ -90,36 +90,7 @@ function Hud.new(playerGui: PlayerGui)
 			scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 			bookArt,
 			-- bolinha de alerta: tem recompensa de maestria para coletar
-			scope:New("Frame")({
-				Name = "Alert",
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.9, 0.1),
-				Size = UDim2.fromScale(0.36, 0.36),
-				BackgroundColor3 = Theme.Rose,
-				ZIndex = 3,
-				Visible = scope:Computed(function(use)
-					local stats, mastered = use(State.Stats), use(State.Mastered)
-					for id in Recipes.Drinks do
-						if not mastered[id] and (stats[id] or 0) >= Recipes.masteryTarget(id) then
-							return true
-						end
-					end
-					return false
-				end),
-				[Children] = {
-					scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
-					scope:New("UIStroke")({ Thickness = 2, Color = Theme.Ink }),
-					scope:New("TextLabel")({
-						BackgroundTransparency = 1,
-						Size = UDim2.fromScale(1, 1),
-						Font = Theme.Font,
-						TextScaled = true,
-						TextColor3 = Theme.Paper,
-						Text = "!",
-						ZIndex = 4,
-					}),
-				},
-			}),
+			BookAlert(scope),
 		},
 		[OnEvent("Activated")] = function()
 			if Hud.onOpenBook then
