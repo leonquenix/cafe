@@ -178,6 +178,59 @@ function ThemePicker.show(options: Options)
 		})
 	end
 
+	-- cor atual das paredes de dentro ao lado do tema, pra ver se combinam (a cor é escolhida à parte, no kit de tintas)
+	local wallColor = scope:Computed(function(use)
+		return Catalog.WallColors[use(State.WallColor) :: string] or Catalog.WallColors[Catalog.DefaultWallColor]
+	end)
+	local wallChip = scope:New("Frame")({
+		Name = "WallColor",
+		Position = UDim2.fromScale(0.62, 0.07),
+		Size = UDim2.fromScale(0.27, 0.22),
+		BackgroundTransparency = 1,
+		[Children] = {
+			-- amostra quadradinha: reboco embaixo e a faixa mais escura de cima, como na parede
+			scope:New("Frame")({
+				Name = "Swatch",
+				AnchorPoint = Vector2.new(0, 0.5),
+				Position = UDim2.fromScale(0, 0.5),
+				Size = UDim2.fromScale(0.8, 0.8),
+				SizeConstraint = Enum.SizeConstraint.RelativeYY,
+				BackgroundColor3 = scope:Computed(function(use)
+					return use(wallColor).Plaster
+				end),
+				ClipsDescendants = true,
+				[Children] = {
+					scope:New("UICorner")({ CornerRadius = UDim.new(0.15, 0) }),
+					scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink }),
+					scope:New("Frame")({
+						Name = "Shade",
+						Size = UDim2.fromScale(1, 0.3),
+						BorderSizePixel = 0,
+						BackgroundColor3 = scope:Computed(function(use)
+							return use(wallColor).Shade
+						end),
+					}),
+				},
+			}),
+			label("Paredes", {
+				Name = "Caption",
+				Position = UDim2.fromScale(0.28, 0.04),
+				Size = UDim2.fromScale(0.72, 0.38),
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextColor3 = Theme.WoodDark,
+				Font = Enum.Font.Gotham,
+			}),
+			label(scope:Computed(function(use)
+				return use(wallColor).Name
+			end), {
+				Name = "ColorName",
+				Position = UDim2.fromScale(0.28, 0.42),
+				Size = UDim2.fromScale(0.72, 0.5),
+				TextXAlignment = Enum.TextXAlignment.Left,
+			}),
+		},
+	})
+
 	local coin = PixelArt.draw(Sprites.Coin)
 	coin.AnchorPoint = Vector2.new(0, 0.5)
 	coin.Position = UDim2.fromScale(0.06, 0.5)
@@ -200,12 +253,13 @@ function ThemePicker.show(options: Options)
 			arrow("Prev", "<", 0.05, -1),
 			arrow("Next", ">", 0.95, 1),
 			iconHolder,
+			wallChip,
 			label(scope:Computed(function(use)
 				return Catalog.Themes[use(selected)].Name
 			end), {
 				Name = "Title",
 				Position = UDim2.fromScale(0.29, 0.08),
-				Size = UDim2.fromScale(0.55, 0.2),
+				Size = UDim2.fromScale(0.31, 0.2),
 				TextXAlignment = Enum.TextXAlignment.Left,
 			}),
 			label(scope:Computed(function(use)

@@ -8,6 +8,9 @@ local Theme = require(script.Parent.Theme)
 
 local WalkHud = {}
 
+-- no celular o pop-up fica 35% menor (mesma detecção do Hud: toque sem mouse)
+local PANEL_SCALE = if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then 0.65 else 1
+
 local gui: ScreenGui
 
 function WalkHud.init(playerGui: PlayerGui)
@@ -57,7 +60,7 @@ function WalkHud.show(onBack: () -> (), hintText: string?, buttonText: string?)
 	pad.PaddingRight = UDim.new(0.08, 0)
 	pad.Parent = back
 
-	TweenService:Create(scale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	TweenService:Create(scale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = PANEL_SCALE }):Play()
 
 	local used = false
 	back.Activated:Connect(function()
