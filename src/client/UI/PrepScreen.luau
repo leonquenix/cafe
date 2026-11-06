@@ -50,8 +50,10 @@ function PrepScreen.init(gui: PlayerGui)
 	CatPicker.init(gui)
 end
 
--- no celular (toque sem mouse) a dica da aba Cardápio fica 20% menor
-local MENU_HINT_SCALE = if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then 0.8 else 1
+-- no celular (toque sem mouse) a dica da aba Cardápio fica 20% menor e centralizada no vão entre o
+-- conteúdo e o rodapé (a tela é baixa e, presa 24px abaixo, ela encostava nos ícones do rodapé)
+local IS_PHONE = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+local MENU_HINT_SCALE = if IS_PHONE then 0.8 else 1
 
 local function label(scope: any, text: any, props: { [string]: any }): TextLabel
 	props.BackgroundTransparency = 1
@@ -855,8 +857,9 @@ function PrepScreen.show(onOpen: () -> (), initialTab: string?)
 							label(scope, scope:Computed(function(use)
 								return `{#use(selection)} receitas no cardápio (mínimo {Progression.MinMenu}) · clique para tirar/colocar`
 							end), {
-								AnchorPoint = Vector2.new(0.5, 1),
-								Position = UDim2.new(0.5, 0, 1, 24),
+								-- celular: centro do vão Content (0.22–0.82) → Footer (0.9) = metade de 0.08/0.6 abaixo do Content
+								AnchorPoint = if IS_PHONE then Vector2.new(0.5, 0.5) else Vector2.new(0.5, 1),
+								Position = if IS_PHONE then UDim2.new(0.5, 0, 1 + 0.04 / 0.6, 0) else UDim2.new(0.5, 0, 1, 24),
 								Size = UDim2.new(1, 0, 0, 20 * MENU_HINT_SCALE),
 								TextColor3 = Theme.Ink,
 								Visible = scope:Computed(function(use)
