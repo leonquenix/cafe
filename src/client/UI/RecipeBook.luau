@@ -413,6 +413,7 @@ function RecipeBook.show()
 			TextScaled = true,
 			TextColor3 = Theme.Ink,
 			Text = text,
+			[Fusion.Attribute("ClickSound")] = "BookOpen", -- mesmo som de abrir o livro
 			[Children] = {
 				scope:New("UICorner")({ CornerRadius = UDim.new(0.3, 0) }),
 				scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
