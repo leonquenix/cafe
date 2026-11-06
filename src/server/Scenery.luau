@@ -207,14 +207,18 @@ local function windowDressing(parent: Instance, center: Vector3, width: number, 
 	-- normal aponta para dentro da sala
 	local right = Vector3.new(0, 1, 0):Cross(normal).Unit
 	local cf = CFrame.fromMatrix(center, right, Vector3.yAxis, -normal)
-	part(parent, Vector3.new(width, height, 0.2), cf, C.Glass, { Transparency = 0.6, CastShadow = false })
+	-- Anti z-fighting: a moldura avança 0.03 para dentro do vão (a face dela não fica no mesmo
+	-- plano do recorte da parede), vidro/mainel/travessa são um pouco menores que o vão (as pontas
+	-- ficam escondidas dentro da moldura) e peças que se cruzam têm profundidades diferentes.
+	part(parent, Vector3.new(width - 0.02, height - 0.02, 0.2), cf, C.Glass, { Transparency = 0.6, CastShadow = false })
 	local t = 0.35
-	part(parent, Vector3.new(width + t * 2, t, 0.6), cf * CFrame.new(0, height / 2 + t / 2, 0), C.Trim)
-	part(parent, Vector3.new(width + t * 2, t, 0.6), cf * CFrame.new(0, -height / 2 - t / 2, 0), C.Trim)
-	part(parent, Vector3.new(t, height, 0.6), cf * CFrame.new(width / 2 + t / 2, 0, 0), C.Trim)
-	part(parent, Vector3.new(t, height, 0.6), cf * CFrame.new(-width / 2 - t / 2, 0, 0), C.Trim)
-	part(parent, Vector3.new(0.2, height, 0.3), cf, C.Trim) -- mainel vertical
-	part(parent, Vector3.new(width, 0.2, 0.3), cf * CFrame.new(0, height * 0.15, 0), C.Trim)
+	local inset = 0.03
+	part(parent, Vector3.new(width + t * 2, t, 0.64), cf * CFrame.new(0, height / 2 + t / 2 - inset, 0), C.Trim)
+	part(parent, Vector3.new(width + t * 2, t, 0.64), cf * CFrame.new(0, -height / 2 - t / 2 + inset, 0), C.Trim)
+	part(parent, Vector3.new(t, height, 0.6), cf * CFrame.new(width / 2 + t / 2 - inset, 0, 0), C.Trim)
+	part(parent, Vector3.new(t, height, 0.6), cf * CFrame.new(-width / 2 - t / 2 + inset, 0, 0), C.Trim)
+	part(parent, Vector3.new(0.2, height - 0.04, 0.32), cf, C.Trim) -- mainel vertical
+	part(parent, Vector3.new(width - 0.04, 0.2, 0.3), cf * CFrame.new(0, height * 0.15, 0), C.Trim)
 	-- peitoril com floreira
 	local sill = cf * CFrame.new(0, -height / 2 - 0.4, -0.7)
 	part(parent, Vector3.new(width + 1, 0.3, 1.2), sill, C.Trim)
@@ -254,9 +258,11 @@ local function buildWalls()
 	end
 	-- batente da porta + capacho
 	local dz = R.MinZ - T / 2
-	part(m, Vector3.new(0.5, 8.9, 1.3), Vector3.new(doorA0 - 0.25, 4.45, dz), C.WoodDark)
-	part(m, Vector3.new(0.5, 8.9, 1.3), Vector3.new(doorA1 + 0.25, 4.45, dz), C.WoodDark)
-	part(m, Vector3.new(doorA1 - doorA0 + 1, 0.5, 1.3), Vector3.new(Layout.DoorX, 8.75, dz), C.WoodDark)
+	-- (o batente avança 0.03 para dentro do vão e a verga é mais funda que os montantes:
+	-- nenhuma face fica no mesmo plano do recorte da parede -> sem z-fighting)
+	part(m, Vector3.new(0.53, 8.9, 1.3), Vector3.new(doorA0 - 0.25 + 0.015, 4.45, dz), C.WoodDark)
+	part(m, Vector3.new(0.53, 8.9, 1.3), Vector3.new(doorA1 + 0.25 - 0.015, 4.45, dz), C.WoodDark)
+	part(m, Vector3.new(doorA1 - doorA0 + 1, 0.53, 1.34), Vector3.new(Layout.DoorX, 8.735, dz), C.WoodDark)
 	-- porta aberta encostada na parede externa
 	part(m, Vector3.new(0.3, 8.3, doorA1 - doorA0), CFrame.new(doorA1 + 0.2, 4.15, dz - 0.6 - (doorA1 - doorA0) / 2), C.Sage)
 	-- barreira invisível: dá pra ver lá fora, mas não dá pra sair andando
@@ -380,10 +386,11 @@ function buildCottage(parent: Instance)
 	-- enxaimel: vigas horizontais, pilares e mãos-francesas
 	local timber = COTTAGE.Timber
 	local tz = cz - 0.22
-	part(m, Vector3.new(R.MaxX - R.MinX + 1, 0.4, 0.3), Vector3.new(0, 13.7, tz), timber)
-	part(m, Vector3.new(R.MaxX - R.MinX + 1, 0.35, 0.3), Vector3.new(0, 11.35, tz), timber)
+	-- (vigas 0.02 mais curtas em cada ponta: as pontas não ficam no mesmo plano das bordas do revestimento)
+	part(m, Vector3.new(R.MaxX - R.MinX + 1 - 0.04, 0.4, 0.3), Vector3.new(0, 13.7, tz), timber)
+	part(m, Vector3.new(R.MaxX - R.MinX + 1 - 0.04, 0.35, 0.3), Vector3.new(0, 11.35, tz), timber)
 	for _, seg in { { R.MinX - 0.5, doorA0 - 0.5 }, { doorA1 + 0.5, R.MaxX + 0.5 } } do
-		part(m, Vector3.new(seg[2] - seg[1], 0.35, 0.3), Vector3.new((seg[1] + seg[2]) / 2, 2.55, tz), timber)
+		part(m, Vector3.new(seg[2] - seg[1] - 0.04, 0.35, 0.3), Vector3.new((seg[1] + seg[2]) / 2, 2.55, tz), timber)
 	end
 	local posts = { R.MinX - 0.2, -12.2, -3, 5.4, doorA0 - 0.75, doorA1 + 0.75, 12.4, R.MaxX + 0.2 }
 	for _, x in posts do
@@ -402,14 +409,30 @@ function buildCottage(parent: Instance)
 	end
 
 	-- janelas: venezianas e floreiras do lado de fora
+	-- venezianas: entre duas janelas próximas fica UMA só (antes eram duas sobrepostas no mesmo plano)
+	local shutterXs: { number } = {}
 	for _, w in windows do
-		for _, side in { -1, 1 } do
-			local x = if side < 0 then w[1] - 1.05 else w[2] + 1.05
-			part(m, Vector3.new(1.3, 6.8, 0.2), Vector3.new(x, 7.25, cz - 0.3), COTTAGE.Shutter)
-			for i = 0, 4 do
-				part(m, Vector3.new(1.1, 0.12, 0.22), Vector3.new(x, 4.6 + i * 1.3, cz - 0.34), COTTAGE.Shutter:Lerp(Color3.new(0, 0, 0), 0.2))
+		for _, x in { w[1] - 1.05, w[2] + 1.05 } do
+			local merged = false
+			for k, other in shutterXs do
+				if math.abs(other - x) < 1.3 then
+					shutterXs[k] = (other + x) / 2
+					merged = true
+					break
+				end
+			end
+			if not merged then
+				table.insert(shutterXs, x)
 			end
 		end
+	end
+	for _, x in shutterXs do
+		part(m, Vector3.new(1.3, 6.8, 0.2), Vector3.new(x, 7.25, cz - 0.3), COTTAGE.Shutter)
+		for i = 0, 4 do
+			part(m, Vector3.new(1.08, 0.12, 0.22), Vector3.new(x, 4.6 + i * 1.3, cz - 0.34), COTTAGE.Shutter:Lerp(Color3.new(0, 0, 0), 0.2))
+		end
+	end
+	for _, w in windows do
 		local width = w[2] - w[1]
 		local boxCF = CFrame.new((w[1] + w[2]) / 2, 3.35, fz - 0.65)
 		part(m, Vector3.new(width + 0.4, 0.8, 0.9), boxCF, C.Terracotta)
@@ -431,7 +454,7 @@ function buildCottage(parent: Instance)
 		part(m, Vector3.new((doorA1 - doorA0 + 1) / 6, 0.2, 2.2), CFrame.new(x, 9.75, fz - 1) * CFrame.Angles(math.rad(-22), 0, 0), if i % 2 == 0 then C.Cream else C.Rose)
 	end
 	part(m, Vector3.new(doorA1 - doorA0 + 1.2, 0.3, 0.3), Vector3.new(Layout.DoorX, 9.35, fz - 2), C.Rose)
-	for _, x in { doorA0 - 1.3, doorA1 + 1.3 } do
+	for _, x in { doorA0 - 1.32, doorA1 + 1.32 } do -- (1.32: o suporte não fica no mesmo plano do pilar)
 		part(m, Vector3.new(0.2, 0.2, 0.7), Vector3.new(x, 7.4, fz - 0.45), rgb(40, 36, 36))
 		part(m, Vector3.new(0.7, 0.9, 0.7), Vector3.new(x, 6.9, fz - 0.8), rgb(40, 36, 36))
 		local glow = part(m, Vector3.new(0.5, 0.6, 0.5), Vector3.new(x, 6.9, fz - 0.8), C.Warm, { Material = Enum.Material.Neon, CastShadow = false })
@@ -463,7 +486,9 @@ function buildCottage(parent: Instance)
 	-- oitão (triângulo da frente) em "escadinha" pixel
 	for i = 0, rise - 1 do
 		local w = 2 * half * (1 - (i + 0.5) / rise)
-		part(m, Vector3.new(w, 1, 0.9), Vector3.new(0, R.Height + i + 0.5, R.MinZ - 0.55), COTTAGE.Plaster)
+		-- (0.03 à frente do teto: a face da frente não coincide com a do forro)
+		-- (e cada degrau sobe 0.02 a mais: o topo do primeiro não coincide com o topo do forro)
+		part(m, Vector3.new(w, 1.02, 0.9), Vector3.new(0, R.Height + i + 0.51, R.MinZ - 0.58), COTTAGE.Plaster)
 	end
 	part(m, Vector3.new(0.4, rise - 0.5, 0.3), Vector3.new(0, R.Height + (rise - 0.5) / 2, fz - 0.2), timber)
 	beam(m, Vector3.new(-9, R.Height + 0.2, fz - 0.2), Vector3.new(-0.2, R.Height + 4.5, fz - 0.2), 0.3, 0.3, timber)
