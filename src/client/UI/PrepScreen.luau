@@ -6,6 +6,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local Fusion = require(ReplicatedStorage.Packages.Fusion)
 local Catalog = require(ReplicatedStorage.Shared.Catalog)
@@ -48,6 +49,9 @@ function PrepScreen.init(gui: PlayerGui)
 	playerGui = gui
 	CatPicker.init(gui)
 end
+
+-- no celular (toque sem mouse) a dica da aba Cardápio fica 20% menor
+local MENU_HINT_SCALE = if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then 0.8 else 1
 
 local function label(scope: any, text: any, props: { [string]: any }): TextLabel
 	props.BackgroundTransparency = 1
@@ -853,7 +857,7 @@ function PrepScreen.show(onOpen: () -> (), initialTab: string?)
 							end), {
 								AnchorPoint = Vector2.new(0.5, 1),
 								Position = UDim2.new(0.5, 0, 1, 24),
-								Size = UDim2.new(1, 0, 0, 20),
+								Size = UDim2.new(1, 0, 0, 20 * MENU_HINT_SCALE),
 								TextColor3 = Theme.Ink,
 								Visible = scope:Computed(function(use)
 									return use(tab) == "Menu"
