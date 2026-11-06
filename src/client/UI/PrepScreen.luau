@@ -327,7 +327,8 @@ local function wallCard(scope: any, order: number): Frame
 	end)
 end
 
--- Ordem na aba: gatinho em 1º, temas da fachada em 2º e o resto do mais barato pro mais caro (empate: nível)
+-- Ordem na aba: gatinho em 1º, temas da fachada em 2º, cor das paredes em 3º e o resto do mais barato pro mais caro
+-- (empate: nível)
 local function decorCards(scope: any): { Frame }
 	local cards = {}
 	local rest = {}
@@ -338,8 +339,8 @@ local function decorCards(scope: any): { Frame }
 			table.insert(rest, Catalog.Decor[id])
 		end
 	end
-	-- tintas das paredes entram na fila pelo preço, como uma decoração (mas abrem a prévia por dentro)
-	table.insert(rest, Catalog.WallPaint :: any)
+	-- cor das paredes logo depois dos temas da fachada (abre a prévia por dentro da loja)
+	table.insert(cards, wallCard(scope, 3))
 	table.sort(rest, function(a, b)
 		if a.Cost ~= b.Cost then
 			return a.Cost < b.Cost
@@ -347,12 +348,8 @@ local function decorCards(scope: any): { Frame }
 		return a.Level < b.Level
 	end)
 	for i, d in rest do
-		if d.Id == Catalog.WallPaint.Id then
-			table.insert(cards, wallCard(scope, i + 2))
-			continue
-		end
 		local desc = `{d.Description} Aconchego +{d.Cozy}.`
-		table.insert(cards, ownableCard(scope, i + 2, d.Id, d.Icon, d.Name, desc, d.Cost, d.Level))
+		table.insert(cards, ownableCard(scope, i + 3, d.Id, d.Icon, d.Name, desc, d.Cost, d.Level))
 	end
 	-- temas da fachada: abre a prévia lá fora (ThemePicker)
 	local themeText = scope:Computed(function(use)
