@@ -28,6 +28,8 @@ Radio.Tracks = {
 	{ Name = "Jazz", Id = "rbxassetid://140331368291861", Color = Theme.Wood },
 	{ Name = "Lo-fi Hip Hop", Id = "rbxassetid://9047104336", Color = Theme.Sage },
 	{ Name = "New Age", Id = "rbxassetid://128130163260275", Color = Color3.fromRGB(150, 200, 220) },
+	{ Name = "Halloween", Id = "rbxassetid://74253488858910", Color = Color3.fromRGB(230, 140, 60) },
+	{ Name = "Natal", Id = "rbxassetid://135242736748021", Color = Color3.fromRGB(200, 80, 80) },
 }
 -- volume do Sound com o controle no máximo
 Radio.MaxVolume = 0.6
@@ -238,7 +240,7 @@ local function build()
 	panel = Instance.new("Frame")
 	panel.Name = "RadioPanel"
 	panel.BackgroundColor3 = Theme.Paper
-	panel.Size = UDim2.fromOffset(300, 262)
+	panel.Size = UDim2.fromOffset(300, 313)
 	panel.Visible = false
 	panel.ZIndex = 21
 	Theme.corner(panel, 0, 16)
@@ -280,7 +282,7 @@ local function build()
 	grid.Name = "Stations"
 	grid.BackgroundTransparency = 1
 	grid.Position = UDim2.fromOffset(14, 50)
-	grid.Size = UDim2.new(1, -28, 0, 144)
+	grid.Size = UDim2.new(1, -28, 0, 195)
 	grid.ZIndex = 22
 	grid.Parent = panel
 	local layout = Instance.new("UIGridLayout")
@@ -323,7 +325,7 @@ local function build()
 
 	-- volume
 	local volLabel = Theme.label("Volume", Theme.Ink)
-	volLabel.Position = UDim2.fromOffset(16, 208)
+	volLabel.Position = UDim2.fromOffset(16, 259)
 	volLabel.Size = UDim2.fromOffset(70, 22)
 	volLabel.TextXAlignment = Enum.TextXAlignment.Left
 	volLabel.ZIndex = 22
@@ -331,7 +333,7 @@ local function build()
 
 	percent = Theme.label("", Theme.Ink)
 	percent.AnchorPoint = Vector2.new(1, 0)
-	percent.Position = UDim2.new(1, -14, 0, 208)
+	percent.Position = UDim2.new(1, -14, 0, 259)
 	percent.Size = UDim2.fromOffset(46, 22)
 	percent.TextXAlignment = Enum.TextXAlignment.Right
 	percent.ZIndex = 22
@@ -344,7 +346,7 @@ local function build()
 	hit.Text = ""
 	hit.AutoButtonColor = false
 	hit.BackgroundTransparency = 1
-	hit.Position = UDim2.fromOffset(96, 202)
+	hit.Position = UDim2.fromOffset(96, 253)
 	hit.Size = UDim2.new(1, -164, 0, 34)
 	hit.ZIndex = 22
 	hit.Parent = panel
