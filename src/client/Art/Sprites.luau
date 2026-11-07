@@ -602,26 +602,27 @@ Sprites.PaoDeQueijo = {
 } :: Sprite
 
 Sprites.Esfirra = {
-	-- esfirra aberta vista de cima: borda de massa e recheio de carne com salsinha
+	-- esfirra fechada triangular vista de cima: três costuras do centro para as pontas
 	Rows = {
-		"...oooooo...",
-		"..oDDDDDDo..",
-		".oDdMMMMdDo.",
-		"oDdMMgMMMdDo",
-		"oDMmMMMgMMDo",
-		"oDMgMMmMMMDo",
-		"oDdMMMgMmdDo",
-		".oDdMMMMdDo.",
-		"..oDDDDDDo..",
-		"...oooooo...",
+		"......o......",
+		".....oDo.....",
+		"....oDsDo....",
+		"....oWsDo....",
+		"...oDWsDDo...",
+		"...oDDsDDo...",
+		"..oDDDsDDDo..",
+		".oDDDsDsDDDo.",
+		".oDDsDDDsDDo.",
+		"oDsDDDDDDDsDo",
+		"obbbbbbbbbbbo",
+		"ooooooooooooo",
 	},
 	Palette = {
 		o = OUTLINE,
-		D = rgb(226, 170, 92), -- massa dourada
-		d = rgb(186, 118, 56), -- borda tostada
-		M = rgb(150, 62, 44), -- carne
-		m = rgb(112, 42, 30), -- carne mais escura
-		g = rgb(92, 170, 70), -- salsinha
+		D = rgb(228, 172, 92), -- massa dourada
+		s = rgb(150, 90, 38), -- costuras/dobras
+		b = rgb(196, 130, 60), -- base mais tostada
+		W = rgb(255, 226, 150), -- brilho de gema
 	},
 } :: Sprite
 
