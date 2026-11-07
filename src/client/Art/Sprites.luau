@@ -578,6 +578,126 @@ Sprites.Pudim = {
 	},
 } :: Sprite
 
+Sprites.PaoDeQueijo = {
+	-- três bolinhas de pão de queijo empilhadas, com casquinha tostada
+	Rows = {
+		"....oooo....",
+		"...oWYYYo...",
+		"...oYcYYo...",
+		"...oYYYyo...",
+		".ooooyyoooo.",
+		"oWYYYooWYYYo",
+		"oYYcYooYcYYo",
+		"oYYYyooYYYyo",
+		"oyyyyooyyyyo",
+		".oooo..oooo.",
+	},
+	Palette = {
+		o = OUTLINE,
+		Y = rgb(244, 214, 130), -- queijo claro
+		y = rgb(214, 160, 72), -- dourado
+		W = rgb(255, 242, 200), -- brilho
+		c = rgb(170, 104, 50), -- pontinhos tostados
+	},
+} :: Sprite
+
+Sprites.Esfirra = {
+	-- esfirra aberta vista de cima: borda de massa e recheio de carne com salsinha
+	Rows = {
+		"...oooooo...",
+		"..oDDDDDDo..",
+		".oDdMMMMdDo.",
+		"oDdMMgMMMdDo",
+		"oDMmMMMgMMDo",
+		"oDMgMMmMMMDo",
+		"oDdMMMgMmdDo",
+		".oDdMMMMdDo.",
+		"..oDDDDDDo..",
+		"...oooooo...",
+	},
+	Palette = {
+		o = OUTLINE,
+		D = rgb(226, 170, 92), -- massa dourada
+		d = rgb(186, 118, 56), -- borda tostada
+		M = rgb(150, 62, 44), -- carne
+		m = rgb(112, 42, 30), -- carne mais escura
+		g = rgb(92, 170, 70), -- salsinha
+	},
+} :: Sprite
+
+Sprites.Empada = {
+	-- empada vista de lado: tampa dourada com gema e lateral canelada
+	Rows = {
+		"....oooo....",
+		"..ooGGWGoo..",
+		".oGGGGGWGGo.",
+		"oGgGGGGGGgGo",
+		"oooooooooooo",
+		"oTtTtTtTtTto",
+		".oTtTtTtTto.",
+		".oTtTtTtTto.",
+		"..oTtTtTto..",
+		"...oooooo...",
+	},
+	Palette = {
+		o = OUTLINE,
+		G = rgb(240, 184, 80), -- tampa pincelada com gema
+		g = rgb(206, 140, 56), -- borda da tampa
+		W = rgb(255, 232, 160), -- brilho
+		T = rgb(196, 132, 62), -- massa da base
+		t = rgb(150, 92, 40), -- caneluras mais escuras
+	},
+} :: Sprite
+
+Sprites.StrawberryTart = {
+	-- tortinha: morangos com folhinhas sobre creme e base de massa canelada
+	Rows = {
+		".LL..LL..LL.",
+		"oRWooRWooRWo",
+		"oRRooRRooRRo",
+		"oCCCCCCCCCCo",
+		"oCCCCCCCCCCo",
+		"oooooooooooo",
+		"oBbBbBbBbBbo",
+		".oBbBbBbBbo.",
+		"..oooooooo..",
+	},
+	Palette = {
+		o = OUTLINE,
+		L = rgb(90, 170, 70), -- folhinhas
+		R = rgb(220, 48, 60), -- morango
+		W = rgb(255, 150, 150), -- brilho do morango
+		C = rgb(252, 238, 206), -- creme
+		B = rgb(222, 160, 84), -- massa
+		b = rgb(176, 112, 52), -- caneluras
+	},
+} :: Sprite
+
+Sprites.Rocambole = {
+	-- fatia de rocambole: espiral de massa e doce de leite, açúcar no topo
+	Rows = {
+		"...oooooo...",
+		"..oWCWWCWo..",
+		".oWMMMMMMWo.",
+		"oCMFFFFFFMCo",
+		"oCMFMMMMFMCo",
+		"oCMFMFFMFMCo",
+		"oCMFMFMMFMCo",
+		"oCMFMMMMFMCo",
+		"oCMMFFFFFMCo",
+		".oCMMMMMMCo.",
+		"..oCCCCCCo..",
+		"...oooooo...",
+	},
+	Palette = {
+		o = OUTLINE,
+		C = rgb(206, 140, 64), -- casquinha
+		M = rgb(248, 214, 120), -- massa amarela
+		F = rgb(176, 104, 52), -- doce de leite
+		W = rgb(255, 252, 244), -- açúcar polvilhado
+	},
+} :: Sprite
+
 Sprites.Oven = {
 	Rows = {
 		"oooooooooooooo",

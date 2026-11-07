@@ -72,10 +72,29 @@ end
 local MILESTONES = #Recipes.Milestones
 local GOLD = Color3.fromRGB(214, 160, 40)
 
--- Selo "MESTRE DO ..." (artigo certo para os doces no plural)
+-- Selo "MESTRE DO ..." (artigo certo para os doces no plural e os femininos)
+local FEMININE = { ["Esfirra"] = true, ["Empada"] = true, ["Torta de morango"] = true }
+-- string.upper não mexe nas letras acentuadas (UTF-8): "Pão" virava "PãO"
+local ACCENTS = {
+	["á"] = "Á",
+	["à"] = "À",
+	["â"] = "Â",
+	["ã"] = "Ã",
+	["é"] = "É",
+	["ê"] = "Ê",
+	["í"] = "Í",
+	["ó"] = "Ó",
+	["ô"] = "Ô",
+	["õ"] = "Õ",
+	["ú"] = "Ú",
+	["ç"] = "Ç",
+}
+local function upper(s: string): string
+	return (string.gsub(string.upper(s), "\195[\128-\191]", ACCENTS))
+end
 local function masterTitle(name: string): string
-	local article = if string.sub(name, -1) == "s" then "DAS" else "DO"
-	return `MESTRE {article} {string.upper(name)}`
+	local article = if string.sub(name, -1) == "s" then "DAS" elseif FEMININE[name] then "DA" else "DO"
+	return `MESTRE {article} {upper(name)}`
 end
 
 local function recipeCard(scope: any, order: number, kind: Achievements.Kind, id: string): Frame
