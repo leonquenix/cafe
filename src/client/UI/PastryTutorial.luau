@@ -2,7 +2,8 @@
 -- Tutorial do forno: aparece uma vez só, no primeiro dia em que os quitutes já estão liberados
 -- (logo depois de "Abrir o café", antes de chegar o primeiro cliente). O servidor guarda que já foi
 -- visto (PastryTutorialSeen) quando o dia começa.
--- Demonstração em cadeia, com pouco texto: cliente pede -> arrasta pro forno -> tira no verde -> perfeito paga +25%.
+-- Demonstração em cadeia, com pouco texto: cliente pede -> pega o quitute na bandeja do forno -> arrasta pro forno
+-- -> tira no verde.
 -- Tela larga: os 4 passos numa linha. Tela estreita (celular em pé): 2 linhas, com uma seta para baixo no meio.
 
 local RunService = game:GetService("RunService")
@@ -164,14 +165,100 @@ local function artOrder(art: Frame, pastryIcon: string)
 	return icon
 end
 
--- 2) quitute indo até o forno (animado)
+-- 2) bandeja do forno em miniatura (mesmo visual da bandeja do PastryPopup: fundo bege e cartas claras):
+-- 3 quitutes em fila, o pedido com borda mostarda pulsando e uma setinha apontando pra ele
+local function artTray(art: Frame, pastryId: string): (UIStroke, Frame)
+	local ids = { pastryId }
+	for _, id in Catalog.PastryOrder do
+		if #ids >= 3 then
+			break
+		end
+		if id ~= pastryId then
+			table.insert(ids, id)
+		end
+	end
+	local rank = {}
+	for i, id in Catalog.PastryOrder do
+		rank[id] = i
+	end
+	table.sort(ids, function(a, b)
+		return rank[a] < rank[b]
+	end)
+
+	local tray = Instance.new("Frame")
+	tray.Name = "Tray"
+	tray.BackgroundColor3 = Theme.PaperShade
+	tray.AnchorPoint = Vector2.new(0.5, 0.5)
+	tray.Position = UDim2.fromScale(0.5, 0.62)
+	tray.Size = UDim2.fromScale(1, 0.62)
+	tray.ZIndex = 3
+	tray.Parent = art
+	local trayRatio = Instance.new("UIAspectRatioConstraint")
+	trayRatio.AspectRatio = 2.6
+	trayRatio.Parent = tray
+	Theme.corner(tray, 0.12)
+	Theme.stroke(tray, 2, Theme.WoodDark)
+
+	local highlight: UIStroke = nil :: any
+	local target: Frame = nil :: any
+	for i, id in ids do
+		local card = Instance.new("Frame")
+		card.Name = id
+		card.BackgroundColor3 = Theme.Paper
+		card.AnchorPoint = Vector2.new(0.5, 0.5)
+		card.Position = UDim2.fromScale(0.18 + (i - 1) * 0.32, 0.5)
+		card.Size = UDim2.fromScale(0.28, 0.82)
+		card.ZIndex = 4
+		card.Parent = tray
+		local cardRatio = Instance.new("UIAspectRatioConstraint")
+		cardRatio.AspectRatio = 0.9
+		cardRatio.Parent = card
+		Theme.corner(card, 0.14)
+		local stroke = Theme.stroke(card, 2)
+		sprite(Catalog.Pastries[id].Icon, card, UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.78, 0.78), 5)
+		if id == pastryId then
+			stroke.Color = Theme.Mustard
+			stroke.Thickness = 3
+			highlight = stroke
+			target = card
+		end
+	end
+	-- setinha em cima do quitute pedido (fica por cima da bandeja)
+	local pointer = Instance.new("Frame")
+	pointer.Name = "Pointer"
+	pointer.BackgroundTransparency = 1
+	pointer.AnchorPoint = Vector2.new(0.5, 1)
+	pointer.Size = UDim2.fromScale(0.26, 0.26)
+	pointer.SizeConstraint = Enum.SizeConstraint.RelativeYY
+	pointer.ZIndex = 7
+	pointer.Parent = art
+	PixelArt.draw(arrowSprite("Down"), 7).Parent = pointer
+	-- posição da carta pedida dentro da área do card
+	local function place(bob: number)
+		if target.Parent == nil then
+			return
+		end
+		local t = target.AbsolutePosition - art.AbsolutePosition
+		local x = (t.X + target.AbsoluteSize.X / 2) / math.max(art.AbsoluteSize.X, 1)
+		local y = (t.Y + bob) / math.max(art.AbsoluteSize.Y, 1)
+		pointer.Position = UDim2.fromScale(x, y)
+	end
+	place(0)
+	pointer:SetAttribute("Bob", 0)
+	pointer:GetAttributeChangedSignal("Bob"):Connect(function()
+		place(pointer:GetAttribute("Bob") :: number)
+	end)
+	return highlight, pointer
+end
+
+-- 3) quitute indo até o forno (animado)
 local function artDrag(art: Frame, pastryIcon: string): Frame
 	sprite("Oven", art, UDim2.fromScale(0.68, 0.55), UDim2.fromScale(0.62, 0.9), 3)
 	local mover = sprite(pastryIcon, art, UDim2.fromScale(0.2, 0.3), UDim2.fromScale(0.32, 0.42), 5)
 	return mover
 end
 
--- 3) barra do forno com o ponteiro correndo e o botão "Tirar!"
+-- 4) barra do forno com o ponteiro correndo e o botão "Tirar!"
 local function artBar(art: Frame): Frame
 	local bar = Instance.new("Frame")
 	bar.Name = "Bar"
@@ -236,18 +323,6 @@ local function artBar(art: Frame): Frame
 	return needle
 end
 
--- 4) resultado: estrela + moeda "+25%"
-local function artPay(art: Frame): Frame
-	local star = sprite("Star", art, UDim2.fromScale(0.3, 0.42), UDim2.fromScale(0.42, 0.62), 4)
-	sprite("Coin", art, UDim2.fromScale(0.66, 0.42), UDim2.fromScale(0.36, 0.52), 4)
-	local plus = text(art, "+25%", UDim2.fromScale(0.5, 0.9), UDim2.fromScale(0.8, 0.26), Theme.SageDark, 5)
-	local s = Instance.new("UIStroke")
-	s.Thickness = 1.5
-	s.Color = Theme.Paper
-	s.Parent = plus
-	return star
-end
-
 ------------------------------------------------------------------ montagem
 
 local function arrow(parent: GuiObject, dir: "Right" | "Down", pos: UDim2, size: UDim2): Frame
@@ -309,7 +384,7 @@ function PastryTutorial.show(pastryId: string?)
 	titleStroke.Color = Theme.PaperShade
 	titleStroke.Parent = title
 
-	local captions = { "Cliente pede", "Arraste pro forno", "Tire no verde!", "Perfeito paga mais" }
+	local captions = { "Cliente pede", "Pegue o quitute", "Arraste pro forno", "Tire no verde!" }
 	local cards: { Frame } = {}
 	local arts: { Frame } = {}
 	for i, cap in captions do
@@ -346,9 +421,9 @@ function PastryTutorial.show(pastryId: string?)
 	end
 
 	artOrder(arts[1], icon)
-	local mover = artDrag(arts[2], icon)
-	local needle = artBar(arts[3])
-	local star = artPay(arts[4])
+	local highlight, pointer = artTray(arts[2], id :: string)
+	local mover = artDrag(arts[3], icon)
+	local needle = artBar(arts[4])
 
 	-- aviso curtinho dos erros
 	local note = text(
@@ -447,9 +522,9 @@ function PastryTutorial.show(pastryId: string?)
 		local cycle = t % 2.6
 		local p = if cycle < 1.45 then (cycle / 1.45) * 0.72 else 0.72
 		needle.Position = UDim2.new(0.03 + 0.94 * p, 0, 0.32, 0)
-		-- estrela "respira"
-		local k = 1 + 0.08 * math.sin(t * 4)
-		star.Size = UDim2.fromScale(0.42 * k, 0.62 * k)
+		-- bandeja: a carta pedida pisca a borda e a setinha quica em cima dela
+		highlight.Thickness = 2.5 + 1.5 * (0.5 + 0.5 * math.sin(t * 6))
+		pointer:SetAttribute("Bob", -math.abs(math.sin(t * 4)) * 6)
 	end)
 
 	local closed = Instance.new("BindableEvent")
