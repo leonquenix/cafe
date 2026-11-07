@@ -506,7 +506,7 @@ Net.OrderAssigned.listen(function(order)
 			end
 			Net.PastryDone.send({ orderId = order.orderId, quality = quality })
 			if quality == Catalog.PastryQuality.Skipped then
-				Hud.toast("Sem o doce: o cliente vai pagar só a bebida", Theme.Mustard)
+				Hud.toast("Sem o quitute: o cliente vai pagar só a bebida", Theme.Mustard)
 			end
 			minigame:open(drinkOnly)
 		end, function(done)
@@ -555,7 +555,7 @@ Net.OrderResult.listen(function(result)
 		-- doce cru/queimado: paga menos e sai insatisfeito
 		Customers.serveFront(color, if result.problem == "RawPastry" then "Tá cru..." else "Queimado?!", false)
 		Hud.payout(result.earned, result.tier, result.tip)
-		Hud.toast(if result.problem == "RawPastry" then "Doce cru: pagou só a bebida" else "Doce queimado: pagou só a bebida", Theme.Rose)
+		Hud.toast(if result.problem == "RawPastry" then "Quitute cru: pagou só a bebida" else "Quitute queimado: pagou só a bebida", Theme.Rose)
 	elseif result.success then
 		Customers.serveFront(color, if customer then thanksFor(customer, result.tier) else nil, true)
 		Hud.payout(result.earned, result.tier, result.tip)
@@ -568,8 +568,8 @@ Net.OrderResult.listen(function(result)
 		end
 		if result.earned > 0 then
 			-- bebida errada, mas o doce veio: paga só o doce
-			complaint ..= " Mas o doce tá bom."
-			toast = string.gsub(toast, "sem pagamento", "pagou só o doce")
+			complaint ..= " Mas o quitute tá bom."
+			toast = string.gsub(toast, "sem pagamento", "pagou só o quitute")
 			Hud.payout(result.earned, -1, 0) -- sem selo de velocidade: a bebida não contou
 		end
 		Customers.serveFront(color, complaint, false)

@@ -36,7 +36,7 @@ local playerGui: PlayerGui
 
 local TABS = {
 	{ Id = "Upgrades", Name = "Melhorias" },
-	{ Id = "Pastries", Name = "Doces" },
+	{ Id = "Pastries", Name = "Quitutes" },
 	{ Id = "Decor", Name = "Decoração" },
 	{ Id = "Menu", Name = "Cardápio" },
 }

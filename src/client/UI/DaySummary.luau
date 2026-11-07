@@ -802,7 +802,7 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 									stat("Avaliação", 2, { ratingStars }),
 								},
 							}),
-							label(scope, "Bebidas e doces entregues", {
+							label(scope, "Bebidas e quitutes entregues", {
 								Position = UDim2.fromScale(0, 0.35),
 								Size = UDim2.fromScale(1, 0.08),
 								TextXAlignment = Enum.TextXAlignment.Left,

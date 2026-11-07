@@ -176,9 +176,9 @@ local function finish(q: number)
 	elseif q == Quality.Ok then
 		message:set("Tá bom!")
 	elseif q == Quality.Raw then
-		message:set("Ainda cru... o cliente não vai pagar o doce")
+		message:set("Ainda cru... o cliente não vai pagar o quitute")
 	else
-		message:set("Queimou! O cliente não vai pagar o doce")
+		message:set("Queimou! O cliente não vai pagar o quitute")
 	end
 	shake(panel)
 	if not Catalog.isBadPastry(q) then
@@ -227,7 +227,7 @@ local function reset()
 	status:set("idle")
 	quality:set(Quality.Skipped)
 	needle:set(0)
-	message:set("Arraste o doce até o forno")
+	message:set("Arraste o quitute até o forno")
 	showInOven(nil)
 end
 
