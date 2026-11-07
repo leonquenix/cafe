@@ -62,42 +62,43 @@ Catalog.Upgrades = {
 	},
 } :: { [string]: Upgrade }
 
--- doces liberam no nível 3 (dois) e depois quase um por nível até o 19
--- (os ímpares 5..19 e os novos nos pares 4, 6, 10, 14, 18; 8, 12 e 16 ficam sem quitute).
+-- ordem de desbloqueio dos doces: cookie e brownie no nível 3 e depois quase um por nível até o 19
+-- (4, 5, 6, 7, 9, 10, 11, 13, 14, 15, 17, 18 e 19; os níveis 8, 12 e 16 ficam sem quitute).
+-- Cost e Price sobem junto com a ordem e o BakeTime cai (os últimos assam mais rápido, mais difícil de acertar).
 -- o Icon tem que ter o mesmo nome do Id (o balão do pedido desenha Sprites[id])
 Catalog.PastryOrder = {
 	"Cookie",
-	"Beliscao",
-	"PaoDeQueijo",
 	"Brownie",
+	"Cupcake",
+	"Beliscao",
+	"CornCake",
 	"Esfirra",
-	"Croissant",
+	"Pudim",
+	"StrawberryTart",
 	"Madeleines",
 	"Empada",
-	"CornCake",
-	"Strudel",
-	"StrawberryTart",
-	"Cupcake",
 	"CarrotCake",
+	"Croissant",
 	"Rocambole",
-	"Pudim",
+	"Strudel",
+	"PaoDeQueijo",
 }
 Catalog.Pastries = {
 	Cookie = { Id = "Cookie", Name = "Cookie", Icon = "Cookie", Cost = 120, Price = 6, Level = 3, BakeTime = 3.2 },
-	Beliscao = { Id = "Beliscao", Name = "Beliscão de goiabada", Icon = "Beliscao", Cost = 150, Price = 7, Level = 3, BakeTime = 3.2 },
-	PaoDeQueijo = { Id = "PaoDeQueijo", Name = "Pão de queijo", Icon = "PaoDeQueijo", Cost = 170, Price = 8, Level = 4, BakeTime = 3.1 },
-	Brownie = { Id = "Brownie", Name = "Brownie", Icon = "Brownie", Cost = 200, Price = 9, Level = 5, BakeTime = 3.0 },
-	Esfirra = { Id = "Esfirra", Name = "Esfirra", Icon = "Esfirra", Cost = 230, Price = 10, Level = 6, BakeTime = 2.9 },
-	Croissant = { Id = "Croissant", Name = "Croissant", Icon = "Croissant", Cost = 250, Price = 10, Level = 7, BakeTime = 2.8 },
-	Madeleines = { Id = "Madeleines", Name = "Madeleines", Icon = "Madeleines", Cost = 280, Price = 11, Level = 9, BakeTime = 2.8 },
-	Empada = { Id = "Empada", Name = "Empada", Icon = "Empada", Cost = 290, Price = 11, Level = 10, BakeTime = 2.8 },
-	CornCake = { Id = "CornCake", Name = "Bolo de fubá", Icon = "CornCake", Cost = 300, Price = 11, Level = 11, BakeTime = 2.8 },
-	Strudel = { Id = "Strudel", Name = "Strudel", Icon = "Strudel", Cost = 350, Price = 13, Level = 13, BakeTime = 2.6 },
-	StrawberryTart = { Id = "StrawberryTart", Name = "Torta de morango", Icon = "StrawberryTart", Cost = 380, Price = 13, Level = 14, BakeTime = 2.5 },
-	Cupcake = { Id = "Cupcake", Name = "Cupcake", Icon = "Cupcake", Cost = 400, Price = 14, Level = 15, BakeTime = 2.4 },
-	CarrotCake = { Id = "CarrotCake", Name = "Bolo de cenoura", Icon = "CarrotCake", Cost = 450, Price = 15, Level = 17, BakeTime = 2.4 },
-	Rocambole = { Id = "Rocambole", Name = "Rocambole", Icon = "Rocambole", Cost = 470, Price = 15, Level = 18, BakeTime = 2.3 },
-	Pudim = { Id = "Pudim", Name = "Pudim", Icon = "Pudim", Cost = 500, Price = 16, Level = 19, BakeTime = 2.2 },
+	Brownie = { Id = "Brownie", Name = "Brownie", Icon = "Brownie", Cost = 150, Price = 7, Level = 3, BakeTime = 3.2 },
+	Cupcake = { Id = "Cupcake", Name = "Cupcake", Icon = "Cupcake", Cost = 170, Price = 8, Level = 4, BakeTime = 3.1 },
+	Beliscao = { Id = "Beliscao", Name = "Beliscão de goiabada", Icon = "Beliscao", Cost = 200, Price = 9, Level = 5, BakeTime = 3.0 },
+	CornCake = { Id = "CornCake", Name = "Bolo de fubá", Icon = "CornCake", Cost = 230, Price = 10, Level = 6, BakeTime = 2.9 },
+	Esfirra = { Id = "Esfirra", Name = "Esfirra", Icon = "Esfirra", Cost = 250, Price = 10, Level = 7, BakeTime = 2.8 },
+	Pudim = { Id = "Pudim", Name = "Pudim", Icon = "Pudim", Cost = 280, Price = 11, Level = 9, BakeTime = 2.8 },
+	StrawberryTart = { Id = "StrawberryTart", Name = "Torta de morango", Icon = "StrawberryTart", Cost = 290, Price = 11, Level = 10, BakeTime = 2.8 },
+	Madeleines = { Id = "Madeleines", Name = "Madeleines", Icon = "Madeleines", Cost = 300, Price = 11, Level = 11, BakeTime = 2.8 },
+	Empada = { Id = "Empada", Name = "Empada", Icon = "Empada", Cost = 350, Price = 13, Level = 13, BakeTime = 2.6 },
+	CarrotCake = { Id = "CarrotCake", Name = "Bolo de cenoura", Icon = "CarrotCake", Cost = 380, Price = 13, Level = 14, BakeTime = 2.5 },
+	Croissant = { Id = "Croissant", Name = "Croissant", Icon = "Croissant", Cost = 400, Price = 14, Level = 15, BakeTime = 2.4 },
+	Rocambole = { Id = "Rocambole", Name = "Rocambole", Icon = "Rocambole", Cost = 450, Price = 15, Level = 17, BakeTime = 2.4 },
+	Strudel = { Id = "Strudel", Name = "Strudel", Icon = "Strudel", Cost = 470, Price = 15, Level = 18, BakeTime = 2.3 },
+	PaoDeQueijo = { Id = "PaoDeQueijo", Name = "Pão de queijo", Icon = "PaoDeQueijo", Cost = 500, Price = 16, Level = 19, BakeTime = 2.2 },
 } :: { [string]: Pastry }
 
 Catalog.DecorOrder = {
