@@ -48,6 +48,7 @@ type Session = {
 	order: Order?,
 	wrong: number,
 	pausedAt: number?, -- livro de receitas aberto: o relógio do pedido está parado desde aqui
+	forcePastry: boolean, -- dia do tutorial do forno: o primeiro cliente sempre pede um quitute
 }
 
 local sessions: { [Player]: Session } = {}
@@ -68,6 +69,7 @@ local function newSession(): Session
 		order = nil,
 		wrong = 0,
 		pausedAt = nil,
+		forcePastry = false,
 	}
 end
 
@@ -84,6 +86,21 @@ end
 
 local function menuOf(data: DataService.Data): { string }
 	return Progression.effectiveMenu(data.Menu, data.Level)
+end
+
+-- O tutorial do forno aparece uma vez só, no primeiro dia começado com pelo menos um quitute comprado
+-- (em qualquer nível; saves antigos com quitutes veem no próximo dia). Depois fica PastryTutorialSeen.
+local function hasPastry(data: DataService.Data): boolean
+	for _, id in Catalog.PastryOrder do
+		if data.Pastries[id] then
+			return true
+		end
+	end
+	return false
+end
+
+local function pastryTutorialDue(data: DataService.Data): boolean
+	return not data.PastryTutorialSeen and hasPastry(data)
 end
 
 local function sendState(player: Player)
@@ -156,7 +173,7 @@ local function sendState(player: Player)
 		wallPaint = data.WallPaint == true,
 		wallColor = if Catalog.WallColors[data.WallColor] then data.WallColor else Catalog.DefaultWallColor,
 		introSeen = data.IntroSeen == true,
-		pastryTutorialSeen = data.PastryTutorialSeen == true,
+		pastryTutorialDue = pastryTutorialDue(data),
 	}, player)
 end
 
@@ -262,7 +279,8 @@ local function chooseModifier(data: DataService.Data, entry: PlanEntry, drink: s
 	return options[rng:NextInteger(1, #options)]
 end
 
-local function choosePastry(data: DataService.Data, entry: PlanEntry): string
+-- force: primeiro cliente do dia do tutorial do forno (sempre pede um quitute comprado)
+local function choosePastry(data: DataService.Data, entry: PlanEntry, force: boolean?): string
 	local regular = if entry.kind == Kind.Regular then Characters.Regulars[entry.regular] else nil
 	if regular and regular.NoPastry then
 		return ""
@@ -275,6 +293,9 @@ local function choosePastry(data: DataService.Data, entry: PlanEntry): string
 	end
 	if #owned == 0 then
 		return ""
+	end
+	if force then
+		return owned[rng:NextInteger(1, #owned)]
 	end
 	local chance = if entry.kind == Kind.Kid then 0.5 else 0.3
 	if rng:NextNumber() > chance then
@@ -332,15 +353,6 @@ end
 
 ------------------------------------------------------------------ handlers
 
--- nível em que o primeiro quitute libera
-local function pastryUnlockLevel(): number
-	local level = math.huge
-	for _, id in Catalog.PastryOrder do
-		level = math.min(level, Catalog.Pastries[id].Level)
-	end
-	return level
-end
-
 local function onStartDay(action: number, player: Player?)
 	if not player then
 		return
@@ -360,12 +372,15 @@ local function onStartDay(action: number, player: Player?)
 	Barista.setWalking(player, false)
 	-- a fala da vovó (primeiro dia) já passou: o cliente só manda começar depois dela
 	data.IntroSeen = true
-	-- com os quitutes liberados o cliente mostra o tutorial do forno antes de mandar começar (uma vez só)
-	if data.Level >= pastryUnlockLevel() then
+	-- o cliente mostrou o tutorial do forno antes de mandar começar: marca já (não volta nem se cair no meio
+	-- do dia) e o primeiro cliente de hoje pede um quitute pra praticar
+	local tutorial = pastryTutorialDue(data)
+	if tutorial then
 		data.PastryTutorialSeen = true
 	end
 	local fresh = newSession()
 	fresh.dayActive = true
+	fresh.forcePastry = tutorial
 	fresh.plan = makePlan(data)
 	sessions[player] = fresh
 	Net.DayPlan.sendTo(fresh.plan, player)
@@ -399,7 +414,7 @@ local function onRequestOrder(index: number, player: Player?)
 			kind = entry.kind,
 			pastryQuality = 0,
 		}
-		order.pastry = choosePastry(data, entry)
+		order.pastry = choosePastry(data, entry, session.forcePastry and index == 1)
 		order.pastryQuality = if order.pastry ~= "" then -1 else 0
 		session.order = order
 	end

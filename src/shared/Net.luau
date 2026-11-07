@@ -139,7 +139,7 @@ return ByteNet.defineNamespace("Cafe", function()
 				wallPaint = ByteNet.bool, -- comprou o kit de tintas
 				wallColor = ByteNet.string, -- cor das paredes de dentro
 				introSeen = ByteNet.bool, -- já viu a fala da vovó do primeiro dia
-				pastryTutorialSeen = ByteNet.bool, -- já viu o tutorial do forno
+				pastryTutorialDue = ByteNet.bool, -- o próximo dia começa com o tutorial do forno
 			}),
 		}),
 		-- servidor -> cliente: resumo do dia que acabou

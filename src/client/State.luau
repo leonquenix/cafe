@@ -32,7 +32,7 @@ local State = {
 	WallPaint = scope:Value(false), -- comprou o kit de tintas
 	WallColor = scope:Value("Cream"), -- cor das paredes de dentro
 	IntroSeen = scope:Value(false), -- já viu a fala da vovó do primeiro dia
-	PastryTutorialSeen = scope:Value(false), -- já viu o tutorial do forno
+	PastryTutorialDue = scope:Value(false), -- o próximo dia começa com o tutorial do forno (o servidor decide)
 }
 
 function State.apply(s: any)
@@ -101,7 +101,7 @@ function State.apply(s: any)
 	State.WallPaint:set(s.wallPaint)
 	State.WallColor:set(s.wallColor)
 	State.IntroSeen:set(s.introSeen)
-	State.PastryTutorialSeen:set(s.pastryTutorialSeen)
+	State.PastryTutorialDue:set(s.pastryTutorialDue)
 	State.Loaded:set(true)
 end
 

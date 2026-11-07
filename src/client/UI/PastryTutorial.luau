@@ -1,7 +1,7 @@
 --!strict
--- Tutorial do forno: aparece uma vez só, no primeiro dia em que os quitutes já estão liberados
--- (logo depois de "Abrir o café", antes de chegar o primeiro cliente). O servidor guarda que já foi
--- visto (PastryTutorialSeen) quando o dia começa.
+-- Tutorial do forno: aparece uma vez só, logo depois de "Abrir o café" e antes do primeiro cliente, no
+-- primeiro dia começado com pelo menos um quitute comprado (qualquer nível). Quando mostrar é regra do
+-- servidor (State.PastryTutorialDue); nesse dia o primeiro cliente sempre pede um quitute.
 -- Demonstração em cadeia, com pouco texto: cliente pede -> pega o quitute na bandeja do forno -> arrasta pro forno
 -- -> tira no verde.
 -- Tela larga: os 4 passos numa linha. Tela estreita (celular em pé): 2 linhas, com uma seta para baixo no meio.
@@ -28,15 +28,6 @@ local BURN_COLOR = Color3.fromRGB(90, 60, 50)
 local TOUCH = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
 
 local gui: ScreenGui
-
--- nível em que o primeiro quitute libera (hoje 3)
-function PastryTutorial.unlockLevel(): number
-	local level = math.huge
-	for _, id in Catalog.PastryOrder do
-		level = math.min(level, Catalog.Pastries[id].Level)
-	end
-	return level
-end
 
 function PastryTutorial.init(playerGui: PlayerGui)
 	gui = Instance.new("ScreenGui")
