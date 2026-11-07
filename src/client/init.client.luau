@@ -25,6 +25,7 @@ local FreeCelebration = require(script.UI.FreeCelebration)
 local Hud = require(script.UI.Hud)
 local Minigame = require(script.UI.Minigame)
 local PastryPopup = require(script.UI.PastryPopup)
+local PastryTutorial = require(script.UI.PastryTutorial)
 local PrepScreen = require(script.UI.PrepScreen)
 local MenuMusic = require(script.UI.MenuMusic)
 local Radio = require(script.UI.Radio)
@@ -69,6 +70,7 @@ WallPicker.init(playerGui)
 RecipeBook.init(playerGui)
 Hud.new(playerGui)
 PastryPopup.init(playerGui)
+PastryTutorial.init(playerGui)
 Hud.setVisible(false)
 
 -- Cmdr (comandos de admin): ";" (ou F2) abre o console
@@ -261,6 +263,17 @@ local function startDay(day: number)
 		-- os clientes (e o dia) só começam depois da fala da vovó
 		if day <= 1 and not peek(State.IntroSeen) then
 			introLine()
+		end
+		-- primeiro dia com quitutes liberados: tutorial do forno antes do primeiro cliente (uma vez só)
+		if peek(State.Level) >= PastryTutorial.unlockLevel() and not peek(State.PastryTutorialSeen) then
+			local example = nil
+			for _, id in Catalog.PastryOrder do
+				if peek(State.Owned)[id] then
+					example = id
+					break
+				end
+			end
+			PastryTutorial.show(example)
 		end
 		Net.StartDay.send(1)
 	end)

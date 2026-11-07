@@ -35,6 +35,7 @@ export type Data = {
 	WallPaint: boolean, -- comprou o kit de tintas (Catalog.WallPaint)
 	WallColor: string, -- cor das paredes de dentro (Catalog.WallColors)
 	IntroSeen: boolean, -- já viu a fala da vovó no começo do primeiro dia
+	PastryTutorialSeen: boolean, -- já viu o tutorial do forno (primeiro dia com quitutes liberados)
 }
 
 local TEMPLATE: Data = {
@@ -63,6 +64,7 @@ local TEMPLATE: Data = {
 	WallPaint = false,
 	WallColor = "Cream",
 	IntroSeen = false,
+	PastryTutorialSeen = false,
 }
 
 local Store = ProfileStore.New("CafeData_v1", TEMPLATE)

@@ -156,6 +156,7 @@ local function sendState(player: Player)
 		wallPaint = data.WallPaint == true,
 		wallColor = if Catalog.WallColors[data.WallColor] then data.WallColor else Catalog.DefaultWallColor,
 		introSeen = data.IntroSeen == true,
+		pastryTutorialSeen = data.PastryTutorialSeen == true,
 	}, player)
 end
 
@@ -331,6 +332,15 @@ end
 
 ------------------------------------------------------------------ handlers
 
+-- nível em que o primeiro quitute libera
+local function pastryUnlockLevel(): number
+	local level = math.huge
+	for _, id in Catalog.PastryOrder do
+		level = math.min(level, Catalog.Pastries[id].Level)
+	end
+	return level
+end
+
 local function onStartDay(action: number, player: Player?)
 	if not player then
 		return
@@ -350,6 +360,10 @@ local function onStartDay(action: number, player: Player?)
 	Barista.setWalking(player, false)
 	-- a fala da vovó (primeiro dia) já passou: o cliente só manda começar depois dela
 	data.IntroSeen = true
+	-- com os quitutes liberados o cliente mostra o tutorial do forno antes de mandar começar (uma vez só)
+	if data.Level >= pastryUnlockLevel() then
+		data.PastryTutorialSeen = true
+	end
 	local fresh = newSession()
 	fresh.dayActive = true
 	fresh.plan = makePlan(data)
