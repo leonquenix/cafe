@@ -1,5 +1,5 @@
 --!strict
--- Pedidos, pagamento, ciclo de dias, loja, cardápio e maestria.
+-- Pedidos, pagamento, ciclo de dias, loja, cardápio e conquistas do livro (marcos por receita).
 -- O servidor é a autoridade de receita, tempo, dinheiro e de quem aparece no dia.
 
 local Players = game:GetService("Players")
@@ -108,6 +108,16 @@ local function sendState(player: Player)
 	for drink, count in data.DrinkStats do
 		table.insert(stats, { drink = drink, count = math.clamp(count, 0, 65535) })
 	end
+	local pastryStats = {}
+	for pastry, count in data.PastryStats do
+		table.insert(pastryStats, { drink = pastry, count = math.clamp(count, 0, 65535) })
+	end
+	local claims = {}
+	for _, list in { data.DrinkClaims, data.PastryClaims } do
+		for id, n in list do
+			table.insert(claims, { id = id, count = math.clamp(n, 0, 255) })
+		end
+	end
 	local mastered = {}
 	for drink in data.Mastered do
 		table.insert(mastered, drink)
@@ -115,6 +125,12 @@ local function sendState(player: Player)
 	local themes = {}
 	for id in data.Themes do
 		table.insert(themes, id)
+	end
+	local hidden = {}
+	for id in data.DecorHidden or {} do
+		if data.Decor[id] then
+			table.insert(hidden, id)
+		end
 	end
 
 	Net.PlayerState.sendTo({
@@ -128,8 +144,11 @@ local function sendState(player: Player)
 		cozy = math.clamp(cozy(data), 0, 255),
 		upgrades = upgrades,
 		owned = owned,
+		hidden = hidden,
 		menu = menuOf(data),
 		stats = stats,
+		pastryStats = pastryStats,
+		claims = claims,
 		mastered = mastered,
 		catColor = if Catalog.CatColors[data.CatColor] then data.CatColor else Catalog.DefaultCatColor,
 		themes = themes,
@@ -455,6 +474,9 @@ local function grant(session: Session, data: DataService.Data, order: Order, mul
 	data.TotalEarned += earned + tip
 	data.DrinksServed += 1
 	data.DrinkStats[order.drink] = (data.DrinkStats[order.drink] or 0) + 1
+	if order.pastry ~= "" and problem == "" then
+		data.PastryStats[order.pastry] = (data.PastryStats[order.pastry] or 0) + 1
+	end
 
 	return earned, tip, tier, problem
 end
@@ -497,6 +519,10 @@ local function onSubmit(payload: any, player: Player?)
 		data.Money += earned
 		data.TotalEarned += earned
 		local q = order.pastryQuality
+		-- o doce saiu certo mesmo com a bebida errada: conta para as conquistas do doce
+		if order.pastry ~= "" and (q == Catalog.PastryQuality.Ok or q == Catalog.PastryQuality.Perfect) then
+			data.PastryStats[order.pastry] = (data.PastryStats[order.pastry] or 0) + 1
+		end
 		table.insert(session.delivered, {
 			drink = order.drink,
 			tier = 0,
@@ -572,19 +598,33 @@ local function onPastryRetry(orderId: number, player: Player?)
 	sendState(player)
 end
 
-local function onClaimMastery(drink: string, player: Player?)
+-- Resgata o próximo marco de conquista (Recipes.Milestones) de uma bebida ou de um doce
+local function onClaimMastery(id: string, player: Player?)
 	if not player then
 		return
 	end
 	local data = DataService.get(player)
-	if not data or not Recipes.Drinks[drink] or data.Mastered[drink] then
+	if not data then
 		return
 	end
-	if (data.DrinkStats[drink] or 0) >= Recipes.masteryTarget(drink) then
-		local reward = Recipes.masteryReward(drink)
-		data.Mastered[drink] = true
+	local isDrink = Recipes.hasMilestones(id)
+	local stats, claims
+	if isDrink then
+		stats, claims = data.DrinkStats, data.DrinkClaims
+	elseif Catalog.Pastries[id] then
+		stats, claims = data.PastryStats, data.PastryClaims
+	else
+		return
+	end
+	local index = Recipes.claimableMilestone(stats[id] or 0, claims[id] or 0)
+	if index then
+		local reward = Recipes.Milestones[index].Reward
+		claims[id] = index
 		data.Money += reward
 		data.TotalEarned += reward
+		if isDrink and index >= Recipes.MasteryMilestone then
+			data.Mastered[id] = true
+		end
 	end
 	sendState(player)
 end
@@ -616,7 +656,7 @@ local function onBuy(id: string, player: Player?)
 		apply = function()
 			data.Pastries[id] = true
 		end
-	elseif decor and not data.Decor[id] and decor.Level <= data.Level then
+	elseif decor and not data.Decor[id] and decor.Level <= data.Level and (not decor.Requires or data.Decor[decor.Requires]) then
 		cost = decor.Cost
 		apply = function()
 			data.Decor[id] = true
@@ -757,6 +797,16 @@ function CafeService.start()
 			return
 		end
 		data.Theme = id
+		sendState(player)
+	end)
+	-- liga/desliga uma decoração já comprada (só visual: o aconchego continua valendo)
+	Net.SetDecorShown.listen(function(value, player: Player?)
+		local data = player and DataService.get(player)
+		if not player or not data or not Catalog.Decor[value.id] or not data.Decor[value.id] then
+			return
+		end
+		data.DecorHidden = data.DecorHidden or {}
+		data.DecorHidden[value.id] = if value.shown then nil else true
 		sendState(player)
 	end)
 	Net.SetWallColor.listen(function(id: string, player: Player?)

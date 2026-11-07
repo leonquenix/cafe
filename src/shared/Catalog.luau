@@ -28,6 +28,8 @@ export type Decor = {
 	Cost: number,
 	Cozy: number,
 	Level: number,
+	Group: string?, -- grupo na aba Decoração (Catalog.DecorGroups); nil = "Cafe"
+	Requires: string?, -- só pode comprar depois desta outra decoração (ex.: gorro precisa do gato)
 }
 
 local Catalog = {}
@@ -76,7 +78,31 @@ Catalog.Pastries = {
 	Pudim = { Id = "Pudim", Name = "Pudim", Icon = "Pudim", Cost = 500, Price = 16, Level = 19, BakeTime = 2.2 },
 } :: { [string]: Pastry }
 
-Catalog.DecorOrder = { "Rug", "HangingPlants", "Paintings", "Cat", "Lanterns", "Record", "Stove" }
+Catalog.DecorOrder = {
+	"Rug",
+	"HangingPlants",
+	"Paintings",
+	"Cat",
+	"Lanterns",
+	"Record",
+	"Stove",
+	"EasterBasket",
+	"EasterWreath",
+	"EasterBunting",
+	"EasterPlantBunny",
+	"EasterWindowGarland",
+	"EasterFootprints",
+	"HalloweenWebs",
+	"HalloweenWall",
+	"HalloweenPumpkins",
+	"HalloweenGhosts",
+	"HalloweenZombieHand",
+	"HalloweenMummy",
+	"ChristmasCatHat",
+	"ChristmasWreath",
+	"ChristmasGarland",
+	"ChristmasTree",
+}
 Catalog.Decor = {
 	Rug = { Id = "Rug", Name = "Tapete de Lã", Description = "Quentinho pros pés.", Icon = "Rug", Cost = 80, Cozy = 1, Level = 1 },
 	HangingPlants = {
@@ -93,7 +119,181 @@ Catalog.Decor = {
 	Lanterns = { Id = "Lanterns", Name = "Lanternas de Papel", Description = "Luz suave e colorida.", Icon = "Lantern", Cost = 160, Cozy = 2, Level = 3 },
 	Record = { Id = "Record", Name = "Vitrola", Description = "Um jazz baixinho no ar.", Icon = "Record", Cost = 220, Cozy = 2, Level = 3 },
 	Stove = { Id = "Stove", Name = "Fogão a Lenha", Description = "Estalinhos e calor de vó.", Icon = "Stove", Cost = 400, Cozy = 3, Level = 4 },
+	-- festas: cada enfeite é comprado separado e pode ser ligado/desligado na loja (perfil DecorHidden)
+	EasterBasket = {
+		Id = "EasterBasket",
+		Name = "Cesta de Ovinhos",
+		Description = "Ovos pintados e um pintinho no balcão.",
+		Icon = "EasterBasket",
+		Cost = 220,
+		Cozy = 1,
+		Level = 6,
+		Group = "Easter",
+	},
+	EasterWreath = {
+		Id = "EasterWreath",
+		Name = "Guirlanda de Páscoa",
+		Description = "Ovinhos e um coelhinho na parede.",
+		Icon = "EasterWreath",
+		Cost = 260,
+		Cozy = 1,
+		Level = 6,
+		Group = "Easter",
+	},
+	EasterBunting = {
+		Id = "EasterBunting",
+		Name = "Bandeirinhas de Páscoa",
+		Description = "Bandeirinhas e ovinhos no teto.",
+		Icon = "EasterBunting",
+		Cost = 300,
+		Cozy = 1,
+		Level = 7,
+		Group = "Easter",
+	},
+	EasterPlantBunny = {
+		Id = "EasterPlantBunny",
+		Name = "Coelhinho Espião",
+		Description = "Espia de dentro da planta do balcão.",
+		Icon = "EasterPlantBunny",
+		Cost = 280,
+		Cozy = 1,
+		Level = 7,
+		Group = "Easter",
+	},
+	EasterWindowGarland = {
+		Id = "EasterWindowGarland",
+		Name = "Festão de Páscoa",
+		Description = "Cenouras, coelhinhos e ovinhos nas janelas.",
+		Icon = "EasterWindowGarland",
+		Cost = 340,
+		Cozy = 1,
+		Level = 7,
+		Group = "Easter",
+	},
+	EasterFootprints = {
+		Id = "EasterFootprints",
+		Name = "Pegadas de Coelhinho",
+		Description = "Um caminho de pegadinhas da porta até o balcão.",
+		Icon = "EasterFootprints",
+		Cost = 240,
+		Cozy = 1,
+		Level = 6,
+		Group = "Easter",
+	},
+	-- HalloweenWall era "Morceguinhos e Teias"; as teias viraram o HalloweenWebs (quem já tinha ganhou as duas)
+	HalloweenWebs = {
+		Id = "HalloweenWebs",
+		Name = "Teias de Aranha",
+		Description = "Teias nas janelas e aranhinhas descendo.",
+		Icon = "HalloweenWebs",
+		Cost = 220,
+		Cozy = 1,
+		Level = 8,
+		Group = "Halloween",
+	},
+	HalloweenWall = {
+		Id = "HalloweenWall",
+		Name = "Morceguinhos",
+		Description = "Morcegos batendo asas pelas paredes.",
+		Icon = "HalloweenWall",
+		Cost = 280,
+		Cozy = 1,
+		Level = 8,
+		Group = "Halloween",
+	},
+	HalloweenPumpkins = {
+		Id = "HalloweenPumpkins",
+		Name = "Abóboras Iluminadas",
+		Description = "Velinhas tremulando nas abóboras.",
+		Icon = "HalloweenPumpkins",
+		Cost = 320,
+		Cozy = 1,
+		Level = 8,
+		Group = "Halloween",
+	},
+	HalloweenGhosts = {
+		Id = "HalloweenGhosts",
+		Name = "Fantasminhas",
+		Description = "Fantasminhas fofos flutuando no teto.",
+		Icon = "HalloweenGhosts",
+		Cost = 360,
+		Cozy = 1,
+		Level = 9,
+		Group = "Halloween",
+	},
+	HalloweenZombieHand = {
+		Id = "HalloweenZombieHand",
+		Name = "Mão de Zumbi",
+		Description = "Uma mão sobe e desce lá fora, na segunda janela da direita.",
+		Icon = "HalloweenZombieHand",
+		Cost = 300,
+		Cozy = 1,
+		Level = 9,
+		Group = "Halloween",
+	},
+	HalloweenMummy = {
+		Id = "HalloweenMummy",
+		Name = "Múmia Passeando",
+		Description = "Uma múmia passa lá fora pelas janelas da esquerda.",
+		Icon = "HalloweenMummy",
+		Cost = 400,
+		Cozy = 1,
+		Level = 9,
+		Group = "Halloween",
+	},
+	-- precisa do gatinho da vitrine (Requires): o gorro vai na cabeça dele
+	ChristmasCatHat = {
+		Id = "ChristmasCatHat",
+		Name = "Gorro do Gatinho",
+		Description = "Gorro de Papai Noel pro gato da vitrine.",
+		Icon = "ChristmasCatHat",
+		Cost = 200,
+		Cozy = 1,
+		Level = 10,
+		Group = "Christmas",
+		Requires = "Cat",
+	},
+	ChristmasWreath = {
+		Id = "ChristmasWreath",
+		Name = "Guirlandas de Natal",
+		Description = "Laço vermelho e pisca-pisca em cada janela.",
+		Icon = "ChristmasWreath",
+		Cost = 300,
+		Cozy = 1,
+		Level = 10,
+		Group = "Christmas",
+	},
+	ChristmasGarland = {
+		Id = "ChristmasGarland",
+		Name = "Festão de Natal",
+		Description = "Festão e bolinhas penduradas no teto.",
+		Icon = "ChristmasGarland",
+		Cost = 380,
+		Cozy = 1,
+		Level = 10,
+		Group = "Christmas",
+	},
+	ChristmasTree = {
+		Id = "ChristmasTree",
+		Name = "Árvore de Natal",
+		Description = "Bolinhas, pisca-pisca e estrela no topo.",
+		Icon = "ChristmasTree",
+		Cost = 550,
+		Cozy = 2,
+		Level = 11,
+		Group = "Christmas",
+	},
 } :: { [string]: Decor }
+
+-- Grupos da aba Decoração (um título por grupo, nesta ordem). Icon = sprite do título.
+export type DecorGroup = { Id: string, Name: string, Icon: string }
+Catalog.DecorGroupOrder = { "Cafe", "Easter", "Halloween", "Christmas" }
+Catalog.DecorGroups = {
+	Cafe = { Id = "Cafe", Name = "Café", Icon = "Heart" },
+	Easter = { Id = "Easter", Name = "Páscoa", Icon = "ThemeEaster" },
+	Halloween = { Id = "Halloween", Name = "Halloween", Icon = "ThemeHalloween" },
+	Christmas = { Id = "Christmas", Name = "Natal", Icon = "ThemeChristmas" },
+} :: { [string]: DecorGroup }
 
 -- Pelagens do gatinho da vitrine (escolhida no pop-up de compra; o visual fica em client/Decor)
 Catalog.CatColorOrder = { "Gray", "Orange", "Black", "White", "Calico", "Tuxedo" }

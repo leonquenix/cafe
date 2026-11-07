@@ -3,15 +3,16 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local Fusion = require(ReplicatedStorage.Packages.Fusion)
 local Progression = require(ReplicatedStorage.Shared.Progression)
-local Recipes = require(ReplicatedStorage.Shared.Recipes)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
 local Sfx = require(script.Parent.Parent.Sfx)
 local State = require(script.Parent.Parent.State)
+local BookAlert = require(script.Parent.BookAlert)
 local Radio = require(script.Parent.Radio)
 local Theme = require(script.Parent.Theme)
 
@@ -19,8 +20,10 @@ local Attribute, Children, OnEvent = Fusion.Attribute, Fusion.Children, Fusion.O
 
 local Hud = {}
 
--- largura natural da fileira do topo (pílula 160, livro 52, 1 espaço de 14)
-local TOP_WIDTH = 160 + 52 + 14
+-- no celular a pílula de dinheiro fica 20% menor (no computador continua igual)
+local MONEY_SCALE = if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then 0.8 else 1
+-- largura natural da fileira do topo (pílula 160 x escala, livro 52, 1 espaço de 14)
+local TOP_WIDTH = 160 * MONEY_SCALE + 52 + 14
 -- a bancada do preparo (Minigame) ocupa a direita: 38% da tela, no máximo 560, a 16 da borda
 local BENCH_FRACTION, BENCH_MAX, BENCH_MARGIN = 0.38, 560, 16
 
@@ -48,7 +51,7 @@ function Hud.new(playerGui: PlayerGui)
 	local scope = State.scope
 
 	local shownMoney = scope:Spring(State.Money, 8, 1)
-	moneyPop = scope:New("UIScale")({ Scale = 1 }) :: UIScale
+	moneyPop = scope:New("UIScale")({ Scale = MONEY_SCALE }) :: UIScale
 
 	local coin = PixelArt.draw(Sprites.Coin)
 	coin.AnchorPoint = Vector2.new(0, 0.5)
@@ -90,36 +93,7 @@ function Hud.new(playerGui: PlayerGui)
 			scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 			bookArt,
 			-- bolinha de alerta: tem recompensa de maestria para coletar
-			scope:New("Frame")({
-				Name = "Alert",
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.9, 0.1),
-				Size = UDim2.fromScale(0.36, 0.36),
-				BackgroundColor3 = Theme.Rose,
-				ZIndex = 3,
-				Visible = scope:Computed(function(use)
-					local stats, mastered = use(State.Stats), use(State.Mastered)
-					for id in Recipes.Drinks do
-						if not mastered[id] and (stats[id] or 0) >= Recipes.masteryTarget(id) then
-							return true
-						end
-					end
-					return false
-				end),
-				[Children] = {
-					scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
-					scope:New("UIStroke")({ Thickness = 2, Color = Theme.Ink }),
-					scope:New("TextLabel")({
-						BackgroundTransparency = 1,
-						Size = UDim2.fromScale(1, 1),
-						Font = Theme.Font,
-						TextScaled = true,
-						TextColor3 = Theme.Paper,
-						Text = "!",
-						ZIndex = 4,
-					}),
-				},
-			}),
+			BookAlert(scope),
 		},
 		[OnEvent("Activated")] = function()
 			if Hud.onOpenBook then
@@ -141,7 +115,7 @@ function Hud.new(playerGui: PlayerGui)
 		BackgroundColor3 = Theme.Paper,
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 1, 10),
-		Size = UDim2.fromScale(0.85, 0.85),
+		Size = UDim2.fromScale(1, 1), -- mesmo tamanho do livro
 		Parent = bookButton,
 		[Children] = {
 			scope:New("UICorner")({ CornerRadius = UDim.new(0.3, 0) }),
@@ -267,7 +241,7 @@ function Hud.payout(earned: number, tier: number, tip: number?)
 	end
 
 	-- moedas voando até a pílula de dinheiro
-	local target = moneyPill.AbsolutePosition + Vector2.new(24, moneyPill.AbsoluteSize.Y / 2)
+	local target = moneyPill.AbsolutePosition + Vector2.new(24 * MONEY_SCALE, moneyPill.AbsoluteSize.Y / 2)
 	local count = math.clamp(math.floor((earned + (tip or 0)) / 4), 3, 10)
 	for i = 1, count do
 		task.delay(0.25 + i * 0.06, function()
@@ -282,8 +256,8 @@ function Hud.payout(earned: number, tier: number, tip: number?)
 			})
 			t.Completed:Once(function()
 				c:Destroy()
-				moneyPop.Scale = 1.12
-				TweenService:Create(moneyPop, TweenInfo.new(0.2), { Scale = 1 }):Play()
+				moneyPop.Scale = 1.12 * MONEY_SCALE
+				TweenService:Create(moneyPop, TweenInfo.new(0.2), { Scale = MONEY_SCALE }):Play()
 			end)
 			t:Play()
 		end)

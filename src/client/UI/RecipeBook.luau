@@ -1,19 +1,24 @@
 --!strict
--- Livro de receitas: todas as bebidas (bloqueadas aparecem como "???") com a missão de
--- maestria de cada uma: sirva N -> colete a recompensa -> selo "MESTRE DO ..." na receita.
+-- Livro de receitas: abas Bebidas e Doces (bloqueados aparecem como "???"). Cada receita tem
+-- conquistas em marcos (Recipes.Milestones: sirva 5, 10, 25, 50 e 100), cada uma com recompensa em
+-- moedas, resgatadas uma de cada vez. Bebida vira "Dominada" (+10%) no marco de 50; com todos os
+-- marcos resgatados a receita ganha o selo "MESTRE".
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local Fusion = require(ReplicatedStorage.Packages.Fusion)
+local Catalog = require(ReplicatedStorage.Shared.Catalog)
 local Recipes = require(ReplicatedStorage.Shared.Recipes)
+local Achievements = require(script.Parent.Parent.Achievements)
 local Glass = require(script.Parent.Parent.Art.Glass)
 local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sprites = require(script.Parent.Parent.Art.Sprites)
 local Pause = require(script.Parent.Parent.Pause)
 local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
+local BookAlert = require(script.Parent.BookAlert)
 
 local Children, OnEvent, peek = Fusion.Children, Fusion.OnEvent, Fusion.peek
 
@@ -21,7 +26,7 @@ local RecipeBook = {}
 local playerGui: PlayerGui
 local isOpen = false
 
-RecipeBook.onClaim = nil :: ((drink: string) -> ())?
+RecipeBook.onClaim = nil :: ((id: string) -> ())? -- resgata o próximo marco da receita (bebida ou doce)
 
 function RecipeBook.init(gui: PlayerGui)
 	playerGui = gui
@@ -64,32 +69,72 @@ local function confetti(parent: GuiObject, amount: number)
 	end
 end
 
-local function recipeCard(scope: any, order: number, id: string): Frame
-	local d = Recipes.Drinks[id]
-	local target = Recipes.masteryTarget(id)
-	local reward = Recipes.masteryReward(id)
+local MILESTONES = #Recipes.Milestones
+local GOLD = Color3.fromRGB(214, 160, 40)
 
+-- Selo "MESTRE DO ..." (artigo certo para os doces no plural)
+local function masterTitle(name: string): string
+	local article = if string.sub(name, -1) == "s" then "DAS" else "DO"
+	return `MESTRE {article} {string.upper(name)}`
+end
+
+local function recipeCard(scope: any, order: number, kind: Achievements.Kind, id: string): Frame
+	local isDrink = kind == "Drink"
+	local drink = if isDrink then Recipes.Drinks[id] else nil
+	local pastry = if isDrink then nil else Catalog.Pastries[id]
+	local name = Achievements.name(kind, id)
+	local level = if drink then drink.Level else (pastry :: Catalog.Pastry).Level
+
+	-- bebida: aprendida no nível; doce: comprado na loja
 	local unlocked = scope:Computed(function(use)
-		return use(State.Level) >= d.Level
+		if isDrink then
+			return use(State.Level) >= level
+		end
+		return use(State.Owned)[id] == true
 	end)
 	local count = scope:Computed(function(use)
-		return use(State.Stats)[id] or 0
+		return (if isDrink then use(State.Stats) else use(State.PastryStats))[id] or 0
+	end)
+	local claimed = scope:Computed(function(use)
+		return math.clamp(use(State.Claims)[id] or 0, 0, MILESTONES)
+	end)
+	local complete = scope:Computed(function(use)
+		return use(claimed) >= MILESTONES
 	end)
 	local mastered = scope:Computed(function(use)
-		return use(State.Mastered)[id] == true
+		return isDrink and use(State.Mastered)[id] == true
+	end)
+	-- próximo marco (o primeiro ainda não resgatado)
+	local nextMilestone = scope:Computed(function(use)
+		return Recipes.Milestones[math.min(use(claimed) + 1, MILESTONES)]
 	end)
 	local claimable = scope:Computed(function(use)
-		return use(unlocked) and not use(mastered) and use(count) >= target
+		return use(unlocked) and Recipes.claimableMilestone(use(count), use(claimed)) ~= nil
+	end)
+	local gold = scope:Computed(function(use)
+		return use(unlocked) and (use(mastered) or use(complete))
 	end)
 	local pulse = scope:Value(1)
 
-	local glass = Glass.new()
-	glass:setPortions(Recipes.portions(id))
-	glass:setMix(if d.Mix then 1 else 0, 0)
-	glass:setLevel(glass:targetLevel())
+	local art: GuiObject
+	if drink then
+		local glass = Glass.new()
+		glass:setPortions(Recipes.portions(id))
+		glass:setMix(if drink.Mix then 1 else 0, 0)
+		glass:setLevel(glass:targetLevel())
+		art = glass.Root
+	else
+		local sprite = PixelArt.draw((Sprites :: any)[(pastry :: Catalog.Pastry).Icon])
+		sprite.Size = UDim2.fromScale(0.9, 0.9)
+		art = sprite
+	end
 
 	local lock = PixelArt.draw(Sprites.Lock)
 	lock.Size = UDim2.fromScale(0.5, 0.5)
+
+	local details = if drink
+		then Recipes.describe(id) .. ` · {Recipes.mixText(id)}  ·  ${drink.Price}`
+		else `Quitute do forno  ·  ${(pastry :: Catalog.Pastry).Price}`
 
 	local sealScale = scope:New("UIScale")({ Scale = 1 })
 	local card: Frame
@@ -98,16 +143,16 @@ local function recipeCard(scope: any, order: number, id: string): Frame
 		Name = id,
 		LayoutOrder = order,
 		BackgroundColor3 = scope:Computed(function(use)
-			return if not use(unlocked) then Theme.PaperShade elseif use(mastered) then Color3.fromRGB(255, 244, 214) else Theme.Paper
+			return if not use(unlocked) then Theme.PaperShade elseif use(gold) then Color3.fromRGB(255, 244, 214) else Theme.Paper
 		end),
 		[Children] = {
 			scope:New("UICorner")({ CornerRadius = UDim.new(0, 10) }),
 			scope:New("UIStroke")({
 				Thickness = scope:Computed(function(use)
-					return if use(mastered) then 4 else 3
+					return if use(gold) then 4 else 3
 				end),
 				Color = scope:Computed(function(use)
-					return if use(mastered) then Color3.fromRGB(214, 160, 40) else Theme.Ink
+					return if use(gold) then GOLD else Theme.Ink
 				end),
 			}),
 			-- desbloqueada
@@ -121,14 +166,16 @@ local function recipeCard(scope: any, order: number, id: string): Frame
 						BackgroundTransparency = 1,
 						Position = UDim2.fromScale(0.03, 0.1),
 						Size = UDim2.fromScale(0.26, 0.8),
-						[Children] = glass.Root,
+						[Children] = art,
 					}),
-					label(scope, d.Name, {
+					label(scope, name, {
 						Position = UDim2.fromScale(0.32, 0.08),
 						Size = UDim2.fromScale(0.64, 0.19),
 						TextXAlignment = Enum.TextXAlignment.Left,
 					}),
-					label(scope, Recipes.describe(id) .. ` · {Recipes.mixText(id)}  ·  ${d.Price}`, {
+					label(scope, scope:Computed(function(use)
+						return if use(mastered) then `{details}  ·  +{math.floor(Recipes.MasteryBonus * 100)}%` else details
+					end), {
 						Position = UDim2.fromScale(0.32, 0.29),
 						Size = UDim2.fromScale(0.64, 0.2),
 						TextXAlignment = Enum.TextXAlignment.Left,
@@ -136,29 +183,28 @@ local function recipeCard(scope: any, order: number, id: string): Frame
 						Font = Enum.Font.Gotham,
 						TextColor3 = Theme.WoodDark,
 					}),
-					-- barra de maestria
+					-- conquista atual: "Sirva 10 (7/10) · 2/5" (marco 2 de 5), barra até ele e a recompensa
 					label(scope, scope:Computed(function(use)
-						if use(mastered) then
-							return `Dominada! Paga +{math.floor(Recipes.MasteryBonus * 100)}% para sempre`
-						end
-						return `Missão: sirva {target}  ({math.min(use(count), target)}/{target})`
+						local m = use(nextMilestone)
+						return `Sirva {m.Count} ({math.min(use(count), m.Count)}/{m.Count})  ·  {math.min(use(claimed) + 1, MILESTONES)}/{MILESTONES}`
 					end), {
+						Name = "Goal",
 						Position = UDim2.fromScale(0.32, 0.52),
 						Size = UDim2.fromScale(0.64, 0.14),
 						TextXAlignment = Enum.TextXAlignment.Left,
-						TextColor3 = scope:Computed(function(use)
-							return if use(mastered) then Color3.fromRGB(176, 124, 20) else Theme.Ink
+						Visible = scope:Computed(function(use)
+							return not use(complete)
 						end),
 					}),
 					scope:New("Frame")({
 						Name = "Bar",
 						Position = UDim2.fromScale(0.32, 0.7),
 						Size = scope:Computed(function(use)
-							return if use(claimable) then UDim2.fromScale(0.3, 0.14) else UDim2.fromScale(0.64, 0.14)
+							return if use(claimable) then UDim2.fromScale(0.3, 0.14) else UDim2.fromScale(0.46, 0.14)
 						end),
 						BackgroundColor3 = Theme.PaperShade,
 						Visible = scope:Computed(function(use)
-							return not use(mastered)
+							return not use(complete)
 						end),
 						[Children] = {
 							scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
@@ -169,11 +215,25 @@ local function recipeCard(scope: any, order: number, id: string): Frame
 									return if use(claimable) then Theme.Mustard else Theme.Sage
 								end),
 								Size = scope:Computed(function(use)
-									return UDim2.fromScale(math.clamp(use(count) / target, 0.03, 1), 1)
+									return UDim2.fromScale(math.clamp(use(count) / use(nextMilestone).Count, 0.03, 1), 1)
 								end),
 								[Children] = scope:New("UICorner")({ CornerRadius = UDim.new(0.5, 0) }),
 							}),
 						},
+					}),
+					-- recompensa do próximo marco (some quando o botão de coletar aparece)
+					label(scope, scope:Computed(function(use)
+						return `+${use(nextMilestone).Reward}`
+					end), {
+						Name = "Reward",
+						AnchorPoint = Vector2.new(1, 0),
+						Position = UDim2.fromScale(0.97, 0.66),
+						Size = UDim2.fromScale(0.17, 0.2),
+						TextXAlignment = Enum.TextXAlignment.Right,
+						TextColor3 = Color3.fromRGB(176, 124, 20),
+						Visible = scope:Computed(function(use)
+							return not use(complete) and not use(claimable)
+						end),
 					}),
 					scope:New("TextButton")({
 						Name = "Claim",
@@ -184,7 +244,10 @@ local function recipeCard(scope: any, order: number, id: string): Frame
 						Font = Theme.Font,
 						TextScaled = true,
 						TextColor3 = Theme.Paper,
-						Text = `Coletar ${reward}!`,
+						Text = scope:Computed(function(use)
+							local index = Recipes.claimableMilestone(use(count), use(claimed))
+							return `Coletar ${if index then Recipes.Milestones[index].Reward else 0}!`
+						end),
 						Visible = claimable,
 						ZIndex = 3,
 						[Children] = {
@@ -199,21 +262,21 @@ local function recipeCard(scope: any, order: number, id: string): Frame
 							end
 						end,
 					}),
-					-- selo de mestre
+					-- selo de mestre: todos os marcos resgatados
 					scope:New("Frame")({
 						Name = "Seal",
 						AnchorPoint = Vector2.new(0.5, 0.5),
-						Position = UDim2.fromScale(0.64, 0.8),
+						Position = UDim2.fromScale(0.64, 0.72),
 						Size = UDim2.fromScale(0.64, 0.2),
 						Rotation = -4,
 						ZIndex = 5,
 						BackgroundColor3 = Color3.fromRGB(246, 196, 70),
-						Visible = mastered,
+						Visible = complete,
 						[Children] = {
 							sealScale,
 							scope:New("UICorner")({ CornerRadius = UDim.new(0.4, 0) }),
 							scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink }),
-							label(scope, `MESTRE DO {string.upper(d.Name)}`, {
+							label(scope, masterTitle(name), {
 								Position = UDim2.fromScale(0.05, 0.14),
 								Size = UDim2.fromScale(0.9, 0.72),
 								ZIndex = 6,
@@ -243,7 +306,12 @@ local function recipeCard(scope: any, order: number, id: string): Frame
 						TextXAlignment = Enum.TextXAlignment.Left,
 						TextColor3 = Theme.WoodDark,
 					}),
-					label(scope, `Aprenda no nível {d.Level}`, {
+					label(scope, scope:Computed(function(use)
+						if not isDrink and use(State.Level) >= level then
+							return "Compre na loja"
+						end
+						return `Aprenda no nível {level}`
+					end), {
 						Position = UDim2.fromScale(0.35, 0.52),
 						Size = UDim2.fromScale(0.6, 0.22),
 						TextXAlignment = Enum.TextXAlignment.Left,
@@ -261,12 +329,20 @@ local function recipeCard(scope: any, order: number, id: string): Frame
 		end
 	end)
 	table.insert(scope, conn)
-	scope:Observer(mastered):onChange(function()
-		if peek(mastered) then
-			sealScale.Scale = 2.2
-			TweenService:Create(sealScale, TweenInfo.new(0.45, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-			confetti(card, 40)
+	-- confete a cada marco resgatado; o selo carimba quando o último sai
+	local lastClaimed = peek(claimed)
+	scope:Observer(claimed):onChange(function()
+		local now = peek(claimed)
+		if now > lastClaimed then
+			if now >= MILESTONES then
+				sealScale.Scale = 2.2
+				TweenService:Create(sealScale, TweenInfo.new(0.45, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+				confetti(card, 40)
+			else
+				confetti(card, 18)
+			end
 		end
+		lastClaimed = now
 	end)
 	return card
 end
@@ -281,15 +357,22 @@ function RecipeBook.show()
 		Pause.set(true)
 	end
 	local scope = Fusion.scoped(Fusion)
+	local tab = scope:Value("Drink" :: Achievements.Kind)
 
-	local recipeCards = {}
-	for i, id in Recipes.DrinkOrder do
-		table.insert(recipeCards, recipeCard(scope, i, id))
+	local function cardsOf(kind: Achievements.Kind): { Frame }
+		local cards = {}
+		for i, id in Achievements.ids(kind) do
+			table.insert(cards, recipeCard(scope, i, kind, id))
+		end
+		return cards
 	end
 
-	local function page(id: string, cards: { Frame }, cellHeight: number, columns: number): ScrollingFrame
+	local function page(id: Achievements.Kind, cards: { Frame }, cellHeight: number, columns: number): ScrollingFrame
 		return scope:New("ScrollingFrame")({
 			Name = id,
+			Visible = scope:Computed(function(use)
+				return use(tab) == id
+			end),
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
 			Size = UDim2.fromScale(1, 1),
@@ -314,6 +397,35 @@ function RecipeBook.show()
 		})
 	end
 
+	local function tabButton(kind: Achievements.Kind, text: string, order: number): TextButton
+		-- bolinha maior que a do HUD (a aba é baixinha e o padding encolhe a área dos filhos)
+		local alert = BookAlert(scope, kind)
+		alert.Size = UDim2.fromScale(1.1, 1.1)
+		alert.Position = UDim2.fromScale(0.94, 0.05)
+		return scope:New("TextButton")({
+			Name = kind,
+			LayoutOrder = order,
+			Size = UDim2.fromScale(0.48, 1),
+			BackgroundColor3 = scope:Computed(function(use)
+				return if use(tab) == kind then Theme.Mustard else Theme.PaperShade
+			end),
+			Font = Theme.Font,
+			TextScaled = true,
+			TextColor3 = Theme.Ink,
+			Text = text,
+			[Fusion.Attribute("ClickSound")] = "BookOpen", -- mesmo som de abrir o livro
+			[Children] = {
+				scope:New("UICorner")({ CornerRadius = UDim.new(0.3, 0) }),
+				scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+				scope:New("UIPadding")({ PaddingTop = UDim.new(0.18, 0), PaddingBottom = UDim.new(0.18, 0) }),
+				alert,
+			},
+			[OnEvent("Activated")] = function()
+				tab:set(kind)
+			end,
+		}) :: TextButton
+	end
+
 	local card = scope:New("Frame")({
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 1.6),
@@ -336,8 +448,24 @@ function RecipeBook.show()
 						PaddingRight = UDim.new(0.025, 0),
 					}),
 					label(scope, "Livro de Receitas", {
-						Size = UDim2.fromScale(0.5, 0.09),
+						Size = UDim2.fromScale(0.4, 0.09),
 						TextXAlignment = Enum.TextXAlignment.Left,
+					}),
+					-- abas Bebidas / Doces, cada uma com a bolinha "!" dos marcos prontos dela
+					scope:New("Frame")({
+						Name = "Tabs",
+						BackgroundTransparency = 1,
+						Position = UDim2.fromScale(0.42, 0.005),
+						Size = UDim2.fromScale(0.44, 0.08),
+						[Children] = {
+							scope:New("UIListLayout")({
+								FillDirection = Enum.FillDirection.Horizontal,
+								Padding = UDim.new(0.04, 0),
+								SortOrder = Enum.SortOrder.LayoutOrder,
+							}),
+							tabButton("Drink", "Bebidas", 1),
+							tabButton("Pastry", "Quitutes", 2),
+						},
 					}),
 					scope:New("TextButton")({
 						Name = "Close",
@@ -367,7 +495,8 @@ function RecipeBook.show()
 						[Children] = {
 							scope:New("UICorner")({ CornerRadius = UDim.new(0, 10) }),
 							scope:New("UIStroke")({ Thickness = 3, Color = Theme.Ink }),
-							page("Recipes", recipeCards, 150, 3),
+							page("Drink", cardsOf("Drink"), 150, 3),
+							page("Pastry", cardsOf("Pastry"), 150, 3),
 						},
 					}),
 				},

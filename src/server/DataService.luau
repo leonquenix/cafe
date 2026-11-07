@@ -2,10 +2,12 @@
 -- Persistência com ProfileStore.
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local ProfileStore = require(ServerScriptService.ServerPackages.ProfileStore)
+local Recipes = require(ReplicatedStorage.Shared.Recipes)
 
 export type Data = {
 	Money: number,
@@ -17,9 +19,14 @@ export type Data = {
 	Upgrades: { [string]: number },
 	Pastries: { [string]: boolean },
 	Decor: { [string]: boolean },
+	DecorHidden: { [string]: boolean }, -- decorações compradas que o jogador desligou na loja
 	Menu: { string },
-	DrinkStats: { [string]: number },
-	Mastered: { [string]: boolean },
+	DrinkStats: { [string]: number }, -- bebidas servidas certas, por receita
+	Mastered: { [string]: boolean }, -- bebidas dominadas (+10%): marco de 50 resgatado (ou maestria antiga)
+	PastryStats: { [string]: number }, -- doces entregues ok/perfeitos, por receita
+	DrinkClaims: { [string]: number }, -- marcos de conquista resgatados por bebida (Recipes.Milestones)
+	PastryClaims: { [string]: number }, -- marcos de conquista resgatados por doce
+	AchievementsVersion: number, -- migração das conquistas já aplicada (0 = save de antes dos marcos)
 	RadioTrack: number, -- estação escolhida no rádio (1 = bossa nova)
 	RadioVolume: number, -- 0-100
 	CatColor: string, -- pelagem do gatinho da vitrine (Catalog.CatColors)
@@ -40,9 +47,14 @@ local TEMPLATE: Data = {
 	Upgrades = {},
 	Pastries = {},
 	Decor = {},
+	DecorHidden = {},
 	Menu = {},
 	DrinkStats = {},
 	Mastered = {},
+	PastryStats = {},
+	DrinkClaims = {},
+	PastryClaims = {},
+	AchievementsVersion = 0,
 	RadioTrack = 1,
 	RadioVolume = 70,
 	CatColor = "Gray",
@@ -72,6 +84,27 @@ local function profileKey(player: Player): string
 	return key
 end
 
+-- Conquistas v1 (marcos 5/10/25/50/100): a maestria antiga era uma missão só por bebida
+-- (Recipes.legacyMasteryTarget: 50, 35 ou 25). Quem já tinha resgatado fica com os marcos até essa meta
+-- marcados como resgatados (sem pagar de novo) e continua Dominado. As contagens não mudam.
+-- Idempotente: só aumenta o que já foi resgatado, e roda uma vez por save (AchievementsVersion).
+local ACHIEVEMENTS_VERSION = 1
+
+local function migrateAchievements(data: Data)
+	if (data.AchievementsVersion or 0) >= ACHIEVEMENTS_VERSION then
+		return
+	end
+	for drink in data.Mastered do
+		if Recipes.hasMilestones(drink) then
+			local n = Recipes.milestonesReached(Recipes.legacyMasteryTarget(drink))
+			data.DrinkClaims[drink] = math.max(data.DrinkClaims[drink] or 0, n)
+		end
+	end
+	data.AchievementsVersion = ACHIEVEMENTS_VERSION
+end
+
+DataService.migrateAchievements = migrateAchievements
+
 local function onPlayerAdded(player: Player)
 	local profile = Store:StartSessionAsync(profileKey(player), {
 		Cancel = function()
@@ -85,6 +118,16 @@ local function onPlayerAdded(player: Player)
 
 	profile:AddUserId(player.UserId)
 	profile:Reconcile()
+	-- "Morceguinhos e Teias" (HalloweenWall) virou dois itens: quem já tinha ganha as Teias de Aranha também
+	-- (e, se tinha desligado, as teias começam desligadas)
+	local data = profile.Data
+	if data.Decor.HalloweenWall and data.Decor.HalloweenWebs == nil then
+		data.Decor.HalloweenWebs = true
+		if data.DecorHidden.HalloweenWall then
+			data.DecorHidden.HalloweenWebs = true
+		end
+	end
+	migrateAchievements(data)
 	profile.OnSessionEnd:Connect(function()
 		profiles[player] = nil
 		player:Kick("Sua sessão foi aberta em outro servidor.")
@@ -129,6 +172,7 @@ function DataService.wipe(player: Player): boolean
 	for k, v in deepCopy(TEMPLATE) :: any do
 		data[k] = v
 	end
+	data.AchievementsVersion = ACHIEVEMENTS_VERSION -- save zerado não tem nada para migrar
 	return true
 end
 

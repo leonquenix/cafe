@@ -10,6 +10,7 @@ local Catalog = require(ReplicatedStorage.Shared.Catalog)
 local Characters = require(ReplicatedStorage.Shared.Characters)
 local Net = require(ReplicatedStorage.Shared.Net)
 local Recipes = require(ReplicatedStorage.Shared.Recipes)
+local Achievements = require(script.Achievements)
 local BackButton = require(script.UI.BackButton)
 local Bubble = require(script.UI.Bubble)
 local CameraController = require(script.CameraController)
@@ -111,6 +112,9 @@ end
 PrepScreen.onSetCatColor = function(color)
 	Net.SetCatColor.send(color)
 end
+PrepScreen.onSetDecorShown = function(id, shown)
+	Net.SetDecorShown.send({ id = id, shown = shown })
+end
 
 -- Decoração nova: fecha o menu, a câmera voa até o lugar, a peça se monta, volta e reabre o menu
 local function showcaseDecor(id: string)
@@ -153,6 +157,12 @@ State.scope:Observer(State.WallColor):onBind(function()
 	end
 end)
 
+-- decorações ligadas/desligadas na loja (antes do Owned: o café já nasce sem as desligadas)
+State.scope:Observer(State.Hidden):onBind(function()
+	Decor.setHidden(peek(State.Hidden))
+	Decor.apply(peek(State.Owned), pendingDecor)
+end)
+
 State.scope:Observer(State.Owned):onBind(function()
 	local owned = peek(State.Owned)
 	Decor.apply(owned, pendingDecor)
@@ -166,21 +176,26 @@ State.scope:Observer(State.Owned):onBind(function()
 	end
 end)
 
--- avisa quando uma missão de maestria fica pronta para coletar
-local lastStats: { [string]: number }? = nil
-State.scope:Observer(State.Stats):onChange(function()
-	local stats = peek(State.Stats)
-	local mastered = peek(State.Mastered)
-	if lastStats then
-		for id, count in stats do
-			local target = Recipes.masteryTarget(id)
-			if not mastered[id] and count >= target and (lastStats[id] or 0) < target then
-				Hud.toast(`Missão completa: {Recipes.Drinks[id].Name}! Colete no livro`, Theme.Mustard)
+-- avisa quando uma receita (bebida ou doce) alcança um marco de conquista novo para resgatar
+local function watchMilestones(kind: Achievements.Kind, value: any)
+	local last: { [string]: number }? = nil
+	State.scope:Observer(value):onChange(function()
+		local stats = peek(value) :: { [string]: number }
+		if last then
+			for _, id in Achievements.ids(kind) do
+				local count = stats[id] or 0
+				local reached = Recipes.milestonesReached(count)
+				if reached > Recipes.milestonesReached(last[id] or 0) and reached > (peek(State.Claims)[id] or 0) then
+					local m = Recipes.Milestones[reached]
+					Hud.toast(`Conquista: {m.Count}x {Achievements.name(kind, id)}! Colete no livro`, Theme.Mustard)
+				end
 			end
 		end
-	end
-	lastStats = table.clone(stats)
-end)
+		last = table.clone(stats)
+	end)
+end
+watchMilestones("Drink", State.Stats)
+watchMilestones("Pastry", State.PastryStats)
 
 local INTRO_LINE = "Preciso fazer isso pela vovó, ela amava tanto esse lugar, talvez eu só precise de uma cidadezinha tranquila e um novo começo."
 
@@ -506,7 +521,7 @@ Net.OrderAssigned.listen(function(order)
 			end
 			Net.PastryDone.send({ orderId = order.orderId, quality = quality })
 			if quality == Catalog.PastryQuality.Skipped then
-				Hud.toast("Sem o doce: o cliente vai pagar só a bebida", Theme.Mustard)
+				Hud.toast("Sem o quitute: o cliente vai pagar só a bebida", Theme.Mustard)
 			end
 			minigame:open(drinkOnly)
 		end, function(done)
@@ -555,7 +570,7 @@ Net.OrderResult.listen(function(result)
 		-- doce cru/queimado: paga menos e sai insatisfeito
 		Customers.serveFront(color, if result.problem == "RawPastry" then "Tá cru..." else "Queimado?!", false)
 		Hud.payout(result.earned, result.tier, result.tip)
-		Hud.toast(if result.problem == "RawPastry" then "Doce cru: pagou só a bebida" else "Doce queimado: pagou só a bebida", Theme.Rose)
+		Hud.toast(if result.problem == "RawPastry" then "Quitute cru: pagou só a bebida" else "Quitute queimado: pagou só a bebida", Theme.Rose)
 	elseif result.success then
 		Customers.serveFront(color, if customer then thanksFor(customer, result.tier) else nil, true)
 		Hud.payout(result.earned, result.tier, result.tip)
@@ -568,8 +583,8 @@ Net.OrderResult.listen(function(result)
 		end
 		if result.earned > 0 then
 			-- bebida errada, mas o doce veio: paga só o doce
-			complaint ..= " Mas o doce tá bom."
-			toast = string.gsub(toast, "sem pagamento", "pagou só o doce")
+			complaint ..= " Mas o quitute tá bom."
+			toast = string.gsub(toast, "sem pagamento", "pagou só o quitute")
 			Hud.payout(result.earned, -1, 0) -- sem selo de velocidade: a bebida não contou
 		end
 		Customers.serveFront(color, complaint, false)

@@ -17,7 +17,7 @@ return ByteNet.defineNamespace("Cafe", function()
 		Pause = ByteNet.definePacket({
 			value = ByteNet.bool,
 		}),
-		-- cliente -> servidor: coletar a recompensa de maestria de uma bebida
+		-- cliente -> servidor: resgatar o próximo marco de conquista de uma bebida ou de um doce (id da receita)
 		ClaimMastery = ByteNet.definePacket({
 			value = ByteNet.string,
 		}),
@@ -96,6 +96,13 @@ return ByteNet.defineNamespace("Cafe", function()
 		SetWallColor = ByteNet.definePacket({
 			value = ByteNet.string,
 		}),
+		-- cliente -> servidor: liga/desliga uma decoração já comprada (Catalog.Decor), salvo no perfil
+		SetDecorShown = ByteNet.definePacket({
+			value = ByteNet.struct({
+				id = ByteNet.string,
+				shown = ByteNet.bool,
+			}),
+		}),
 		-- cliente -> servidor: cardápio do dia
 		SetMenu = ByteNet.definePacket({
 			value = ByteNet.array(ByteNet.string),
@@ -120,9 +127,12 @@ return ByteNet.defineNamespace("Cafe", function()
 				cozy = ByteNet.uint8,
 				upgrades = ByteNet.array(ByteNet.struct({ id = ByteNet.string, level = ByteNet.uint8 })),
 				owned = ByteNet.array(ByteNet.string), -- doces e decoração comprados
+				hidden = ByteNet.array(ByteNet.string), -- decorações compradas que estão desligadas
 				menu = ByteNet.array(ByteNet.string),
 				stats = ByteNet.array(ByteNet.struct({ drink = ByteNet.string, count = ByteNet.uint16 })),
-				mastered = ByteNet.array(ByteNet.string), -- recompensas de maestria já coletadas
+				pastryStats = ByteNet.array(ByteNet.struct({ drink = ByteNet.string, count = ByteNet.uint16 })), -- doces servidos (drink = id do doce)
+				claims = ByteNet.array(ByteNet.struct({ id = ByteNet.string, count = ByteNet.uint8 })), -- marcos de conquista resgatados por receita
+				mastered = ByteNet.array(ByteNet.string), -- bebidas dominadas (+10%)
 				catColor = ByteNet.string, -- pelagem do gatinho da vitrine
 				themes = ByteNet.array(ByteNet.string), -- temas da fachada comprados
 				theme = ByteNet.string, -- tema da fachada em uso
