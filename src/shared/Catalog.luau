@@ -6,8 +6,9 @@ export type Upgrade = {
 	Name: string,
 	Description: string,
 	Icon: string, -- nome do sprite
-	Costs: { number }, -- custo de cada nível
-	Level: number, -- nível do jogador necessário
+	Costs: { number }, -- custo de cada degrau
+	Level: number, -- nível do jogador necessário (vale para os degraus sem entrada em TierLevels)
+	TierLevels: { [number]: number }?, -- degrau -> nível do jogador necessário (degraus mais altos)
 }
 
 export type Pastry = {
@@ -41,29 +42,32 @@ Catalog.Upgrades = {
 		Name = "Máquina Turbo",
 		Description = "Os ingredientes despejam mais rápido.",
 		Icon = "Coffee",
-		Costs = { 80, 200, 450 },
+		Costs = { 80, 200, 450, 900, 1600 },
 		Level = 1,
+		TierLevels = { [4] = 14, [5] = 27 },
 	},
 	Whisk = {
 		Id = "Whisk",
 		Name = "Batedor Elétrico",
 		Description = "Menos voltas para misturar.",
 		Icon = "Spoon",
-		Costs = { 60, 160, 380 },
+		Costs = { 60, 160, 380, 750, 1400 },
 		Level = 1,
+		TierLevels = { [4] = 18, [5] = 28 },
 	},
 	TipJar = {
 		Id = "TipJar",
 		Name = "Pote de Gorjetas",
 		Description = "Clientes Relâmpago deixam gorjeta.",
 		Icon = "Coin",
-		Costs = { 100, 250, 500 },
-		Level = 2,
+		Costs = { 100, 250, 500, 1000, 1800 },
+		Level = 4,
+		TierLevels = { [4] = 24, [5] = 30 },
 	},
 } :: { [string]: Upgrade }
 
--- ordem de desbloqueio dos doces: cookie e brownie no nível 3 e depois quase um por nível até o 19
--- (4, 5, 6, 7, 9, 10, 11, 13, 14, 15, 17, 18 e 19; os níveis 8, 12 e 16 ficam sem quitute).
+-- ordem de desbloqueio dos doces: cookie e brownie no nível 3 e depois espaçando até o 28
+-- (5, 6, 7, 8, 10, 12, 13, 15, 18, 20, 24, 26 e 28).
 -- Cost e Price sobem junto com a ordem e o BakeTime cai (os últimos assam mais rápido, mais difícil de acertar).
 -- o Icon tem que ter o mesmo nome do Id (o balão do pedido desenha Sprites[id])
 Catalog.PastryOrder = {
@@ -86,19 +90,19 @@ Catalog.PastryOrder = {
 Catalog.Pastries = {
 	Cookie = { Id = "Cookie", Name = "Cookie", Icon = "Cookie", Cost = 120, Price = 6, Level = 3, BakeTime = 3.2 },
 	Brownie = { Id = "Brownie", Name = "Brownie", Icon = "Brownie", Cost = 150, Price = 7, Level = 3, BakeTime = 3.2 },
-	Cupcake = { Id = "Cupcake", Name = "Cupcake", Icon = "Cupcake", Cost = 170, Price = 8, Level = 4, BakeTime = 3.1 },
-	Beliscao = { Id = "Beliscao", Name = "Beliscão de goiabada", Icon = "Beliscao", Cost = 200, Price = 9, Level = 5, BakeTime = 3.0 },
-	CornCake = { Id = "CornCake", Name = "Bolo de fubá", Icon = "CornCake", Cost = 230, Price = 10, Level = 6, BakeTime = 2.9 },
-	Esfirra = { Id = "Esfirra", Name = "Esfirra", Icon = "Esfirra", Cost = 250, Price = 10, Level = 7, BakeTime = 2.8 },
-	Pudim = { Id = "Pudim", Name = "Pudim", Icon = "Pudim", Cost = 280, Price = 11, Level = 9, BakeTime = 2.8 },
-	StrawberryTart = { Id = "StrawberryTart", Name = "Torta de morango", Icon = "StrawberryTart", Cost = 290, Price = 11, Level = 10, BakeTime = 2.8 },
-	Madeleines = { Id = "Madeleines", Name = "Madeleines", Icon = "Madeleines", Cost = 300, Price = 11, Level = 11, BakeTime = 2.8 },
-	Empada = { Id = "Empada", Name = "Empada", Icon = "Empada", Cost = 350, Price = 13, Level = 13, BakeTime = 2.6 },
-	CarrotCake = { Id = "CarrotCake", Name = "Bolo de cenoura", Icon = "CarrotCake", Cost = 380, Price = 13, Level = 14, BakeTime = 2.5 },
-	Croissant = { Id = "Croissant", Name = "Croissant", Icon = "Croissant", Cost = 400, Price = 14, Level = 15, BakeTime = 2.4 },
-	Rocambole = { Id = "Rocambole", Name = "Rocambole", Icon = "Rocambole", Cost = 450, Price = 15, Level = 17, BakeTime = 2.4 },
-	Strudel = { Id = "Strudel", Name = "Strudel", Icon = "Strudel", Cost = 470, Price = 15, Level = 18, BakeTime = 2.3 },
-	PaoDeQueijo = { Id = "PaoDeQueijo", Name = "Pão de queijo", Icon = "PaoDeQueijo", Cost = 500, Price = 16, Level = 19, BakeTime = 2.2 },
+	Cupcake = { Id = "Cupcake", Name = "Cupcake", Icon = "Cupcake", Cost = 170, Price = 8, Level = 5, BakeTime = 3.1 },
+	Beliscao = { Id = "Beliscao", Name = "Beliscão de goiabada", Icon = "Beliscao", Cost = 200, Price = 9, Level = 6, BakeTime = 3.0 },
+	CornCake = { Id = "CornCake", Name = "Bolo de fubá", Icon = "CornCake", Cost = 230, Price = 10, Level = 7, BakeTime = 2.9 },
+	Esfirra = { Id = "Esfirra", Name = "Esfirra", Icon = "Esfirra", Cost = 250, Price = 10, Level = 8, BakeTime = 2.8 },
+	Pudim = { Id = "Pudim", Name = "Pudim", Icon = "Pudim", Cost = 280, Price = 11, Level = 10, BakeTime = 2.8 },
+	StrawberryTart = { Id = "StrawberryTart", Name = "Torta de morango", Icon = "StrawberryTart", Cost = 290, Price = 11, Level = 12, BakeTime = 2.8 },
+	Madeleines = { Id = "Madeleines", Name = "Madeleines", Icon = "Madeleines", Cost = 300, Price = 11, Level = 13, BakeTime = 2.8 },
+	Empada = { Id = "Empada", Name = "Empada", Icon = "Empada", Cost = 350, Price = 13, Level = 15, BakeTime = 2.6 },
+	CarrotCake = { Id = "CarrotCake", Name = "Bolo de cenoura", Icon = "CarrotCake", Cost = 380, Price = 13, Level = 18, BakeTime = 2.5 },
+	Croissant = { Id = "Croissant", Name = "Croissant", Icon = "Croissant", Cost = 400, Price = 14, Level = 20, BakeTime = 2.4 },
+	Rocambole = { Id = "Rocambole", Name = "Rocambole", Icon = "Rocambole", Cost = 450, Price = 15, Level = 24, BakeTime = 2.4 },
+	Strudel = { Id = "Strudel", Name = "Strudel", Icon = "Strudel", Cost = 470, Price = 15, Level = 26, BakeTime = 2.3 },
+	PaoDeQueijo = { Id = "PaoDeQueijo", Name = "Pão de queijo", Icon = "PaoDeQueijo", Cost = 500, Price = 16, Level = 28, BakeTime = 2.2 },
 } :: { [string]: Pastry }
 
 Catalog.DecorOrder = {
@@ -137,11 +141,11 @@ Catalog.Decor = {
 		Cozy = 1,
 		Level = 1,
 	},
-	Paintings = { Id = "Paintings", Name = "Galeria de Quadros", Description = "Arte local na parede.", Icon = "Painting", Cost = 120, Cozy = 1, Level = 2 },
+	Paintings = { Id = "Paintings", Name = "Galeria de Quadros", Description = "Arte local na parede.", Icon = "Painting", Cost = 120, Cozy = 1, Level = 3 },
 	Cat = { Id = "Cat", Name = "Gatinho da Vitrine", Description = "Dorme em cima dos docinhos.", Icon = "Cat", Cost = 150, Cozy = 2, Level = 2 },
-	Lanterns = { Id = "Lanterns", Name = "Lanternas de Papel", Description = "Luz suave e colorida.", Icon = "Lantern", Cost = 160, Cozy = 2, Level = 3 },
-	Record = { Id = "Record", Name = "Vitrola", Description = "Um jazz baixinho no ar.", Icon = "Record", Cost = 220, Cozy = 2, Level = 3 },
-	Stove = { Id = "Stove", Name = "Fogão a Lenha", Description = "Estalinhos e calor de vó.", Icon = "Stove", Cost = 400, Cozy = 3, Level = 4 },
+	Lanterns = { Id = "Lanterns", Name = "Lanternas de Papel", Description = "Luz suave e colorida.", Icon = "Lantern", Cost = 160, Cozy = 2, Level = 5 },
+	Record = { Id = "Record", Name = "Vitrola", Description = "Um jazz baixinho no ar.", Icon = "Record", Cost = 220, Cozy = 2, Level = 5 },
+	Stove = { Id = "Stove", Name = "Fogão a Lenha", Description = "Estalinhos e calor de vó.", Icon = "Stove", Cost = 400, Cozy = 3, Level = 7 },
 	-- festas: cada enfeite é comprado separado e pode ser ligado/desligado na loja (perfil DecorHidden)
 	EasterBasket = {
 		Id = "EasterBasket",
@@ -150,7 +154,7 @@ Catalog.Decor = {
 		Icon = "EasterBasket",
 		Cost = 220,
 		Cozy = 1,
-		Level = 6,
+		Level = 11,
 		Group = "Easter",
 	},
 	EasterWreath = {
@@ -160,7 +164,7 @@ Catalog.Decor = {
 		Icon = "EasterWreath",
 		Cost = 260,
 		Cozy = 1,
-		Level = 6,
+		Level = 12,
 		Group = "Easter",
 	},
 	EasterBunting = {
@@ -170,7 +174,7 @@ Catalog.Decor = {
 		Icon = "EasterBunting",
 		Cost = 300,
 		Cozy = 1,
-		Level = 7,
+		Level = 13,
 		Group = "Easter",
 	},
 	EasterPlantBunny = {
@@ -180,7 +184,7 @@ Catalog.Decor = {
 		Icon = "EasterPlantBunny",
 		Cost = 280,
 		Cozy = 1,
-		Level = 7,
+		Level = 13,
 		Group = "Easter",
 	},
 	EasterWindowGarland = {
@@ -190,7 +194,7 @@ Catalog.Decor = {
 		Icon = "EasterWindowGarland",
 		Cost = 340,
 		Cozy = 1,
-		Level = 7,
+		Level = 14,
 		Group = "Easter",
 	},
 	EasterFootprints = {
@@ -200,7 +204,7 @@ Catalog.Decor = {
 		Icon = "EasterFootprints",
 		Cost = 240,
 		Cozy = 1,
-		Level = 6,
+		Level = 12,
 		Group = "Easter",
 	},
 	-- HalloweenWall era "Morceguinhos e Teias"; as teias viraram o HalloweenWebs (quem já tinha ganhou as duas)
@@ -211,7 +215,7 @@ Catalog.Decor = {
 		Icon = "HalloweenWebs",
 		Cost = 220,
 		Cozy = 1,
-		Level = 8,
+		Level = 16,
 		Group = "Halloween",
 	},
 	HalloweenWall = {
@@ -221,7 +225,7 @@ Catalog.Decor = {
 		Icon = "HalloweenWall",
 		Cost = 280,
 		Cozy = 1,
-		Level = 8,
+		Level = 16,
 		Group = "Halloween",
 	},
 	HalloweenPumpkins = {
@@ -231,7 +235,7 @@ Catalog.Decor = {
 		Icon = "HalloweenPumpkins",
 		Cost = 320,
 		Cozy = 1,
-		Level = 8,
+		Level = 17,
 		Group = "Halloween",
 	},
 	HalloweenGhosts = {
@@ -241,7 +245,7 @@ Catalog.Decor = {
 		Icon = "HalloweenGhosts",
 		Cost = 360,
 		Cozy = 1,
-		Level = 9,
+		Level = 19,
 		Group = "Halloween",
 	},
 	HalloweenZombieHand = {
@@ -251,7 +255,7 @@ Catalog.Decor = {
 		Icon = "HalloweenZombieHand",
 		Cost = 300,
 		Cozy = 1,
-		Level = 9,
+		Level = 19,
 		Group = "Halloween",
 	},
 	HalloweenMummy = {
@@ -261,7 +265,7 @@ Catalog.Decor = {
 		Icon = "HalloweenMummy",
 		Cost = 400,
 		Cozy = 1,
-		Level = 9,
+		Level = 20,
 		Group = "Halloween",
 	},
 	-- precisa do gatinho da vitrine (Requires): o gorro vai na cabeça dele
@@ -272,7 +276,7 @@ Catalog.Decor = {
 		Icon = "ChristmasCatHat",
 		Cost = 200,
 		Cozy = 1,
-		Level = 10,
+		Level = 23,
 		Group = "Christmas",
 		Requires = "Cat",
 	},
@@ -283,7 +287,7 @@ Catalog.Decor = {
 		Icon = "ChristmasWreath",
 		Cost = 300,
 		Cozy = 1,
-		Level = 10,
+		Level = 23,
 		Group = "Christmas",
 	},
 	ChristmasGarland = {
@@ -293,7 +297,7 @@ Catalog.Decor = {
 		Icon = "ChristmasGarland",
 		Cost = 380,
 		Cozy = 1,
-		Level = 10,
+		Level = 25,
 		Group = "Christmas",
 	},
 	ChristmasTree = {
@@ -303,7 +307,7 @@ Catalog.Decor = {
 		Icon = "ChristmasTree",
 		Cost = 550,
 		Cozy = 2,
-		Level = 11,
+		Level = 27,
 		Group = "Christmas",
 	},
 } :: { [string]: Decor }
@@ -318,16 +322,17 @@ Catalog.DecorGroups = {
 	Christmas = { Id = "Christmas", Name = "Natal", Icon = "ThemeChristmas" },
 } :: { [string]: DecorGroup }
 
--- Pelagens do gatinho da vitrine (escolhida no pop-up de compra; o visual fica em client/Decor)
+-- Pelagens do gatinho da vitrine (escolhida no pop-up de compra; o visual fica em client/Decor).
+-- Level = nível do jogador pra escolher; quem já usa uma pelagem bloqueada continua com ela.
 Catalog.CatColorOrder = { "Gray", "Orange", "Black", "White", "Calico", "Tuxedo" }
 Catalog.CatColors = {
-	Gray = { Id = "Gray", Name = "CINZA" },
-	Orange = { Id = "Orange", Name = "LARANJA" },
-	Black = { Id = "Black", Name = "PRETO" },
-	White = { Id = "White", Name = "BRANCO" },
-	Calico = { Id = "Calico", Name = "TRICOLOR" },
-	Tuxedo = { Id = "Tuxedo", Name = "FRAJOLINHA" },
-} :: { [string]: { Id: string, Name: string } }
+	Gray = { Id = "Gray", Name = "CINZA", Level = 1 },
+	Orange = { Id = "Orange", Name = "LARANJA", Level = 1 },
+	Black = { Id = "Black", Name = "PRETO", Level = 7 },
+	White = { Id = "White", Name = "BRANCO", Level = 10 },
+	Calico = { Id = "Calico", Name = "TRICOLOR", Level = 21 },
+	Tuxedo = { Id = "Tuxedo", Name = "FRAJOLINHA", Level = 29 },
+} :: { [string]: { Id: string, Name: string, Level: number } }
 Catalog.DefaultCatColor = "Gray"
 
 -- Temas da fachada (só visual, sem aconchego): trocados no pop-up de temas; o visual fica em client/OutsideTheme.
@@ -345,19 +350,20 @@ Catalog.DefaultTheme = "Original"
 Catalog.ThemeOrder = { "Original", "Winter", "Autumn", "Rain", "Christmas", "Halloween", "Easter" }
 Catalog.Themes = {
 	Original = { Id = "Original", Name = "Primavera", Description = "O jardim florido de sempre.", Icon = "ThemeSpring", Cost = 0, Level = 1 },
-	Winter = { Id = "Winter", Name = "Inverno", Description = "Neve caindo e tudo branquinho.", Icon = "ThemeWinter", Cost = 350, Level = 6 },
-	Autumn = { Id = "Autumn", Name = "Outono", Description = "Folhas laranja voando pelo jardim.", Icon = "ThemeAutumn", Cost = 300, Level = 5 },
-	Rain = { Id = "Rain", Name = "Dia de Chuva", Description = "Céu cinzinha e chuva lá fora.", Icon = "ThemeRain", Cost = 250, Level = 4 },
-	Christmas = { Id = "Christmas", Name = "Natal", Description = "Pisca-pisca, enfeites e o Papai Noel no céu.", Icon = "ThemeChristmas", Cost = 500, Level = 10 },
-	Halloween = { Id = "Halloween", Name = "Halloween", Description = "Abóboras, velinhas e morcegos.", Icon = "ThemeHalloween", Cost = 450, Level = 8 },
-	Easter = { Id = "Easter", Name = "Páscoa", Description = "Ovinhos escondidos e coelhinhos no jardim.", Icon = "ThemeEaster", Cost = 400, Level = 7 },
+	Winter = { Id = "Winter", Name = "Inverno", Description = "Neve caindo e tudo branquinho.", Icon = "ThemeWinter", Cost = 350, Level = 10 },
+	Autumn = { Id = "Autumn", Name = "Outono", Description = "Folhas laranja voando pelo jardim.", Icon = "ThemeAutumn", Cost = 300, Level = 8 },
+	Rain = { Id = "Rain", Name = "Dia de Chuva", Description = "Céu cinzinha e chuva lá fora.", Icon = "ThemeRain", Cost = 250, Level = 6 },
+	Christmas = { Id = "Christmas", Name = "Natal", Description = "Pisca-pisca, enfeites e o Papai Noel no céu.", Icon = "ThemeChristmas", Cost = 500, Level = 22 },
+	Halloween = { Id = "Halloween", Name = "Halloween", Description = "Abóboras, velinhas e morcegos.", Icon = "ThemeHalloween", Cost = 450, Level = 15 },
+	Easter = { Id = "Easter", Name = "Páscoa", Description = "Ovinhos escondidos e coelhinhos no jardim.", Icon = "ThemeEaster", Cost = 400, Level = 11 },
 } :: { [string]: Theme }
 
 -- Cores das paredes de dentro (só visual, sem aconchego): o kit de tintas é comprado uma vez na aba Decoração
--- e libera todas as cores; depois a troca é de graça. "Cream" é a cor de sempre, grátis.
+-- e libera as cores do nível do jogador (Level; 1 = vem com o kit); depois a troca é de graça.
+-- "Cream" é a cor de sempre, grátis. Quem já usa uma cor bloqueada continua com ela.
 -- Plaster = parede; Shade = faixa de cima, perto do teto (um tom mais escuro). O visual fica em client/WallPaint.
 -- Os tons são um pouco mais fortes do que parecem: a luz quente do café puxa tudo pro amarelo.
-export type WallColor = { Id: string, Name: string, Description: string, Plaster: Color3, Shade: Color3 }
+export type WallColor = { Id: string, Name: string, Description: string, Level: number, Plaster: Color3, Shade: Color3 }
 
 Catalog.WallPaint = {
 	Id = "WallPaint",
@@ -365,13 +371,14 @@ Catalog.WallPaint = {
 	Description = "Pinte as paredes de dentro. Só visual.",
 	Icon = "WallPaint",
 	Cost = 300,
-	Level = 5,
+	Level = 8,
 }
 Catalog.DefaultWallColor = "Cream"
 Catalog.WallColorOrder = { "Cream", "Peach", "Mint", "Pink", "Lilac", "Blue" }
 Catalog.WallColors = {
 	Cream = {
 		Id = "Cream",
+		Level = 1,
 		Name = "Creme",
 		Description = "O reboco clarinho de sempre.",
 		Plaster = Color3.fromRGB(244, 230, 206),
@@ -379,6 +386,7 @@ Catalog.WallColors = {
 	},
 	Peach = {
 		Id = "Peach",
+		Level = 1,
 		Name = "Laranja Pastel",
 		Description = "Pêssego quentinho, cor de fim de tarde.",
 		Plaster = Color3.fromRGB(250, 204, 172),
@@ -386,6 +394,7 @@ Catalog.WallColors = {
 	},
 	Mint = {
 		Id = "Mint",
+		Level = 1,
 		Name = "Verde Pastel",
 		Description = "Sálvia suave, combina com as plantinhas.",
 		Plaster = Color3.fromRGB(190, 224, 186),
@@ -393,6 +402,7 @@ Catalog.WallColors = {
 	},
 	Pink = {
 		Id = "Pink",
+		Level = 10,
 		Name = "Rosa Pastel",
 		Description = "Rosinha de confeitaria.",
 		Plaster = Color3.fromRGB(246, 190, 214),
@@ -400,6 +410,7 @@ Catalog.WallColors = {
 	},
 	Lilac = {
 		Id = "Lilac",
+		Level = 25,
 		Name = "Lilás Pastel",
 		Description = "Lavanda delicada, pra um café sonhador.",
 		Plaster = Color3.fromRGB(192, 182, 246),
@@ -407,12 +418,32 @@ Catalog.WallColors = {
 	},
 	Blue = {
 		Id = "Blue",
+		Level = 29,
 		Name = "Azul Pastel",
 		Description = "Azul de céu limpo pela manhã.",
 		Plaster = Color3.fromRGB(162, 198, 240),
 		Shade = Color3.fromRGB(138, 176, 222),
 	},
 } :: { [string]: WallColor }
+
+-- Estações do rádio, na ordem salva no perfil (RadioTrack = índice); o som fica em client/UI/Radio.
+-- Level = nível do jogador pra ouvir; o painel mostra as estações em ordem de nível.
+Catalog.RadioStations = {
+	{ Name = "Bossa Nova", Level = 1 },
+	{ Name = "Metal", Level = 30 },
+	{ Name = "K-pop", Level = 26 },
+	{ Name = "Jazz", Level = 5 },
+	{ Name = "Lo-fi Hip Hop", Level = 1 },
+	{ Name = "New Age", Level = 9 },
+	{ Name = "Halloween", Level = 15 },
+	{ Name = "Natal", Level = 22 },
+} :: { { Name: string, Level: number } }
+Catalog.DefaultRadioTrack = 1
+
+function Catalog.radioUnlocked(index: number, level: number): boolean
+	local station = Catalog.RadioStations[index]
+	return station ~= nil and station.Level <= level
+end
 
 Catalog.CozyBonus = 0.02 -- cada ponto de aconchego: +2% em todos os pagamentos
 
@@ -447,6 +478,12 @@ end
 
 function Catalog.upgradeCost(id: string, currentLevel: number): number?
 	return Catalog.Upgrades[id].Costs[currentLevel + 1]
+end
+
+-- Nível do jogador necessário para comprar o degrau `tier` (1..#Costs) de uma melhoria
+function Catalog.upgradeTierLevel(id: string, tier: number): number
+	local u = Catalog.Upgrades[id]
+	return (u.TierLevels and u.TierLevels[tier]) or u.Level
 end
 
 return Catalog

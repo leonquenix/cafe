@@ -1,6 +1,8 @@
 --!strict
 -- Pop-up do gatinho da vitrine: prévia 3D do gato e quadradinhos com as pelagens.
 -- Clicar numa cor troca a prévia; o nome da cor aparece com o cursor em cima (no celular, ao tocar).
+-- Pelagens acima do nível (Catalog.CatColors[].Level) ficam com cadeado e "Nível X"; a pelagem atual
+-- continua escolhível mesmo se o nível dela subiu.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -10,7 +12,10 @@ local UserInputService = game:GetService("UserInputService")
 local Fusion = require(ReplicatedStorage.Packages.Fusion)
 local Catalog = require(ReplicatedStorage.Shared.Catalog)
 local Decor = require(script.Parent.Parent.Decor)
+local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Sfx = require(script.Parent.Parent.Sfx)
+local Sprites = require(script.Parent.Parent.Art.Sprites)
+local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
 
 local Children, OnEvent, peek = Fusion.Children, Fusion.OnEvent, Fusion.peek
@@ -122,15 +127,22 @@ function CatPicker.show(options: Options)
 	-- nome da cor: a que está sob o cursor (ou a tocada por último no celular)
 	local touchToken = 0
 	local swatches = {}
+	local level = peek(State.Level) :: number
 	for i, id in Catalog.CatColorOrder do
 		local isSelected = scope:Computed(function(use)
 			return use(selected) == id
 		end)
+		local coatLevel = Catalog.CatColors[id].Level
+		local locked = coatLevel > level and id ~= options.Current
+		local lockArt = PixelArt.draw(Sprites.Lock, 4)
+		lockArt.Size = UDim2.fromScale(0.5, 0.5)
+		lockArt.Position = UDim2.fromScale(0.5, 0.42)
 		table.insert(
 			swatches,
 			scope:New("TextButton")({
 				Name = id,
 				LayoutOrder = i,
+				[Fusion.Attribute("NoClickSound")] = locked, -- bloqueada toca o som de indisponível
 				Text = "",
 				AutoButtonColor = false,
 				BackgroundColor3 = Theme.Paper,
@@ -156,6 +168,32 @@ function CatPicker.show(options: Options)
 						ClipsDescendants = true,
 						[Children] = swatchArt(scope, id),
 					}),
+					-- bloqueada: véu claro, cadeado e o nível
+					scope:New("Frame")({
+						Name = "Locked",
+						Visible = locked,
+						AnchorPoint = Vector2.new(0.5, 0.5),
+						Position = UDim2.fromScale(0.5, 0.5),
+						Size = UDim2.fromScale(0.78, 0.78),
+						BackgroundColor3 = Theme.Paper,
+						BackgroundTransparency = 0.25,
+						ZIndex = 3,
+						[Children] = {
+							lockArt,
+							scope:New("TextLabel")({
+								Name = "Level",
+								BackgroundTransparency = 1,
+								AnchorPoint = Vector2.new(0.5, 1),
+								Position = UDim2.fromScale(0.5, 1),
+								Size = UDim2.fromScale(1, 0.3),
+								Font = Theme.Font,
+								TextScaled = true,
+								TextColor3 = Theme.Ink,
+								Text = `Nível {coatLevel}`,
+								ZIndex = 4,
+							}),
+						},
+					}),
 					-- etiqueta com o nome, em cima do quadradinho
 					scope:New("TextLabel")({
 						Name = "Tip",
@@ -166,7 +204,7 @@ function CatPicker.show(options: Options)
 						Font = Theme.Font,
 						TextScaled = true,
 						TextColor3 = Theme.Paper,
-						Text = Catalog.CatColors[id].Name,
+						Text = if locked then `{Catalog.CatColors[id].Name} · NÍVEL {coatLevel}` else Catalog.CatColors[id].Name,
 						ZIndex = 5,
 						Visible = scope:Computed(function(use)
 							return use(hovered) == id
@@ -191,7 +229,11 @@ function CatPicker.show(options: Options)
 					end
 				end,
 				[OnEvent("Activated")] = function(input: InputObject?)
-					selected:set(id)
+					if locked then
+						Sfx.play("Denied")
+					else
+						selected:set(id)
+					end
 					hovered:set(id)
 					-- toque não tem "sair de cima": o nome some sozinho depois de um tempinho
 					if (input and input.UserInputType == Enum.UserInputType.Touch) or UserInputService.TouchEnabled and not UserInputService.MouseEnabled then

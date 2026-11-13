@@ -1,7 +1,8 @@
 --!strict
 -- Pop-up das cores das paredes: a câmera olha a loja por dentro e o painel embaixo troca a cor ao vivo.
--- As setinhas passam pelas cores (só prévia); o botão compra o kit de tintas (libera todas), põe em uso
--- ou mostra "Em uso". Mesmo visual do pop-up de temas da fachada (painel 70% transparente).
+-- As setinhas passam pelas cores (só prévia); o botão compra o kit de tintas (libera as cores do nível),
+-- põe em uso ou mostra "Em uso". Cores acima do nível (Catalog.WallColors[].Level) mostram "Nível X".
+-- Mesmo visual do pop-up de temas da fachada (painel 70% transparente).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -51,11 +52,15 @@ function WallPicker.show(options: Options)
 		return order[use(index)]
 	end)
 
-	-- Using = em uso · Owned = dá pra usar · Level/Poor = falta nível/moeda · Buy = dá pra comprar
+	-- Using = em uso · Owned = dá pra usar · Level/Poor = falta nível/moeda pro kit · Buy = dá pra comprar
+	-- ColorLevel = a cor em si ainda não liberou no nível do jogador
 	local status = scope:Computed(function(use)
 		local id = use(selected)
+		local level = use(State.Level)
 		if use(State.WallColor) == id then
 			return "Using"
+		elseif Catalog.WallColors[id].Level > level then
+			return if not use(State.WallPaint) and level < kit.Level then "Level" else "ColorLevel"
 		elseif id == Catalog.DefaultWallColor or use(State.WallPaint) then
 			return "Owned"
 		elseif use(State.Level) < kit.Level then
@@ -159,6 +164,8 @@ function WallPicker.show(options: Options)
 				return "Usar esta cor"
 			elseif s == "Level" then
 				return `Nível {kit.Level}`
+			elseif s == "ColorLevel" then
+				return `Nível {Catalog.WallColors[use(selected)].Level}`
 			elseif s == "Poor" then
 				return `${kit.Cost}`
 			end
@@ -249,8 +256,10 @@ function WallPicker.show(options: Options)
 					return if use(selected) == Catalog.DefaultWallColor then "Grátis · sempre sua" else "Já é sua: troque quando quiser"
 				elseif s == "Level" then
 					return `Libera no nível {kit.Level}`
+				elseif s == "ColorLevel" then
+					return `Essa cor libera no nível {Catalog.WallColors[use(selected)].Level}`
 				end
-				return `Uma compra libera todas · {use(index)}/{#order}`
+				return `O kit libera as cores do seu nível · {use(index)}/{#order}`
 			end), {
 				Name = "Status",
 				Position = UDim2.fromScale(0.29, 0.47),

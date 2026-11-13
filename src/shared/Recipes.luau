@@ -31,8 +31,8 @@ Recipes.Ingredients = {
 	Chocolate = { Id = "Chocolate", Name = "Chocolate", Liquid = Color3.fromRGB(110, 60, 38), Level = 1 },
 	Caramel = { Id = "Caramel", Name = "Caramelo", Liquid = Color3.fromRGB(214, 142, 56), Level = 2 },
 	Matcha = { Id = "Matcha", Name = "Matcha", Liquid = Color3.fromRGB(128, 170, 78), Level = 4 },
-	Cinnamon = { Id = "Cinnamon", Name = "Canela", Liquid = Color3.fromRGB(176, 104, 58), Level = 5 },
-	Cream = { Id = "Cream", Name = "Chantilly", Liquid = Color3.fromRGB(255, 250, 240), Level = 8 },
+	Cinnamon = { Id = "Cinnamon", Name = "Canela", Liquid = Color3.fromRGB(176, 104, 58), Level = 6 },
+	Cream = { Id = "Cream", Name = "Chantilly", Liquid = Color3.fromRGB(255, 250, 240), Level = 9 },
 } :: { [string]: Ingredient }
 
 Recipes.DrinkOrder = {
@@ -67,13 +67,13 @@ Recipes.Drinks = {
 	Mocha = drink("Mocha", "Mocha", 3, 18, true, { Coffee = 1, Chocolate = 1, Milk = 1 }),
 	CaramelMacchiato = drink("CaramelMacchiato", "Caramel Macchiato", 2, 20, true, { Coffee = 1, Milk = 1, Caramel = 1 }),
 	MatchaLatte = drink("MatchaLatte", "Matcha Latte", 4, 18, true, { Matcha = 1, Milk = 1 }),
-	CinnamonCappuccino = drink("CinnamonCappuccino", "Cappuccino de Canela", 5, 22, true, { Coffee = 1, Milk = 1, Cinnamon = 1 }),
-	CinnamonChocolate = drink("CinnamonChocolate", "Chocolate com Canela", 6, 22, true, { Chocolate = 1, Milk = 1, Cinnamon = 1 }),
-	Vienna = drink("Vienna", "Café Vienense", 8, 24, false, { Coffee = 2, Cream = 1 }),
-	SwissChocolate = drink("SwissChocolate", "Chocolate Suíço", 10, 26, true, { Chocolate = 2, Milk = 1, Cream = 1 }),
-	CaramelSupreme = drink("CaramelSupreme", "Caramelo Supremo", 12, 30, true, { Coffee = 1, Milk = 1, Caramel = 1, Cream = 1 }),
-	MatchaCloud = drink("MatchaCloud", "Matcha Nuvem", 14, 30, true, { Matcha = 1, Milk = 1, Cinnamon = 1, Cream = 1 }),
-	HouseSpecial = drink("HouseSpecial", "Especial da Casa", 16, 36, true, { Coffee = 1, Chocolate = 1, Caramel = 1, Cream = 1 }),
+	CinnamonCappuccino = drink("CinnamonCappuccino", "Cappuccino de Canela", 6, 22, true, { Coffee = 1, Milk = 1, Cinnamon = 1 }),
+	CinnamonChocolate = drink("CinnamonChocolate", "Chocolate com Canela", 8, 22, true, { Chocolate = 1, Milk = 1, Cinnamon = 1 }),
+	Vienna = drink("Vienna", "Café Vienense", 9, 24, false, { Coffee = 2, Cream = 1 }),
+	SwissChocolate = drink("SwissChocolate", "Chocolate Suíço", 11, 26, true, { Chocolate = 2, Milk = 1, Cream = 1 }),
+	CaramelSupreme = drink("CaramelSupreme", "Caramelo Supremo", 14, 30, true, { Coffee = 1, Milk = 1, Caramel = 1, Cream = 1 }),
+	MatchaCloud = drink("MatchaCloud", "Matcha Nuvem", 17, 30, true, { Matcha = 1, Milk = 1, Cinnamon = 1, Cream = 1 }),
+	HouseSpecial = drink("HouseSpecial", "Especial da Casa", 21, 36, true, { Coffee = 1, Chocolate = 1, Caramel = 1, Cream = 1 }),
 } :: { [string]: Drink }
 
 Recipes.Drinks.TripleMilk = drink("TripleMilk", "Leite Triplo", 1, 10, true, { Milk = 3 })
@@ -90,8 +90,8 @@ export type Modifier = {
 Recipes.ModifierOrder = { "NoMix", "Double", "ExtraCream" }
 Recipes.Modifiers = {
 	NoMix = { Id = "NoMix", Name = "Sem mexer", Level = 2, Bonus = 0.25 },
-	Double = { Id = "Double", Name = "Dose dupla", Level = 3, Bonus = 0.25 },
-	ExtraCream = { Id = "ExtraCream", Name = "Extra chantilly", Level = 8, Bonus = 0.25 },
+	Double = { Id = "Double", Name = "Dose dupla", Level = 4, Bonus = 0.25 },
+	ExtraCream = { Id = "ExtraCream", Name = "Extra chantilly", Level = 9, Bonus = 0.25 },
 } :: { [string]: Modifier }
 
 local function totalPortions(ingredients: { [string]: number }): number
@@ -222,8 +222,27 @@ end
 
 -- Meta da maestria antiga (uma missão só por bebida, antes dos marcos). Usada só na migração do save:
 -- quem tinha resgatado ganha como resgatados os marcos até essa meta.
+-- A meta dependia do nível da bebida na época; os níveis ficam congelados aqui para a migração não mudar
+-- quando a progressão for rebalanceada (ninguém perde maestria).
+local LEGACY_DRINK_LEVELS = {
+	Espresso = 1,
+	Macchiato = 1,
+	HotChocolate = 1,
+	Latte = 2,
+	CaramelMacchiato = 2,
+	Mocha = 3,
+	MatchaLatte = 4,
+	CinnamonCappuccino = 5,
+	CinnamonChocolate = 6,
+	Vienna = 8,
+	SwissChocolate = 10,
+	CaramelSupreme = 12,
+	MatchaCloud = 14,
+	HouseSpecial = 16,
+}
+
 function Recipes.legacyMasteryTarget(drinkId: string): number
-	local level = Recipes.Drinks[drinkId].Level
+	local level = LEGACY_DRINK_LEVELS[drinkId] or Recipes.Drinks[drinkId].Level
 	return if level <= 2 then 50 elseif level <= 4 then 35 else 25
 end
 

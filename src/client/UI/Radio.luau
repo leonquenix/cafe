@@ -3,6 +3,7 @@
 -- botão abaixo do livro de receitas) para trocar de estação e ajustar o volume.
 -- A escolha fica salva no perfil (atributos RadioTrack/RadioVolume vindos do servidor).
 -- Com o painel aberto no meio do expediente o jogo pausa, igual ao livro de receitas.
+-- Cada estação libera num nível (Catalog.RadioStations); as bloqueadas aparecem com cadeado e "Nível X".
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,14 +12,19 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local Fusion = require(ReplicatedStorage.Packages.Fusion)
+local Catalog = require(ReplicatedStorage.Shared.Catalog)
 local Net = require(ReplicatedStorage.Shared.Net)
+local PixelArt = require(script.Parent.Parent.Art.PixelArt)
 local Pause = require(script.Parent.Parent.Pause)
+local Sfx = require(script.Parent.Parent.Sfx)
+local Sprites = require(script.Parent.Parent.Art.Sprites)
 local State = require(script.Parent.Parent.State)
 local Theme = require(script.Parent.Theme)
 
 local Radio = {}
 
--- estações (todas cozy/lo-fi); a primeira é a padrão.
+-- estações (todas cozy/lo-fi); a primeira é a padrão. A ordem é a salva no perfil e a mesma de
+-- Catalog.RadioStations (nome e nível); o painel mostra em ordem de nível.
 -- Speed < 1 desacelera a batida; Lofi abafa os agudos (efeito "lo-fi" em faixas pesadas);
 -- Region (segundos da faixa) corta a intro e o final para o loop não marcar o começo
 Radio.Tracks = {
@@ -65,11 +71,17 @@ local function save()
 	Net.SetRadio.send({ track = track, volume = volume })
 end
 
+local function unlocked(index: number): boolean
+	return Catalog.radioUnlocked(index, Fusion.peek(State.Level) :: number)
+end
+
 local function loadSettings()
 	local t = player:GetAttribute("RadioTrack")
 	local v = player:GetAttribute("RadioVolume")
-	if typeof(t) == "number" and Radio.Tracks[t] then
+	if typeof(t) == "number" and Radio.Tracks[t] and unlocked(t) then
 		track = t
+	elseif not unlocked(track) then
+		track = Catalog.DefaultRadioTrack
 	end
 	if typeof(v) == "number" then
 		volume = math.clamp(math.floor(v), 0, 100)
@@ -98,11 +110,23 @@ local function refreshPanel()
 	end
 	for i, button in stationButtons do
 		local on = i == track
+		local open = unlocked(i)
 		button.BackgroundColor3 = if on then Radio.Tracks[i].Color else Theme.PaperShade
+		button.AutoButtonColor = open
+		-- bloqueada: sem o chiado de sintonizar (toca o som de indisponível)
+		button:SetAttribute("NoClickSound", not open)
 		local stroke = button:FindFirstChildOfClass("UIStroke") :: UIStroke
 		stroke.Thickness = if on then 3 else 2
 		local note = button:FindFirstChild("Note") :: TextLabel
 		note.Visible = on
+		local name = button:FindFirstChild("StationName") :: TextLabel
+		name.TextColor3 = if open then Theme.Ink else Theme.WoodDark
+		name.Position = if open then UDim2.fromOffset(10, 9) else UDim2.fromOffset(10, 4)
+		name.Size = if open then UDim2.new(1, -34, 1, -18) else UDim2.new(1, -34, 0, 20)
+		local lockLevel = button:FindFirstChild("LockLevel") :: TextLabel
+		lockLevel.Visible = not open
+		local lock = button:FindFirstChild("Lock") :: Frame
+		lock.Visible = not open
 	end
 	fill.Size = UDim2.fromScale(volume / 100, 1)
 	knob.Position = UDim2.fromScale(volume / 100, 0.5)
@@ -149,6 +173,10 @@ end
 
 function Radio.setTrack(index: number)
 	if not Radio.Tracks[index] or index == track then
+		return
+	end
+	if not unlocked(index) then
+		Sfx.play("Denied")
 		return
 	end
 	track = index
@@ -295,7 +323,8 @@ local function build()
 		local button = Instance.new("TextButton")
 		button.Name = info.Name
 		button:SetAttribute("ClickSound", "RadioTune") -- trocar de música chia como sintonizar
-		button.LayoutOrder = i
+		-- em ordem de nível (empate: ordem da lista)
+		button.LayoutOrder = Catalog.RadioStations[i].Level * 100 + i
 		button.Text = ""
 		button.AutoButtonColor = true
 		button.BackgroundColor3 = Theme.PaperShade
@@ -303,6 +332,7 @@ local function build()
 		Theme.corner(button, 0, 10)
 		Theme.stroke(button, 2)
 		local name = Theme.label(info.Name, Theme.Ink)
+		name.Name = "StationName"
 		name.Position = UDim2.fromOffset(10, 9)
 		name.Size = UDim2.new(1, -34, 1, -18)
 		name.TextXAlignment = Enum.TextXAlignment.Left
@@ -316,6 +346,23 @@ local function build()
 		note.ZIndex = 24
 		note.Visible = false
 		note.Parent = button
+		-- bloqueada: cadeado à direita e o nível embaixo do nome
+		local lockLevel = Theme.label(`Nível {Catalog.RadioStations[i].Level}`, Theme.WoodDark)
+		lockLevel.Name = "LockLevel"
+		lockLevel.Position = UDim2.fromOffset(10, 24)
+		lockLevel.Size = UDim2.new(1, -34, 0, 14)
+		lockLevel.TextXAlignment = Enum.TextXAlignment.Left
+		lockLevel.ZIndex = 24
+		lockLevel.Visible = false
+		lockLevel.Parent = button
+		local lock = PixelArt.draw(Sprites.Lock, 24)
+		lock.Name = "Lock"
+		lock.AnchorPoint = Vector2.new(1, 0.5)
+		lock.Position = UDim2.new(1, -8, 0.5, 0)
+		lock.Size = UDim2.fromOffset(20, 20)
+		lock.ZIndex = 24
+		lock.Visible = false
+		lock.Parent = button
 		button.Activated:Connect(function()
 			Radio.setTrack(i)
 		end)

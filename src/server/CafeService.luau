@@ -156,7 +156,7 @@ local function sendState(player: Player)
 		xp = data.XP,
 		day = math.clamp(data.Day, 1, 65535),
 		served = session.resolved,
-		perDay = #session.plan > 0 and #session.plan or Progression.OrdersPerDay,
+		perDay = #session.plan > 0 and #session.plan or Progression.ordersForLevel(data.Level),
 		dayActive = session.dayActive,
 		cozy = math.clamp(cozy(data), 0, 255),
 		upgrades = upgrades,
@@ -177,10 +177,20 @@ local function sendState(player: Player)
 	}, player)
 end
 
+-- Rádio salvo vai pros atributos do jogador; estação acima do nível (ex.: save antigo ou setLevel pra baixo)
+-- ou que não existe mais volta para a bossa nova
+local function syncRadio(player: Player, data: DataService.Data)
+	if not Catalog.radioUnlocked(data.RadioTrack, data.Level) then
+		data.RadioTrack = Catalog.DefaultRadioTrack
+	end
+	player:SetAttribute("RadioTrack", data.RadioTrack)
+	player:SetAttribute("RadioVolume", data.RadioVolume)
+end
+
 ------------------------------------------------------------------ plano do dia
 
 local function makePlan(data: DataService.Data): { PlanEntry }
-	local n = Progression.OrdersPerDay
+	local n = Progression.ordersForLevel(data.Level)
 	local plan: { PlanEntry } = {}
 	for i = 1, n do
 		plan[i] = { kind = Kind.Normal, regular = 0, status = "pending" }
@@ -676,7 +686,7 @@ local function onBuy(id: string, player: Player?)
 	local theme = Catalog.Themes[id]
 	if upgrade then
 		local lvl = data.Upgrades[id] or 0
-		cost = if upgrade.Level <= data.Level then upgrade.Costs[lvl + 1] else nil
+		cost = if Catalog.upgradeTierLevel(id, lvl + 1) <= data.Level then upgrade.Costs[lvl + 1] else nil
 		apply = function()
 			data.Upgrades[id] = lvl + 1
 		end
@@ -736,6 +746,10 @@ end
 ------------------------------------------------------------------ API para comandos (Cmdr)
 
 function CafeService.refresh(player: Player)
+	local data = DataService.get(player)
+	if data then
+		syncRadio(player, data)
+	end
 	sendState(player)
 end
 
@@ -789,8 +803,7 @@ end
 function CafeService.start()
 	DataService.onLoaded(function(player, data)
 		sessions[player] = newSession()
-		player:SetAttribute("RadioTrack", data.RadioTrack)
-		player:SetAttribute("RadioVolume", data.RadioVolume)
+		syncRadio(player, data)
 		sendState(player)
 	end)
 
@@ -813,7 +826,9 @@ function CafeService.start()
 	Net.SetMenu.listen(onSetMenu)
 	Net.SetCatColor.listen(function(id: string, player: Player?)
 		local data = player and DataService.get(player)
-		if not player or not data or not Catalog.CatColors[id] then
+		local coat = Catalog.CatColors[id]
+		-- pelagem acima do nível só vale se já for a atual (quem tinha escolhido antes não perde)
+		if not player or not data or not coat or (coat.Level > data.Level and data.CatColor ~= id) then
 			return
 		end
 		data.CatColor = id
@@ -840,7 +855,12 @@ function CafeService.start()
 	end)
 	Net.SetWallColor.listen(function(id: string, player: Player?)
 		local data = player and DataService.get(player)
-		if not player or not data or not Catalog.WallColors[id] or (id ~= Catalog.DefaultWallColor and not data.WallPaint) then
+		local color = Catalog.WallColors[id]
+		if not player or not data or not color or (id ~= Catalog.DefaultWallColor and not data.WallPaint) then
+			return
+		end
+		-- cor acima do nível só vale se já for a atual (quem tinha escolhido antes não perde)
+		if color.Level > data.Level and data.WallColor ~= id then
 			return
 		end
 		data.WallColor = id
@@ -851,7 +871,11 @@ function CafeService.start()
 		if not player or not data then
 			return
 		end
-		data.RadioTrack = math.clamp(value.track, 1, 6)
+		-- estação bloqueada pelo nível: mantém a atual (o volume continua valendo)
+		local track = math.clamp(value.track, 1, #Catalog.RadioStations)
+		if Catalog.radioUnlocked(track, data.Level) then
+			data.RadioTrack = track
+		end
 		data.RadioVolume = math.clamp(value.volume, 0, 100)
 		player:SetAttribute("RadioTrack", data.RadioTrack)
 		player:SetAttribute("RadioVolume", data.RadioVolume)

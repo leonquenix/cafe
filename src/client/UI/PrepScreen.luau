@@ -221,16 +221,22 @@ local function upgradeCards(scope: any): { Frame }
 		local cost = scope:Computed(function(use)
 			return u.Costs[use(lvl) + 1]
 		end)
+		-- nível do jogador pro próximo degrau (os degraus 4 e 5 pedem mais que o da melhoria)
+		local needed = scope:Computed(function(use)
+			return Catalog.upgradeTierLevel(id, math.min(use(lvl) + 1, #u.Costs))
+		end)
 		local text = scope:Computed(function(use)
 			local c = use(cost)
-			if use(State.Level) < u.Level then
-				return `Nível {u.Level}`
+			if not c then
+				return "Máximo!"
+			elseif use(State.Level) < use(needed) then
+				return `Nível {use(needed)}`
 			end
-			return if c then `${c}` else "Máximo!"
+			return `${c}`
 		end)
 		local enabled = scope:Computed(function(use)
 			local c = use(cost)
-			return c ~= nil and use(State.Level) >= u.Level and use(State.Money) >= c
+			return c ~= nil and use(State.Level) >= use(needed) and use(State.Money) >= c
 		end)
 		local pips = scope:Computed(function(use)
 			local list = {}
@@ -415,7 +421,7 @@ local function wallCard(scope: any, order: number): Frame
 	local enabled = scope:Computed(function(use)
 		return use(State.Level) >= kit.Level
 	end)
-	local desc = "Laranja, verde, rosa, lilás e azul, tudo pastel. Só visual."
+	local desc = "Tons pastel pras paredes; mais cores liberam com o nível. Só visual."
 	return shopCard(scope, order, kit.Icon, kit.Name, desc, nil, text, enabled, function()
 		if PrepScreen.onWalls then
 			PrepScreen.onWalls()

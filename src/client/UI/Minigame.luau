@@ -25,6 +25,10 @@ local Children, OnEvent, peek = Fusion.Children, Fusion.OnEvent, Fusion.peek
 
 local STIR_TURNS = 2.2 -- voltas completas pra misturar (antes do batedor)
 local POUR_TIME = 0.55 -- segundos por porção (antes da máquina turbo)
+-- efeito de cada degrau das melhorias (índice = degrau + 1): fração do tempo de despejo e voltas pra misturar.
+-- Os degraus 1-3 são os de sempre; 4 e 5 continuam melhorando, mas com um mínimo pra não ficar instantâneo.
+local POUR_FACTOR = { 1, 0.8, 0.6, 0.4, 0.3, 0.22 }
+local STIR_BY_TIER = { STIR_TURNS, 1.75, 1.3, 0.9, 0.7, 0.55 }
 local ROWS_PER_PORTION = 4
 
 export type Order = { orderId: number, customerId: number, drink: string, modifier: string, pastry: string }
@@ -1004,7 +1008,7 @@ function Minigame._addIngredient(self: any, id: string)
 		local from = glass.Level
 		local to = #list * ROWS_PER_PORTION
 		local turbo = (peek(State.Upgrades) :: any).Espresso or 0
-		local duration = POUR_TIME * (1 - 0.2 * turbo)
+		local duration = POUR_TIME * POUR_FACTOR[math.clamp(turbo, 0, #POUR_FACTOR - 1) + 1]
 		local pourSound = Sfx.play("Pour")
 		local t0 = os.clock()
 		while true do
@@ -1059,7 +1063,7 @@ function Minigame._beginStir(self: any, input: InputObject)
 		local d = (a - (lastAngle :: number) + math.pi) % (2 * math.pi) - math.pi
 		lastAngle = a
 		local whisk = (peek(State.Upgrades) :: any).Whisk or 0
-		local turns = math.max(0.9, STIR_TURNS - 0.45 * whisk)
+		local turns = STIR_BY_TIER[math.clamp(whisk, 0, #STIR_BY_TIER - 1) + 1]
 		progress = math.min(1, progress + math.abs(d) / (2 * math.pi * turns))
 		self.swirl += d
 		if math.abs(d) > 0.01 then

@@ -298,16 +298,40 @@ local function confetti(parent: GuiObject, amount: number)
 	end
 end
 
-type UnlockKind = "drink" | "ingredient" | "shop" | "modifier"
+type UnlockKind = "drink" | "ingredient" | "shop" | "modifier" | "upgradeTier" | "radio" | "catColor" | "wallColor"
 
 local UNLOCK_TAGS = {
 	drink = { "NOVA RECEITA!", Theme.Rose },
 	ingredient = { "NOVO INGREDIENTE!", Theme.Sage },
 	shop = { "NA LOJA!", Theme.Mustard },
 	modifier = { "PEDIDO ESPECIAL!", Color3.fromRGB(150, 130, 200) },
+	upgradeTier = { "MELHORIA!", Theme.Mustard },
+	radio = { "NOVA ESTAÇÃO!", Color3.fromRGB(110, 160, 200) },
+	catColor = { "NOVA PELAGEM!", Theme.Rose },
+	wallColor = { "NOVA COR!", Theme.Sage },
 }
 
-local function unlockCard(scope: any, kind: UnlockKind, id: string, order: number, width: number): Frame
+-- amostra da parede (faixa de cima + reboco) para o card de cor nova
+local function wallSwatch(id: string): Frame
+	local color = Catalog.WallColors[id]
+	local f = Instance.new("Frame")
+	f.AnchorPoint = Vector2.new(0.5, 0.5)
+	f.Position = UDim2.fromScale(0.5, 0.5)
+	f.Size = UDim2.fromScale(0.8, 0.8)
+	f.SizeConstraint = Enum.SizeConstraint.RelativeYY
+	f.BackgroundColor3 = color.Plaster
+	f.BorderSizePixel = 0
+	Theme.corner(f, 0.15)
+	Theme.stroke(f, 3)
+	local shade = Instance.new("Frame")
+	shade.BorderSizePixel = 0
+	shade.Size = UDim2.fromScale(1, 0.2)
+	shade.BackgroundColor3 = color.Shade
+	shade.Parent = f
+	return f
+end
+
+local function unlockCard(scope: any, kind: UnlockKind, id: string, order: number, width: number, tier: number?): Frame
 	local art: GuiObject
 	local title: string
 	local subtitle: string
@@ -323,8 +347,29 @@ local function unlockCard(scope: any, kind: UnlockKind, id: string, order: numbe
 		art = PixelArt.draw(Sprites.Spoon)
 		title = Recipes.Modifiers[id].Name
 		subtitle = "Clientes vão pedir. Paga +25%!"
+	elseif kind == "upgradeTier" then
+		local u = Catalog.Upgrades[id]
+		art = PixelArt.draw((Sprites :: any)[u.Icon])
+		title = u.Name
+		subtitle = `Degrau {tier} liberado na loja!`
+	elseif kind == "radio" then
+		art = PixelArt.draw(Sprites.Radio)
+		title = Catalog.RadioStations[tonumber(id) :: number].Name
+		subtitle = "Nova estação no rádio!"
+	elseif kind == "catColor" then
+		art = PixelArt.draw(Sprites.Cat)
+		title = `Gatinho {string.lower(Catalog.CatColors[id].Name)}`
+		subtitle = "Nova cor no pop-up do gatinho!"
+	elseif kind == "wallColor" then
+		art = wallSwatch(id)
+		title = Catalog.WallColors[id].Name
+		subtitle = "Nova cor para as paredes!"
 	else
-		local item: any = Catalog.Upgrades[id] or Catalog.Pastries[id] or Catalog.Decor[id]
+		local item: any = Catalog.Upgrades[id]
+			or Catalog.Pastries[id]
+			or Catalog.Decor[id]
+			or Catalog.Themes[id]
+			or (if id == Catalog.WallPaint.Id then Catalog.WallPaint else nil)
 		art = PixelArt.draw((Sprites :: any)[item.Icon])
 		title = item.Name
 		subtitle = "Disponível na loja!"
@@ -378,7 +423,6 @@ local function unlockCard(scope: any, kind: UnlockKind, id: string, order: numbe
 end
 
 local function showLevelUp(scope: any, parent: GuiObject, levelBefore: number, levelAfter: number, onClose: () -> ())
-	local drinks, ingredients = Progression.unlocksBetween(levelBefore, levelAfter)
 	playSound(DaySummary.LevelUpSound, DaySummary.LevelUpVolume, DaySummary.LevelUpSpeed, true)
 
 	local rays = scope:New("Frame")({
@@ -401,31 +445,13 @@ local function showLevelUp(scope: any, parent: GuiObject, levelBefore: number, l
 		r.Parent = rays
 	end
 
-	local entries: { { kind: UnlockKind, id: string } } = {}
-	for _, id in drinks do
-		table.insert(entries, { kind = "drink", id = id })
-	end
-	for _, id in ingredients do
-		table.insert(entries, { kind = "ingredient", id = id })
-	end
-	for _, id in Recipes.ModifierOrder do
-		local lv = Recipes.Modifiers[id].Level
-		if lv > levelBefore and lv <= levelAfter then
-			table.insert(entries, { kind = "modifier", id = id })
-		end
-	end
-	for _, group in { { Catalog.UpgradeOrder, Catalog.Upgrades }, { Catalog.PastryOrder, Catalog.Pastries }, { Catalog.DecorOrder, Catalog.Decor } } do
-		for _, id in group[1] :: { string } do
-			local lv = (group[2] :: any)[id].Level
-			if lv > levelBefore and lv <= levelAfter then
-				table.insert(entries, { kind = "shop", id = id })
-			end
-		end
-	end
+	-- tudo o que o novo nível liberou: receitas, ingredientes, pedidos especiais, loja (inclui temas e o kit
+	-- de tintas), degraus de melhoria, estações do rádio, pelagens do gatinho e cores das paredes
+	local entries = Progression.rewardsBetween(levelBefore, levelAfter)
 	local width = math.min(0.22, 0.95 / math.max(#entries, 1) - 0.02)
 	local cards = {}
 	for i, e in entries do
-		table.insert(cards, unlockCard(scope, e.kind, e.id, i, width))
+		table.insert(cards, unlockCard(scope, e.kind :: UnlockKind, e.id, i, width, e.tier))
 	end
 
 	local banner = label(scope, `NÍVEL {levelAfter}!`, {

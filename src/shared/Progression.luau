@@ -2,12 +2,28 @@
 -- Regras de progressão: dias, pagamento por velocidade, XP e desbloqueios.
 -- Compartilhado para o cliente conseguir mostrar a mesma conta que o servidor faz.
 
+local Catalog = require(script.Parent.Catalog)
 local Recipes = require(script.Parent.Recipes)
 
 local Progression = {}
 
-Progression.OrdersPerDay = 6
 Progression.DayBonusXp = 25
+
+-- Clientes por dia: crescem com o nível (5 no nível 1 até 10 a partir do 16)
+function Progression.ordersForLevel(level: number): number
+	if level <= 1 then
+		return 5
+	elseif level <= 3 then
+		return 6
+	elseif level <= 6 then
+		return 7
+	elseif level <= 10 then
+		return 8
+	elseif level <= 15 then
+		return 9
+	end
+	return 10
+end
 
 -- Tempo (s) contado a partir do pedido. É o mesmo pra toda receita:
 -- receitas mais complexas pagam mais, mas o relógio não fica mais generoso.
@@ -52,13 +68,14 @@ function Progression.orderXp(tier: number): number
 	return 10 + tier * 5
 end
 
--- XP pra sair de cada nível, pensado em ~185 XP por dia jogando bem: nível 2 no dia 2,
--- 3 no dia 5, 4 no 9, 5 no 13, 6 no 18, 7 no 24, 8 no 31, 9 no 38, 10 no 46 ... 20 no 169.
--- O dia 1 rende no máximo 175 XP (sem criança nem crítico), então o nível 2 nunca sai no primeiro dia.
--- Só encarece em relação à curva antiga, e o save guarda o nível (não o XP total): ninguém é rebaixado.
+-- XP pra sair de cada nível (1..29). Como os clientes por dia crescem com o nível, o XP do dia vai de
+-- ~150 no nível 1 até ~275 do 16 em diante: nível 2 no dia 2, 16 perto do dia 80 e 30 perto do dia 163.
+-- O dia 1 (5 clientes) não chega aos 300, então o nível 2 nunca sai no primeiro dia.
+-- O save guarda o nível (não o XP total): ninguém é rebaixado quando a tabela muda.
 Progression.XpTable = {
-	350, 550, 750, 750, 900, 1100, 1300, 1300, 1500, 1650,
-	1850, 1850, 2050, 2200, 2400, 2400, 2600, 2800, 2950,
+	300, 525, 700, 800, 1000, 1000, 1100, 1350, 1350, 1350,
+	1500, 1500, 1750, 1750, 1750, 1650, 1650, 1650, 1650, 1650,
+	1650, 1650, 1650, 1650, 1650, 1650, 1650, 1650, 1650,
 }
 
 function Progression.xpToNext(level: number): number
@@ -146,6 +163,80 @@ function Progression.unlocksBetween(fromLevel: number, toLevel: number): ({ stri
 		end
 	end
 	return drinks, ingredients
+end
+
+-- Tudo o que um nível libera, na ordem da tela de "subiu de nível".
+-- kind: "drink" | "ingredient" | "modifier" | "shop" (melhoria, quitute, decoração, tema, kit de tintas)
+-- | "upgradeTier" (próximo degrau de uma melhoria; tier = degrau) | "radio" (id = índice da estação)
+-- | "catColor" | "wallColor"
+export type Reward = { kind: string, id: string, tier: number? }
+
+function Progression.rewardsBetween(fromLevel: number, toLevel: number): { Reward }
+	local list: { Reward } = {}
+	local function between(lv: number): boolean
+		return lv > fromLevel and lv <= toLevel
+	end
+	local drinks, ingredients = Progression.unlocksBetween(fromLevel, toLevel)
+	for _, id in drinks do
+		table.insert(list, { kind = "drink", id = id })
+	end
+	for _, id in ingredients do
+		table.insert(list, { kind = "ingredient", id = id })
+	end
+	for _, id in Recipes.ModifierOrder do
+		if between(Recipes.Modifiers[id].Level) then
+			table.insert(list, { kind = "modifier", id = id })
+		end
+	end
+	for _, id in Catalog.UpgradeOrder do
+		local u = Catalog.Upgrades[id]
+		if between(u.Level) then
+			table.insert(list, { kind = "shop", id = id })
+		end
+		for tier = 1, #u.Costs do
+			local lv = Catalog.upgradeTierLevel(id, tier)
+			if lv ~= u.Level and between(lv) then
+				table.insert(list, { kind = "upgradeTier", id = id, tier = tier })
+			end
+		end
+	end
+	for _, id in Catalog.PastryOrder do
+		if between(Catalog.Pastries[id].Level) then
+			table.insert(list, { kind = "shop", id = id })
+		end
+	end
+	for _, id in Catalog.DecorOrder do
+		if between(Catalog.Decor[id].Level) then
+			table.insert(list, { kind = "shop", id = id })
+		end
+	end
+	for _, id in Catalog.ThemeOrder do
+		local th = Catalog.Themes[id]
+		if th.Cost > 0 and between(th.Level) then
+			table.insert(list, { kind = "shop", id = id })
+		end
+	end
+	if between(Catalog.WallPaint.Level) then
+		table.insert(list, { kind = "shop", id = Catalog.WallPaint.Id })
+	end
+	for _, id in Catalog.WallColorOrder do
+		local lv = Catalog.WallColors[id].Level
+		if lv > Catalog.WallPaint.Level and between(lv) then
+			table.insert(list, { kind = "wallColor", id = id })
+		end
+	end
+	for _, id in Catalog.CatColorOrder do
+		local lv = Catalog.CatColors[id].Level
+		if lv > Catalog.Decor.Cat.Level and between(lv) then
+			table.insert(list, { kind = "catColor", id = id })
+		end
+	end
+	for i, station in Catalog.RadioStations do
+		if between(station.Level) then
+			table.insert(list, { kind = "radio", id = tostring(i) })
+		end
+	end
+	return list
 end
 
 return Progression
