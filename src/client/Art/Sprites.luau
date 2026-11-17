@@ -1415,4 +1415,486 @@ Sprites.HalloweenZombieHand = {
 	Palette = { o = OUTLINE, G = rgb(150, 196, 120), g = rgb(110, 156, 90), P = rgb(120, 96, 140), b = rgb(150, 98, 62), B = rgb(110, 70, 46) },
 } :: Sprite
 
+---------------------------------------------------------------- festas novas (Dia do Amor, São Patrício, Carnaval, Festa Junina)
+
+local LOVE_PAL = { o = OUTLINE, R = rgb(226, 74, 100), P = rgb(244, 140, 172), L = rgb(252, 200, 216), W = rgb(255, 246, 248) }
+local CLOVER_PAL = { o = OUTLINE, G = rgb(96, 176, 92), g = rgb(56, 128, 70), L = rgb(156, 214, 124), Y = rgb(250, 206, 72), y = rgb(212, 160, 44) }
+
+Sprites.ThemeLove = {
+	Rows = {
+		"..ooo...ooo..",
+		".oRRRo.oRRRo.",
+		"oRRWRRoRRRRRo",
+		"oRWRRRRRRRRRo",
+		"oRRRRRRRRRRRo",
+		"oRRRRRRRRRRRo",
+		".oRRRRRRRRRo.",
+		"..oRRRRRRRo..",
+		"...oRRRRRo...",
+		"....oRRRo....",
+		".....oRo.....",
+		"......o......",
+	},
+	Palette = LOVE_PAL,
+} :: Sprite
+
+Sprites.ThemePatrick = {
+	Rows = {
+		"...ooo.ooo...",
+		"..oGGGoGGGo..",
+		"..oGLGGGLGo..",
+		"...oGGGGGo...",
+		".oooooGooooo.",
+		"oGGGGoGoGGGGo",
+		"oGLGGGGGGGLGo",
+		"oGGGGoGoGGGGo",
+		".oooo.g.oooo.",
+		"......g......",
+		".....g.......",
+		"....oo.......",
+	},
+	Palette = CLOVER_PAL,
+} :: Sprite
+
+Sprites.ThemeCarnival = {
+	Rows = {
+		"....P.Y.B....",
+		"....P.Y.B....",
+		".....PYB.....",
+		"oo...ooo...oo",
+		"oMoooMMMoooMo",
+		"oMMMMMMMMMMMo",
+		"oMMookMMookMo",
+		"oMMookMMookMo",
+		".oMMMMoMMMMo.",
+		"..oYYYooYYYo.",
+		"...ooo..ooo..",
+	},
+	Palette = { o = OUTLINE, M = rgb(172, 112, 222), k = rgb(54, 40, 64), Y = rgb(250, 206, 72), P = rgb(240, 92, 120), B = rgb(80, 190, 232) },
+} :: Sprite
+
+Sprites.ThemeJunina = {
+	Rows = {
+		"kkkkkkkkkkkkk",
+		"oooo.ooo.oooo",
+		"oRRo.oYo.oBBo",
+		"oRRo.oYo.oBBo",
+		"oRRo.oYo.oBBo",
+		"oRRo.oYo.oBBo",
+		"o.Ro.o.o.oB.o",
+		".....ooo.....",
+		".....oGo.....",
+		".....oGo.....",
+		".....oGo.....",
+		".....o.o.....",
+	},
+	Palette = { o = OUTLINE, k = rgb(150, 110, 80), R = rgb(232, 76, 76), Y = rgb(250, 200, 60), B = rgb(80, 150, 230), G = rgb(110, 196, 110) },
+} :: Sprite
+
+Sprites.LoveCatTiara = {
+	Rows = {
+		"oRo......oRo",
+		"RRRo....oRRR",
+		"oRo......oRo",
+		".oPo....oPo.",
+		"..oPo..oPo..",
+		".oRRRRRRRRo.",
+		".oGGGGGGGGo.",
+		".oGeGGGGeGo.",
+		".oGGGpGGGGo.",
+		"..oGGGGGGo..",
+		"...oooooo...",
+	},
+	Palette = { o = OUTLINE, R = rgb(226, 74, 100), P = rgb(250, 226, 232), G = rgb(160, 160, 172), e = rgb(40, 30, 30), p = rgb(240, 140, 150) },
+} :: Sprite
+
+Sprites.LoveCounterCards = {
+	Rows = {
+		"..oo.oo.........",
+		".oWWoWWo........",
+		"oWRRWRRWo.......",
+		"oWRRRRRWo.......",
+		".oWRRRWo........",
+		"..oWRWo.ooo.ooo.",
+		"...oWo.oPPPoPPPo",
+		"....o..oPLPPPPPo",
+		".......oPbbbbbPo",
+		"........oPPPPPo.",
+		".........oPPPo..",
+		"..........oPo...",
+		"...........o....",
+	},
+	Palette = { o = OUTLINE, W = rgb(255, 246, 248), R = rgb(226, 74, 100), P = rgb(244, 140, 172), L = rgb(252, 200, 216), b = rgb(255, 255, 255) },
+} :: Sprite
+
+Sprites.LoveWallFrames = {
+	Rows = {
+		"......o.....",
+		".....o.o....",
+		"....o...o...",
+		".ooo.o.ooo..",
+		"oKKKoKoKKKo.",
+		"oKLLKKKLLKo.",
+		"oKLLLRLLLKo.",
+		".oKLRRRLKo..",
+		"..oKLRLKo...",
+		"...oKLKo....",
+		"....oKo.....",
+		".....o......",
+	},
+	Palette = { o = OUTLINE, K = rgb(150, 92, 62), L = rgb(252, 200, 216), R = rgb(226, 74, 100) },
+} :: Sprite
+
+Sprites.LoveRug = {
+	Rows = {
+		"..oooo..oooo..",
+		".oRRRRooRRRRo.",
+		"oRPPPPRRPPPPRo",
+		"oRPLLPPPPLLPRo",
+		"oRPLLLRRLLLPRo",
+		".oRPLRRRRLPRo.",
+		"..oRPLRRLPRo..",
+		"...oRPLLPRo...",
+		"....oRPPRo....",
+		".....oRRo.....",
+		"......oo......",
+	},
+	Palette = LOVE_PAL,
+} :: Sprite
+
+Sprites.LoveWindowHearts = {
+	Rows = {
+		"oooooooooooo",
+		"o.k...k...ko",
+		"o.k...k...ko",
+		"oRRR..k..RRo",
+		"o.R..PPP..Ro",
+		"o.k...P...ko",
+		"o.k...k...ko",
+		"oPPP..k..PPo",
+		"o.P..RRR..Po",
+		"o.....R.....",
+		"oooooooooooo",
+	},
+	Palette = { o = OUTLINE, k = rgb(236, 220, 196), R = rgb(226, 74, 100), P = rgb(244, 140, 172) },
+} :: Sprite
+
+Sprites.LoveHeartBunting = {
+	Rows = {
+		"oo..........oo",
+		"WWWo......oWWW",
+		"o.oWWo..oWWo.o",
+		"....oWWWWo....",
+		"..R....P......",
+		".RRR..PPP..R..",
+		"RRRRR..P..RRR.",
+		".RRR.......R..",
+		"..R...........",
+	},
+	Palette = { o = OUTLINE, W = rgb(255, 246, 248), R = rgb(226, 74, 100), P = rgb(244, 140, 172) },
+} :: Sprite
+
+Sprites.PatrickCatHat = {
+	Rows = {
+		"...oooooo...",
+		"...oGGGGo...",
+		"...oGGGGo...",
+		"...oGGLGo...",
+		"...okYYko...",
+		".oggggggggo.",
+		".oCCCCCCCCo.",
+		".oCeCCCCeCo.",
+		".oCCCpCCCCo.",
+		"..oCCCCCCo..",
+		"...oooooo...",
+	},
+	Palette = { o = OUTLINE, G = rgb(62, 156, 84), g = rgb(40, 116, 64), L = rgb(156, 214, 124), k = rgb(44, 38, 44), Y = rgb(250, 206, 72), C = rgb(160, 160, 172), e = rgb(40, 30, 30), p = rgb(240, 140, 150) },
+} :: Sprite
+
+Sprites.PatrickCauldron = {
+	Rows = {
+		"....oooo....",
+		"..ooYYyYoo..",
+		".oYyYYYYyYo.",
+		"oooooooooooo",
+		"okkkkkkkkkko",
+		".oKKKKKKKKo.",
+		".oKKKKKKkKo.",
+		".oKKKKKKKKo.",
+		"..oKKKKKKo..",
+		"..oooooooo.o",
+		".ok......oYo",
+		"oYo.......o.",
+	},
+	Palette = { o = OUTLINE, Y = rgb(250, 206, 72), y = rgb(212, 160, 44), K = rgb(64, 62, 72), k = rgb(44, 42, 50) },
+} :: Sprite
+
+Sprites.PatrickCloverBunting = {
+	Rows = {
+		"oo..........oo",
+		"kkko......okkk",
+		"o.okko..okko.o",
+		"....okkkko....",
+		".o..o...o..o..",
+		"oGo.o..oGo.o..",
+		"GGGoGo.GGGoGo.",
+		".gGGGG..gGGGG.",
+		".g.oGo..g.oGo.",
+		"g....o.g....o.",
+	},
+	Palette = { o = OUTLINE, k = rgb(240, 236, 200), G = rgb(96, 176, 92), g = rgb(56, 128, 70) },
+} :: Sprite
+
+Sprites.PatrickRug = {
+	Rows = {
+		"...ooo.ooo....",
+		"..oGGGoGGGo...",
+		"..oGLGGGLGo...",
+		"oooGGGGGGGooo.",
+		"oGGGoGGGoGGGo.",
+		"oGLGGGYGGGLGo.",
+		"oGGGoGGGoGGGo.",
+		"oooGGGGGGGooo.",
+		"..oGLGGGLGo...",
+		"..oGGGoGGGo..g",
+		"...ooo.ooo.gg.",
+		"..........g...",
+	},
+	Palette = { o = OUTLINE, G = rgb(96, 176, 92), L = rgb(156, 214, 124), Y = rgb(200, 236, 160), g = rgb(56, 128, 70) },
+} :: Sprite
+
+Sprites.PatrickWindowClovers = {
+	Rows = {
+		"GG.o.....GG.",
+		"GGooooooGGGo",
+		".gW..W...Wgo",
+		"oW...W....Wo",
+		"oW...W....GG",
+		"ooooooooooGG",
+		"oW...W....go",
+		"GG...W....Wo",
+		"GG...W....Wo",
+		"goooooooooGG",
+		"..........GG",
+	},
+	Palette = { o = OUTLINE, G = rgb(96, 176, 92), g = rgb(56, 128, 70), W = rgb(190, 222, 240) },
+} :: Sprite
+
+Sprites.PatrickLeprechaun = {
+	Rows = {
+		"...oooooo...",
+		"...oGGGGo...",
+		"...oGGGGo...",
+		"...okYYko...",
+		".oggggggggo.",
+		"..oSSSSSSo..",
+		"..oSeSSeSo..",
+		"..oBSppSBo..",
+		"..oBBBBBBo..",
+		"...oBBBBo...",
+		"WWWWoBBoWWWW",
+		"KKKKKKKKKKKK",
+	},
+	Palette = { o = OUTLINE, G = rgb(62, 156, 84), g = rgb(40, 116, 64), k = rgb(44, 38, 44), Y = rgb(250, 206, 72), S = rgb(250, 210, 180), e = rgb(58, 36, 30), p = rgb(240, 170, 150), B = rgb(232, 120, 52), W = rgb(190, 222, 240), K = rgb(150, 98, 62) },
+} :: Sprite
+
+Sprites.CarnivalCatMask = {
+	Rows = {
+		"...P.Y.B....",
+		"...P.Y.B....",
+		"oo.oMMMo..oo",
+		"oMoMkMkMooMo",
+		".oMMMMMMMMo.",
+		".oYYYYYYYYo.",
+		".oGGGGGGGGo.",
+		".oGeGGGGeGo.",
+		".oGGGpGGGGo.",
+		"..oGGGGGGo..",
+		"...oooooo...",
+	},
+	Palette = { o = OUTLINE, M = rgb(172, 112, 222), k = rgb(54, 40, 64), Y = rgb(250, 206, 72), P = rgb(240, 92, 120), B = rgb(80, 190, 232), G = rgb(160, 160, 172), e = rgb(40, 30, 30), p = rgb(240, 140, 150) },
+} :: Sprite
+
+Sprites.CarnivalTambourine = {
+	Rows = {
+		"....oooooo....",
+		"..ooBBBBBBoo..",
+		".oBBCCCCCCBBo.",
+		"oSBCCCCCCCCBSo",
+		"oBCCCCbbCCCCBo",
+		"oBCCCbbbbCCCBo",
+		"oBCCCCbbCCCCBo",
+		"oSBCCCCCCCCBSo",
+		".oBBCCCCCCBBo.",
+		"..ooBBBBBBoo..",
+		"P...oooooo..Y.",
+		"..G.......R...",
+	},
+	Palette = { o = OUTLINE, B = rgb(150, 210, 246), b = rgb(110, 176, 222), C = rgb(250, 242, 222), S = rgb(220, 222, 230), P = rgb(240, 92, 120), Y = rgb(250, 200, 60), G = rgb(120, 210, 110), R = rgb(172, 112, 222) },
+} :: Sprite
+
+Sprites.CarnivalConfetti = {
+	Rows = {
+		"P....B....Y.",
+		"....Y....G..",
+		".G.....R....",
+		"......P...B.",
+		"..Y.B....P..",
+		"R......Y....",
+		"...P.....G..",
+		".B....G...R.",
+		"....R.....Y.",
+		"..G....B....",
+		"bbbbbbbbbbbb",
+		"kkkkkkkkkkkk",
+	},
+	Palette = { P = rgb(240, 92, 120), B = rgb(80, 190, 232), Y = rgb(250, 200, 60), G = rgb(120, 210, 110), R = rgb(172, 112, 222), b = rgb(214, 170, 120), k = rgb(186, 132, 88) },
+} :: Sprite
+
+Sprites.CarnivalStreamers = {
+	Rows = {
+		"kkkkkkkkkkkk",
+		".P...B...Y..",
+		"..P.B...Y...",
+		".P...B...Y..",
+		"..P.B...Y...",
+		".P...B...Y..",
+		"..P..B..Y...",
+		".P....B..Y..",
+		"..P...B.Y...",
+		"......B.....",
+	},
+	Palette = { k = rgb(120, 78, 52), P = rgb(240, 92, 120), B = rgb(80, 190, 232), Y = rgb(250, 200, 60) },
+} :: Sprite
+
+Sprites.CarnivalWindowMasks = {
+	Rows = {
+		"oooooooooooo",
+		"oW.oo.oo..Wo",
+		"oWoMkMkMo.Wo",
+		"oW.oMMMo..Wo",
+		"oW..o.o...Wo",
+		"ooooooooooo.",
+		"oW...oo.oo.o",
+		"oW..oYkYkYoo",
+		"oW...oYYYo.o",
+		"oW....o.o..o",
+		"oooooooooooo",
+	},
+	Palette = { o = OUTLINE, W = rgb(190, 222, 240), M = rgb(240, 92, 120), Y = rgb(80, 190, 232), k = rgb(54, 40, 64) },
+} :: Sprite
+
+Sprites.CarnivalUmbrellas = {
+	Rows = {
+		".....oo.....",
+		"...ooYYoo...",
+		"..oRRYYGGo..",
+		".oRRRYYGGGo.",
+		"oBBRRYYGGRRo",
+		"oooooooooooo",
+		".....W......",
+		".....W......",
+		".....W......",
+		".....W.R....",
+		"......RR....",
+	},
+	Palette = { o = OUTLINE, R = rgb(232, 64, 72), Y = rgb(250, 204, 60), G = rgb(70, 170, 90), B = rgb(70, 140, 230), W = rgb(240, 236, 230) },
+} :: Sprite
+
+Sprites.JuninaCatHat = {
+	Rows = {
+		"....oooo....",
+		"...oSSSSo...",
+		"...oRRRRo...",
+		"ooooSSSSoooo",
+		"oSSSSsSSSSSo",
+		".oooooooooo.",
+		".oGGGGGGGGo.",
+		".oGeGGGGeGo.",
+		".oGGGpGGGGo.",
+		"..oGGGGGGo..",
+		"...oooooo...",
+	},
+	Palette = { o = OUTLINE, S = rgb(236, 200, 120), s = rgb(200, 158, 86), R = rgb(220, 64, 64), G = rgb(160, 160, 172), e = rgb(40, 30, 30), p = rgb(240, 140, 150) },
+} :: Sprite
+
+Sprites.JuninaCounterBasket = {
+	Rows = {
+		"....oooo....",
+		"...o....o...",
+		"..o.YgYg.o..",
+		"..oYYgYYgo..",
+		".oooooooooo.",
+		".oSsSsSsSSo.",
+		".oSSsSsSsSo.",
+		"..oSSSSSSo..",
+		"BWBWBWBWBWBW",
+		"WBWBWBWBWBWB",
+		"BWBWBWBWBWBW",
+	},
+	Palette = { o = OUTLINE, Y = rgb(250, 210, 80), g = rgb(130, 186, 96), S = rgb(236, 200, 120), s = rgb(200, 158, 86), B = rgb(96, 150, 220), W = rgb(250, 250, 246) },
+} :: Sprite
+
+Sprites.JuninaWallDaisies = {
+	Rows = {
+		"..W.........",
+		".WYW....W...",
+		"..W....WYW..",
+		"..g.....W...",
+		"..g..W..g...",
+		".gg.WYW.g...",
+		"..g..W..gg..",
+		"..g..g..g...",
+		"kkkkkkkkkkkk",
+		"KKKKKKKKKKKK",
+	},
+	Palette = { W = rgb(252, 252, 248), Y = rgb(250, 200, 60), g = rgb(96, 160, 84), k = rgb(244, 230, 206), K = rgb(226, 206, 178) },
+} :: Sprite
+
+Sprites.JuninaRug = {
+	Rows = {
+		"YYYYYYYYYYYYYY",
+		"YRRRRRRRRRRRRY",
+		"YRBBRRRRRWWRRY",
+		"YBYYBRGRRWYWRY",
+		"YRBBRRRRRRWWRY",
+		"YRRRRWWRRRRRRY",
+		"YRGRWYWRRBBRRY",
+		"YRRRRWWRRBYBRY",
+		"YRRRRRRRRRBBRY",
+		"YYYYYYYYYYYYYY",
+	},
+	Palette = { Y = rgb(250, 200, 60), R = rgb(214, 56, 64), B = rgb(90, 150, 230), W = rgb(252, 250, 246), G = rgb(70, 150, 90) },
+} :: Sprite
+
+Sprites.JuninaFlags = {
+	Rows = {
+		"kkkkkkkkkkkkkk",
+		"oooo.oooo.oooo",
+		"oRRo.oYYo.oBBo",
+		"oRRo.oYYo.oBBo",
+		"oRRo.oYYo.oBBo",
+		"oRRo.oYYo.oBBo",
+		"oooo.oooo.oooo",
+		"o..o.o..o.o..o",
+	},
+	Palette = { o = OUTLINE, k = rgb(150, 110, 80), R = rgb(232, 76, 76), Y = rgb(250, 200, 60), B = rgb(80, 150, 230) },
+} :: Sprite
+
+Sprites.JuninaWindowBalloons = {
+	Rows = {
+		"oooooooooooo",
+		"o..k....k..o",
+		"o..o....o..o",
+		"o.oRo..oBo.o",
+		"ooRYRooBYBoo",
+		"o.oRo..oBo.o",
+		"o..o....o..o",
+		"o..F....F..o",
+		"o..........o",
+		"oooooooooooo",
+	},
+	Palette = { o = OUTLINE, k = rgb(236, 220, 196), R = rgb(232, 76, 76), Y = rgb(250, 200, 60), B = rgb(80, 150, 230), F = rgb(255, 170, 70) },
+} :: Sprite
+
 return Sprites

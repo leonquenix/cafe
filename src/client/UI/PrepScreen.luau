@@ -361,6 +361,10 @@ local function decorCard(scope: any, order: number, d: Catalog.Decor): Frame
 	if needs then
 		desc = `{d.Description} Precisa do {needs.Name}. Aconchego +{d.Cozy}.`
 	end
+	local slot = d.Slot and Catalog.DecorSlots[d.Slot]
+	if slot and d.Id ~= "Rug" then
+		desc = `{desc} {slot.Text}`
+	end
 	local card = ownableCard(scope, order, d.Id, d.Icon, d.Name, desc, d.Cost, d.Level, d.Requires, if needs then "Sem gatinho" else nil)
 	decorToggle(scope, d.Id).Parent = card
 	return card

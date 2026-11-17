@@ -68,14 +68,17 @@ function Progression.orderXp(tier: number): number
 	return 10 + tier * 5
 end
 
--- XP pra sair de cada nível (1..29). Como os clientes por dia crescem com o nível, o XP do dia vai de
+-- XP pra sair de cada nível (1..45). Como os clientes por dia crescem com o nível, o XP do dia vai de
 -- ~150 no nível 1 até ~275 do 16 em diante: nível 2 no dia 2, 16 perto do dia 80 e 30 perto do dia 163.
+-- Do 31 ao 46 vêm as festas novas (Dia do Amor, São Patrício, Carnaval e Festa Junina), uns 6 dias por nível.
 -- O dia 1 (5 clientes) não chega aos 300, então o nível 2 nunca sai no primeiro dia.
 -- O save guarda o nível (não o XP total): ninguém é rebaixado quando a tabela muda.
 Progression.XpTable = {
 	300, 525, 700, 800, 1000, 1000, 1100, 1350, 1350, 1350,
 	1500, 1500, 1750, 1750, 1750, 1650, 1650, 1650, 1650, 1650,
-	1650, 1650, 1650, 1650, 1650, 1650, 1650, 1650, 1650,
+	1650, 1650, 1650, 1650, 1650, 1650, 1650, 1650, 1650, 1650,
+	1650, 1650, 1650, 1650, 1650, 1650, 1650, 1650, 1650, 1650,
+	1650, 1650, 1650, 1650, 1650,
 }
 
 function Progression.xpToNext(level: number): number

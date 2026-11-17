@@ -84,6 +84,21 @@ local function cozy(data: DataService.Data): number
 	return total
 end
 
+-- vaga exclusiva (Catalog.Decor.Slot: chapéu do gato, tapete): desliga as outras decorações compradas da mesma vaga
+local function hideSlotMates(data: DataService.Data, id: string)
+	local slot = Catalog.Decor[id] and Catalog.Decor[id].Slot
+	if not slot then
+		return
+	end
+	data.DecorHidden = data.DecorHidden or {}
+	for other in data.Decor do
+		local d = Catalog.Decor[other]
+		if other ~= id and d and d.Slot == slot then
+			data.DecorHidden[other] = true
+		end
+	end
+end
+
 local function menuOf(data: DataService.Data): { string }
 	return Progression.effectiveMenu(data.Menu, data.Level)
 end
@@ -699,6 +714,7 @@ local function onBuy(id: string, player: Player?)
 		cost = decor.Cost
 		apply = function()
 			data.Decor[id] = true
+			hideSlotMates(data, id)
 		end
 	elseif theme and theme.Cost > 0 and not data.Themes[id] and theme.Level <= data.Level then
 		-- tema comprado já entra em uso
@@ -851,6 +867,9 @@ function CafeService.start()
 		end
 		data.DecorHidden = data.DecorHidden or {}
 		data.DecorHidden[value.id] = if value.shown then nil else true
+		if value.shown then
+			hideSlotMates(data, value.id)
+		end
 		sendState(player)
 	end)
 	Net.SetWallColor.listen(function(id: string, player: Player?)

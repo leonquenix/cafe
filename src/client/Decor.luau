@@ -2,7 +2,8 @@
 -- Decoração comprada na loja, construída com Parts só para o jogador (cada um tem o seu café).
 -- Alguns itens têm animaçãozinha: gato respirando, disco girando, fogo piscando, lanternas balançando,
 -- pisca-pisca de Natal, abóboras tremulando, fantasminhas flutuando, coelhinho espiando da planta, múmia passando
--- lá fora, mão de zumbi na janela, gorro no gato. Cada uma pode ser desligada na loja (Decor.setHidden).
+-- lá fora, mão de zumbi na janela, gorro no gato, duende espiando, sombrinhas girando, balões juninos.
+-- Cada uma pode ser desligada na loja (Decor.setHidden).
 -- Clicar no gato faz carinho: ele mia e solta um balãozinho de coração. O gato tem várias pelagens (Decor.CatCoats).
 
 local Players = game:GetService("Players")
@@ -55,6 +56,30 @@ Decor.Focus = {
 	ChristmasCatHat = { Vector3.new(0.5, 7.2, 5.5), Vector3.new(-2.6, 5.8, 0) },
 	HalloweenMummy = { Vector3.new(2, 8, 2), Vector3.new(-18, 6.5, -8) },
 	HalloweenZombieHand = { Vector3.new(5, 7.5, 2), Vector3.new(18, 6.5, -5) },
+	LoveCatTiara = { Vector3.new(0.5, 7.2, 5.5), Vector3.new(-2.6, 5.8, 0) },
+	LoveCounterCards = { Vector3.new(2, 7, 5), Vector3.new(1.8, 3.5, -0.2) },
+	LoveWallFrames = { Vector3.new(3.2, 8.5, 7), Vector3.new(-4, 8, -16) },
+	LoveRug = { Vector3.new(7.5, 7.5, -3), Vector3.new(12.5, 0.5, -11.5) },
+	LoveWindowHearts = { Vector3.new(3.2, 8.5, 7), Vector3.new(0, 8.5, -16) },
+	LoveHeartBunting = { Vector3.new(2, 7.5, 5), Vector3.new(0, 12.3, -4) },
+	PatrickCatHat = { Vector3.new(0.5, 7.2, 5.5), Vector3.new(-2.6, 5.8, 0) },
+	PatrickCauldron = { Vector3.new(0.5, 6.8, 5), Vector3.new(-0.5, 3.8, 0) },
+	PatrickCloverBunting = { Vector3.new(2, 8, 2), Vector3.new(0, 12, -11.5) },
+	PatrickRug = { Vector3.new(7.5, 7.5, -3), Vector3.new(12.5, 0.5, -11.5) },
+	PatrickWindowClovers = { Vector3.new(3.2, 8.5, 7), Vector3.new(0, 8, -16) },
+	PatrickLeprechaun = { Vector3.new(2, 8, 2), Vector3.new(-18, 6.3, -14) },
+	CarnivalCatMask = { Vector3.new(0.5, 7.2, 5.5), Vector3.new(-2.6, 5.8, 0) },
+	CarnivalTambourine = { Vector3.new(1.5, 6.8, 5), Vector3.new(1, 3.6, 0.3) },
+	CarnivalConfetti = { Vector3.new(4, 9, 2), Vector3.new(0, 0, -12) },
+	CarnivalStreamers = { Vector3.new(1, 8, 2), Vector3.new(0, 12, -12) },
+	CarnivalWindowMasks = { Vector3.new(3.2, 8.5, 7), Vector3.new(0, 7.5, -16) },
+	CarnivalUmbrellas = { Vector3.new(2, 8, 2), Vector3.new(0, 11, -10) },
+	JuninaCatHat = { Vector3.new(0.5, 7.2, 5.5), Vector3.new(-2.6, 5.8, 0) },
+	JuninaCounterBasket = { Vector3.new(3.5, 6.8, 5), Vector3.new(3.2, 3.8, 0.2) },
+	JuninaWallDaisies = { Vector3.new(3.2, 8.5, 7), Vector3.new(-2, 8, -16) },
+	JuninaRug = { Vector3.new(7.5, 7.5, -3), Vector3.new(12.5, 0.5, -11.5) },
+	JuninaFlags = { Vector3.new(2, 8, 4), Vector3.new(0, 12, -9.5) },
+	JuninaWindowBalloons = { Vector3.new(3.2, 8.5, 7), Vector3.new(0, 8.5, -16) },
 } :: { [string]: { Vector3 } }
 
 local function part(parent: Instance, size: Vector3, cf: CFrame | Vector3, color: Color3, props: { [string]: any }?): BasePart
@@ -1478,6 +1503,1025 @@ BUILDERS.HalloweenZombieHand = function(m)
 			for i, p in f.Parts do
 				p.CFrame = k * f.Rel[i]
 			end
+		end
+	end)
+end
+
+---------------------------------------------------------------- festas novas (Dia do Amor, São Patrício, Carnaval, Festa Junina)
+-- Mesma ideia das outras festas: cada enfeite é um item separado. Os enfeites do gatinho e os tapetes são
+-- "vagas" exclusivas (Catalog.Decor.Slot): o servidor deixa só um ligado por vez.
+
+local LOVE_RED, LOVE_PINK, LOVE_LIGHT, LOVE_WHITE = rgb(226, 74, 100), rgb(244, 140, 172), rgb(252, 200, 216), rgb(255, 246, 248)
+local CLOVER, CLOVER_DARK, CLOVER_LIGHT = rgb(96, 176, 92), rgb(56, 128, 70), rgb(156, 214, 124)
+local GOLD, GOLD_DARK = rgb(250, 206, 72), rgb(212, 160, 44)
+local FESTA = { rgb(240, 92, 120), rgb(250, 200, 60), rgb(80, 190, 232), rgb(120, 210, 110), rgb(172, 112, 222), rgb(250, 140, 60) }
+local THREAD = rgb(236, 220, 196)
+local CYL = { Shape = Enum.PartType.Cylinder }
+
+local function merge(a: { [string]: any }?, b: { [string]: any }?): { [string]: any }
+	local t = {}
+	for k, v in a or {} do
+		t[k] = v
+	end
+	for k, v in b or {} do
+		t[k] = v
+	end
+	return t
+end
+
+-- disco (cilindro achatado) com a face virada pro +Z do frame
+local function disc(m: Model, cf: CFrame, d: number, thick: number, color: Color3, props: { [string]: any }?): BasePart
+	return part(m, Vector3.new(thick, d, d), cf * CFrame.Angles(0, math.rad(90), 0), color, merge(CYL, props))
+end
+
+-- disco deitado (face pra cima), centro em `pos`
+local function flatDisc(m: Model, pos: Vector3, d: number, thick: number, color: Color3, props: { [string]: any }?): BasePart
+	return part(m, Vector3.new(thick, d, d), upright(pos), color, merge(CYL, props))
+end
+
+-- frame deitado no chão/balcão: +Z do frame = pra cima, +Y do frame = pro fundo (-Z do mundo), girado `yaw` graus
+local function lying(pos: Vector3, yaw: number?): CFrame
+	return CFrame.new(pos) * CFrame.Angles(0, math.rad(yaw or 0), 0) * CFrame.Angles(-math.pi / 2, 0, 0)
+end
+
+-- coração no plano XY do frame (frente = +Z), `s` = largura (a altura é quase igual); o meio fica em (0, -0.1s)
+local function heart(m: Model, cf: CFrame, s: number, color: Color3, thick: number, props: { [string]: any }?): { BasePart }
+	return {
+		part(m, Vector3.new(0.6 * s, 0.6 * s, thick), cf * CFrame.new(0, -0.16 * s, 0) * CFrame.Angles(0, 0, math.rad(45)), color, props),
+		disc(m, cf * CFrame.new(-0.22 * s, 0.12 * s, 0), 0.52 * s, thick, color, props),
+		disc(m, cf * CFrame.new(0.22 * s, 0.12 * s, 0), 0.52 * s, thick, color, props),
+	}
+end
+
+-- babadinho em volta de um coração (bolinhas na borda de um coração de tamanho `s`), atrás dele
+local function ruffle(m: Model, cf: CFrame, s: number, color: Color3, thick: number): { BasePart }
+	local ps = heart(m, cf, s, color, thick)
+	for _, sx in { -1, 1 } do
+		for _, a in { -10, 40, 90 } do
+			local r = math.rad(a)
+			table.insert(ps, disc(m, cf * CFrame.new(sx * (0.22 + math.cos(r) * 0.27) * s, (0.12 + math.sin(r) * 0.27) * s, 0), 0.15 * s, thick, color))
+		end
+		for _, u in { 0.3, 0.65 } do
+			table.insert(ps, disc(m, cf * CFrame.new(sx * 0.44 * s * (1 - u), -0.16 * s - 0.44 * s * u, 0), 0.15 * s, thick, color))
+		end
+	end
+	return ps
+end
+
+-- trevinho de 3 folhas redondas (frente = +Z), `s` = tamanho
+local function clover(m: Model, cf: CFrame, s: number, color: Color3, thick: number): { BasePart }
+	local ps = {}
+	for i = 0, 2 do
+		local a = math.rad(90 + i * 120)
+		table.insert(ps, disc(m, cf * CFrame.new(math.cos(a) * 0.27 * s, math.sin(a) * 0.27 * s, 0), 0.56 * s, thick, if i == 0 then color else color:Lerp(CLOVER_DARK, 0.25)))
+	end
+	table.insert(ps, part(m, Vector3.new(0.08 * s, 0.5 * s, thick * 0.8), cf * CFrame.new(0.12 * s, -0.42 * s, 0) * CFrame.Angles(0, 0, math.rad(25)), CLOVER_DARK))
+	return ps
+end
+
+-- moedinha de ouro deitada
+local function coin(m: Model, pos: Vector3, tilt: number?, yaw: number?): BasePart
+	return part(m, Vector3.new(0.05, 0.24, 0.24), CFrame.new(pos) * CFrame.Angles(0, math.rad(yaw or 0), math.rad(90 + (tilt or 0))), GOLD, CYL)
+end
+
+-- máscara de carnaval (frente = +Z), `s` = largura
+local function carnivalMask(m: Model, cf: CFrame, s: number, color: Color3, trim: Color3): { BasePart }
+	local ps = {}
+	local t = 0.08 * s
+	for _, sx in { -1, 1 } do
+		local eye = cf * CFrame.new(sx * 0.24 * s, 0, 0) * CFrame.Angles(0, 0, math.rad(sx * 12))
+		table.insert(ps, part(m, Vector3.new(0.46 * s, 0.32 * s, t), eye, color))
+		table.insert(ps, part(m, Vector3.new(0.2 * s, 0.16 * s, t), cf * CFrame.new(sx * 0.5 * s, 0.12 * s, 0) * CFrame.Angles(0, 0, math.rad(sx * 35)), color)) -- pontinha
+		table.insert(ps, part(m, Vector3.new(0.17 * s, 0.1 * s, t * 1.2), eye * CFrame.new(-sx * 0.01 * s, 0.01 * s, 0), rgb(54, 40, 64))) -- olho vazado
+		table.insert(ps, part(m, Vector3.new(0.46 * s, 0.05 * s, t * 1.15), eye * CFrame.new(0, -0.16 * s, 0), trim)) -- debrum
+	end
+	table.insert(ps, part(m, Vector3.new(0.18 * s, 0.14 * s, t), cf * CFrame.new(0, 0.06 * s, 0), color)) -- ponte do nariz
+	table.insert(ps, disc(m, cf * CFrame.new(0, 0.17 * s, 0.01 * s), 0.12 * s, t * 1.3, trim)) -- pedrinha
+	return ps
+end
+
+-- enfeite na cabeça do gato da vitrine (montado em cima de CAT_HEAD): acompanha a cabeça (respirando, montando,
+-- trocando de pelagem) e some quando o gato não está lá
+local function followCatHead(ps: { BasePart })
+	local r = rig(CAT_HEAD, ps)
+	local goal = {}
+	for i, p in ps do
+		goal[i] = p.Transparency
+	end
+	local showing = true
+	addAnimator(function()
+		local h = catHead
+		local on = h ~= nil and h.Parent ~= nil and h:IsDescendantOf(container)
+		if on ~= showing then
+			showing = on
+			for i, p in ps do
+				p.Transparency = if on then goal[i] else 1
+			end
+		end
+		if on and h then
+			moveRig(r, CAT_HEAD:ToObjectSpace(h.CFrame))
+		end
+	end)
+end
+
+-- animação mais leve: só roda `hz` vezes por segundo (enfeites com muitas peças balançando devagar)
+local function addSlowAnimator(hz: number, fn: (t: number) -> ())
+	local last = -1
+	addAnimator(function(t)
+		local step = math.floor(t * hz)
+		if step ~= last then
+			last = step
+			fn(t)
+		end
+	end)
+end
+
+-- varal entre âncoras (x) na altura `y` e profundidade `z`, com barriga `sag`; devolve a curva de cada vão
+local function rope(m: Model, anchors: { number }, y: number, z: number, sag: number, color: Color3): { (u: number) -> Vector3 }
+	local spans = {}
+	for s = 1, #anchors - 1 do
+		local a, b = anchors[s], anchors[s + 1]
+		local function at(u: number): Vector3
+			return Vector3.new(a + (b - a) * u, y - sag * math.sin(math.pi * u), z)
+		end
+		for k = 0, 5 do
+			beam(m, at(k / 6), at((k + 1) / 6), 0.06, color)
+		end
+		spans[s] = at
+	end
+	return spans
+end
+
+local CAT_TOP = CAT_HEAD -- espaço da cabeça do gato: +X pro lado da carinha, +Z pra câmera
+
+------------------------------------------------ Dia do Amor
+
+-- Tiara do gatinho: anteninhas de mola com um coração de babadinho em cada ponta
+BUILDERS.LoveCatTiara = function(m)
+	local S = CAT_S
+	local function at(x: number, y: number, z: number): CFrame
+		return CAT_TOP * CFrame.new(x * S, y * S, z * S)
+	end
+	local ps = {
+		part(m, Vector3.new(0.86, 0.09, 0.16) * S, at(0, 0.42, -0.02), LOVE_RED), -- tiara
+		part(m, Vector3.new(0.09, 0.26, 0.16) * S, at(-0.44, 0.3, -0.02), LOVE_RED),
+		part(m, Vector3.new(0.09, 0.26, 0.16) * S, at(0.44, 0.3, -0.02), LOVE_RED),
+	}
+	for _, sx in { -1, 1 } do
+		local base = at(sx * 0.16, 0.46, -0.02).Position
+		local tip = at(sx * 0.34, 1.05, 0.02).Position
+		table.insert(ps, beam(m, base, tip, 0.05 * S, rgb(250, 226, 232)))
+		local h = at(sx * 0.36, 1.17, 0.04) * CFrame.Angles(0, 0, math.rad(-sx * 12))
+		for _, p in ruffle(m, h * CFrame.new(0, 0, -0.03 * S), 0.44 * S, LOVE_WHITE, 0.06 * S) do
+			table.insert(ps, p)
+		end
+		for _, p in heart(m, h, 0.34 * S, LOVE_RED, 0.1 * S) do
+			table.insert(ps, p)
+		end
+	end
+	followCatHead(ps)
+end
+
+-- Cartinhas de coração espalhadas pelo balcão: umas com babado, outras escrito "be mine"
+BUILDERS.LoveCounterCards = function(m)
+	local top = Layout.CounterHeight
+	local z0 = Layout.CounterZ
+	-- { x, z, giro, tamanho, cor, babado, "be mine" }
+	local cards = {
+		{ 1.95, z0 + 0.95, 20, 0.62, LOVE_RED, true, false },
+		{ 1.7, z0 - 0.85, -15, 0.72, LOVE_PINK, false, true },
+		{ 0.15, z0 - 1.05, 10, 0.5, LOVE_LIGHT, true, false },
+		{ 2.95, z0 - 1.0, -25, 0.7, LOVE_RED, false, true },
+		{ 4.85, z0 - 1.15, 30, 0.45, LOVE_PINK, true, false },
+		{ -0.75, z0 - 1.05, -8, 0.66, LOVE_RED, false, true },
+	}
+	for _, c in cards do
+		local cf = lying(Vector3.new(c[1], top, c[2]), c[3])
+		local s = c[4]
+		if c[6] then
+			ruffle(m, cf * CFrame.new(0, 0, 0.015), s * 1.3, LOVE_WHITE, 0.03)
+		end
+		heart(m, cf * CFrame.new(0, 0, 0.035), s, c[5], 0.03)
+		if c[7] then
+			local card = part(m, Vector3.new(0.78 * s, 0.36 * s, 0.01), cf * CFrame.new(0, -0.1 * s, 0.055), c[5], { Transparency = 1, CanQuery = false })
+			local gui = Instance.new("SurfaceGui")
+			gui.Face = Enum.NormalId.Back -- a face de cima (+Z do frame)
+			gui.PixelsPerStud = 200
+			gui.LightInfluence = 1
+			gui.Parent = card
+			local label = Instance.new("TextLabel")
+			label.BackgroundTransparency = 1
+			label.Size = UDim2.fromScale(1, 1)
+			label.Text = "be mine"
+			label.TextScaled = true
+			label.Font = Enum.Font.FredokaOne
+			label.TextColor3 = if c[5] == LOVE_RED then LOVE_WHITE else LOVE_RED
+			label.Parent = gui
+		end
+	end
+end
+
+-- quadrinho de coração na parede (frame com +Z pra dentro da sala): moldura, fundo, coraçãozinho e fio no prego
+local function heartFrame(m: Model, cf: CFrame, s: number, inner: Color3)
+	heart(m, cf, s, rgb(150, 92, 62), 0.12)
+	heart(m, cf * CFrame.new(0, 0.01 * s, 0.05), s * 0.8, inner, 0.06)
+	heart(m, cf * CFrame.new(0, 0, 0.09), s * 0.34, LOVE_RED, 0.05)
+	local nail = cf * CFrame.new(0, 0.62 * s, 0.02)
+	part(m, Vector3.new(0.1, 0.1, 0.1), nail, rgb(120, 110, 100))
+	for _, sx in { -1, 1 } do
+		beam(m, nail.Position, (cf * CFrame.new(sx * 0.26 * s, 0.36 * s, 0.02)).Position, 0.04, THREAD)
+	end
+end
+
+-- Quadros de coração: na parede da esquerda (entre as janelas e no fundo), na parede da porta (entre as janelas,
+-- em cima da estante e perto da porta) e na parede da direita
+BUILDERS.LoveWallFrames = function(m)
+	local spots = {
+		{ sideWall(-1, 6.7, -8), 1.9, LOVE_LIGHT },
+		{ sideWall(-1, 7.2, -19.2), 1.5, LOVE_PINK },
+		{ CFrame.new(-3, 8.2, WALL_Z), 1.05, LOVE_PINK },
+		{ CFrame.new(-15.6, 10.6, WALL_Z), 1.4, LOVE_LIGHT },
+		{ CFrame.new(6.4, 10.4, WALL_Z), 1.1, LOVE_LIGHT },
+		{ sideWall(1, 10.2, -19.3), 1.3, LOVE_PINK },
+	}
+	for _, spec in spots do
+		heartFrame(m, spec[1], spec[2], spec[3])
+	end
+end
+
+-- Tapete de coração: no lugar do tapete de lã (só um tapete fica ligado)
+BUILDERS.LoveRug = function(m)
+	local c = Vector3.new(12.5, 0, -11.2)
+	heart(m, lying(c + Vector3.new(0, 0.05, 0)), 6.1, LOVE_RED, 0.1)
+	heart(m, lying(c + Vector3.new(0, 0.07, -0.05)), 5.3, LOVE_PINK, 0.12)
+	heart(m, lying(c + Vector3.new(0, 0.09, -0.15)), 3.5, LOVE_LIGHT, 0.12)
+	heart(m, lying(c + Vector3.new(0, 0.11, -0.3)), 1.5, LOVE_RED, 0.12)
+	-- pontinhos brancos de costura em volta do coração do meio
+	for i = 0, 9 do
+		local a = i / 10 * math.pi * 2
+		flatDisc(m, c + Vector3.new(math.cos(a) * 2.25, 0.1, -0.5 + math.sin(a) * 2.0), 0.3, 0.12, LOVE_WHITE)
+	end
+end
+
+-- Pendentes de coração: em todas as janelas, fios pendurados no alto da janela com corações (pequeno e grande)
+BUILDERS.LoveWindowHearts = function(m)
+	local charms: { Rig } = {}
+	local colors = { LOVE_RED, LOVE_PINK, LOVE_LIGHT }
+	local count = 0
+	for _, id in WINDOW_ORDER do
+		local win = WINDOWS[id]
+		local topY = win.Height / 2 + 0.05
+		for j, u in { -0.32, 0, 0.32 } do
+			count += 1
+			local len = 1.2 + ((count % 3) * 0.45)
+			local hang = win.Frame * CFrame.new(u * win.Width, topY, 0.5)
+			local ps = { part(m, Vector3.new(0.04, len + 0.9, 0.04), hang * CFrame.new(0, -(len + 0.9) / 2, 0), THREAD) }
+			local big = (count + j) % 2 == 0
+			for k, spec in { { len * 0.45, if big then 0.45 else 0.7 }, { len + 0.55, if big then 0.75 else 0.45 } } do
+				local color = colors[(count + k) % #colors + 1]
+				for _, p in heart(m, hang * CFrame.new(0, -spec[1], 0.03), spec[2], color, 0.1) do
+					table.insert(ps, p)
+				end
+			end
+			table.insert(charms, rig(hang, ps))
+		end
+	end
+	addSlowAnimator(30, function(t)
+		for i, c in charms do
+			moveRig(c, CFrame.Angles(math.sin(t * 1.1 + i * 0.9) * 0.06, 0, math.sin(t * 0.8 + i * 1.6) * 0.08))
+		end
+	end)
+end
+
+-- Varal de corações no teto: na viga da frente (z = -4), alternando coração pequeno e grande
+BUILDERS.LoveHeartBunting = function(m)
+	local z = Layout.Room.MinZ + 18.5 -- frente da viga em z = -4
+	local spans = rope(m, { -17.5, -11.5, -5.8, 0, 5.8, 11.5, 17.5 }, BEAM_Y - 0.1, z, 0.75, LOVE_WHITE)
+	local colors = { LOVE_RED, LOVE_PINK, LOVE_RED, LOVE_LIGHT }
+	local hearts: { Rig } = {}
+	local count = 0
+	for _, at in spans do
+		for k = 1, 4 do
+			count += 1
+			local p = at(k / 5)
+			local s = if count % 2 == 0 then 0.85 else 0.5
+			local cf = faceCamera(p) * CFrame.new(0, -0.5 * s, 0)
+			table.insert(hearts, rig(CFrame.new(p), heart(m, cf, s, colors[count % #colors + 1], 0.12)))
+		end
+	end
+	-- lacinhos nos apoios
+	for _, x in { -11.5, -5.8, 0, 5.8, 11.5 } do
+		heart(m, faceCamera(Vector3.new(x, BEAM_Y - 0.15, z + 0.1)), 0.35, LOVE_RED, 0.1)
+	end
+	addSlowAnimator(30, function(t)
+		for i, h in hearts do
+			moveRig(h, CFrame.Angles(math.sin(t * 1.2 + i * 0.7) * 0.1, 0, math.sin(t * 0.9 + i) * 0.07))
+		end
+	end)
+end
+
+------------------------------------------------ Dia de São Patrício
+
+-- Cartola de duende: verde, com fivela dourada e um trevinho na fita
+BUILDERS.PatrickCatHat = function(m)
+	local S = CAT_S
+	local head = CAT_TOP * CFrame.Angles(0, 0, math.rad(-10)) -- inclinadinha pro lado da carinha
+	local function at(x: number, y: number, z: number): CFrame
+		return head * CFrame.new(x * S, y * S, z * S)
+	end
+	local green, greenDark = rgb(62, 156, 84), rgb(40, 116, 64)
+	local ps = {
+		part(m, Vector3.new(1.02, 0.08, 0.88) * S, at(0, 0.42, 0), greenDark), -- aba
+		part(m, Vector3.new(0.62, 0.66, 0.54) * S, at(0, 0.78, 0), green), -- copa
+		part(m, Vector3.new(0.64, 0.05, 0.56) * S, at(0, 1.1, 0), greenDark),
+		part(m, Vector3.new(0.65, 0.15, 0.57) * S, at(0, 0.54, 0), rgb(44, 38, 44)), -- fita
+		part(m, Vector3.new(0.22, 0.17, 0.04) * S, at(0, 0.54, 0.29), GOLD), -- fivela
+		part(m, Vector3.new(0.11, 0.08, 0.05) * S, at(0, 0.54, 0.29), rgb(44, 38, 44)),
+	}
+	for _, p in clover(m, at(0.24, 0.66, 0.29) * CFrame.Angles(0, 0, math.rad(-15)), 0.3 * S, CLOVER_LIGHT, 0.04 * S) do
+		table.insert(ps, p)
+	end
+	followCatHead(ps)
+end
+
+-- Caldeirão de moedas: no balcão, entre a vitrine e o caixa, com moedinhas caídas em volta (uma brilha de vez em quando)
+BUILDERS.PatrickCauldron = function(m)
+	local top = Layout.CounterHeight
+	local c = Vector3.new(-0.55, top, Layout.CounterZ + 0.25)
+	local iron, ironDark = rgb(64, 62, 72), rgb(44, 42, 50)
+	for i = 0, 2 do
+		local a = i / 3 * math.pi * 2 + 0.4
+		part(m, Vector3.new(0.12, 0.16, 0.12), c + Vector3.new(math.cos(a) * 0.3, 0.08, math.sin(a) * 0.3), ironDark) -- perninhas
+	end
+	part(m, Vector3.new(0.5, 0.86, 0.86), upright(c + Vector3.new(0, 0.42, 0)), iron, CYL) -- panela
+	part(m, Vector3.new(0.2, 0.7, 0.7), upright(c + Vector3.new(0, 0.12, 0)), iron, CYL) -- fundo arredondado
+	part(m, Vector3.new(0.12, 0.98, 0.98), upright(c + Vector3.new(0, 0.7, 0)), ironDark, CYL) -- borda
+	for _, sx in { -1, 1 } do
+		part(m, Vector3.new(0.08, 0.2, 0.2), CFrame.new(c + Vector3.new(sx * 0.5, 0.55, 0)) * CFrame.Angles(0, 0, math.rad(90)), ironDark, CYL) -- alcinhas
+	end
+	-- montinho de ouro
+	flatDisc(m, c + Vector3.new(0, 0.75, 0), 0.8, 0.12, GOLD_DARK)
+	flatDisc(m, c + Vector3.new(0, 0.86, 0), 0.6, 0.14, GOLD)
+	flatDisc(m, c + Vector3.new(0.02, 0.97, 0.02), 0.36, 0.12, GOLD)
+	local shine = {}
+	for i, spec in { { -0.22, 0.98, 0.12, 20 }, { 0.18, 1.0, -0.1, -25 }, { 0.05, 1.1, 0.16, 35 }, { -0.1, 1.08, -0.18, -10 }, { 0.26, 0.93, 0.2, 15 } } do
+		local p = coin(m, c + Vector3.new(spec[1], spec[2], spec[3]), spec[4], i * 50)
+		if i % 2 == 1 then
+			table.insert(shine, p)
+		end
+	end
+	-- moedas caídas no balcão
+	for i, spec in { { 0.35, -0.75 }, { -0.7, 0.95 }, { 0.05, -0.45 }, { 0.15, 0.85 }, { -0.35, -0.6 } } do
+		local p = coin(m, Vector3.new(c.X + spec[1], top + 0.03, c.Z + spec[2]), 0, i * 70)
+		if i == 2 or i == 4 then
+			table.insert(shine, p)
+		end
+	end
+	-- moeda em pé, encostada
+	coin(m, c + Vector3.new(0.62, 0.13, 0.35), 75, 30)
+	local last = -1
+	addAnimator(function(t)
+		local step = math.floor(t * 1.5)
+		if step == last then
+			return
+		end
+		last = step
+		for i, p in shine do
+			p.Color = if (i + step) % #shine == 0 then rgb(255, 246, 190) else GOLD
+		end
+	end)
+end
+
+-- Varal de trevos: entre as vigas do fundo (z = -11.5), trevinhos de tamanhos diferentes balançando
+BUILDERS.PatrickCloverBunting = function(m)
+	local z = -11.6
+	local y = Layout.Room.Height - 1.1
+	local anchors = { -17.5, -12, -6.5, -1, 4.5, 10, 17.5 }
+	for i = 2, #anchors - 1 do
+		part(m, Vector3.new(0.05, 1.1, 0.05), Vector3.new(anchors[i], y + 0.55, z), THREAD) -- fio até o teto
+		disc(m, faceCamera(Vector3.new(anchors[i], y - 0.05, z + 0.08)), 0.36, 0.08, GOLD) -- moedinha no nó
+	end
+	local spans = rope(m, anchors, y, z, 0.7, rgb(240, 236, 200))
+	local greens = { CLOVER, CLOVER_LIGHT, rgb(110, 190, 100) }
+	local charms: { Rig } = {}
+	local count = 0
+	for _, at in spans do
+		for k = 1, 3 do
+			count += 1
+			local p = at(k / 4)
+			local s = if count % 2 == 0 then 0.8 else 0.5
+			local len = 0.15 + (count % 3) * 0.15
+			local thread = part(m, Vector3.new(0.03, len, 0.03), p - Vector3.new(0, len / 2, 0), THREAD)
+			local ps = clover(m, faceCamera(p - Vector3.new(0, len + 0.3 * s, 0)), s, greens[count % #greens + 1], 0.1)
+			table.insert(ps, thread)
+			table.insert(charms, rig(CFrame.new(p), ps))
+		end
+	end
+	addSlowAnimator(30, function(t)
+		for i, c in charms do
+			moveRig(c, CFrame.Angles(math.sin(t * 1.1 + i * 0.8) * 0.1, 0, math.sin(t * 0.9 + i * 1.3) * 0.12))
+		end
+	end)
+end
+
+-- Tapete de trevo de quatro folhas (no lugar do tapete de lã)
+BUILDERS.PatrickRug = function(m)
+	local c = Vector3.new(12.5, 0, -11.5)
+	for i = 0, 3 do
+		local a = math.rad(45 + i * 90)
+		local leaf = lying(c, 0) * CFrame.Angles(0, 0, a)
+		heart(m, leaf * CFrame.new(0, 0.58 * 2.75 - 0.05, 0.05), 2.75, CLOVER_DARK, 0.1)
+		heart(m, leaf * CFrame.new(0, 0.58 * 2.75 + 0.08, 0.07), 2.3, CLOVER, 0.12)
+		part(m, Vector3.new(0.14, 1.5, 0.12), leaf * CFrame.new(0, 1.0, 0.09), CLOVER_LIGHT) -- nervura
+	end
+	flatDisc(m, c + Vector3.new(0, 0.09, 0), 0.9, 0.14, CLOVER_LIGHT)
+	-- cabinho saindo pra frente
+	local last = c + Vector3.new(0.3, 0.1, 0.6)
+	for _, p in { Vector3.new(0.7, 0.1, 1.5), Vector3.new(0.6, 0.1, 2.4), Vector3.new(0.2, 0.1, 3.1) } do
+		beam(m, last, c + p, 0.3, CLOVER_DARK)
+		last = c + p
+	end
+end
+
+-- trevos em volta da janela (frame da janela, na frente da moldura): { u (largura), v (altura), tamanho, giro }
+local CLOVER_RING = {
+	{ -0.55, 0.52, 0.95, 15 },
+	{ -0.18, 0.55, 0.55, -10 },
+	{ 0.22, 0.54, 0.75, 20 },
+	{ 0.56, 0.4, 0.6, -25 },
+	{ 0.57, -0.1, 0.8, 10 },
+	{ 0.5, -0.5, 0.5, -15 },
+	{ -0.56, -0.45, 0.7, 25 },
+	{ -0.58, 0.05, 0.5, -20 },
+}
+
+-- Trevos nas janelas: trevinhos de vários tamanhos em volta de todas as janelas
+BUILDERS.PatrickWindowClovers = function(m)
+	local greens = { CLOVER, CLOVER_LIGHT, rgb(110, 190, 100) }
+	for w, id in WINDOW_ORDER do
+		local win = WINDOWS[id]
+		for i, spec in CLOVER_RING do
+			local cf = win.Frame * CFrame.new(spec[1] * win.Width, spec[2] * win.Height, 0.4) * CFrame.Angles(0, 0, math.rad(spec[4]))
+			clover(m, cf, spec[3], greens[(i + w) % #greens + 1], 0.1)
+		end
+	end
+end
+
+-- Duende Espião: lá fora, na janela de trás da esquerda, um duende pequeno sobe devagar pra espiar dentro do café,
+-- olha pros lados e se esconde de novo (tudo com tweens). Tocar nele faz ele se esconder na hora.
+BUILDERS.PatrickLeprechaun = function(m)
+	local id = currentId
+	local DOWN = 3.6 -- quanto ele desce pra sumir atrás da parede
+	local peek = Vector3.new(Layout.Room.MinX - 1.4, 6.3, -14.6) -- centro da cabeça quando está espiando
+	local cf = faceCamera(peek)
+	local ps = {}
+	local function add(size: Vector3, at: CFrame, color: Color3, props: { [string]: any }?): BasePart
+		local p = part(m, size, cf * at, color, props)
+		table.insert(ps, p)
+		return p
+	end
+	local skin, beard = rgb(250, 210, 180), rgb(232, 120, 52)
+	local green, greenDark = rgb(62, 156, 84), rgb(40, 116, 64)
+	local head = add(Vector3.new(0.9, 0.8, 0.8), CFrame.new(), skin)
+	add(Vector3.new(1.0, 0.45, 0.82), CFrame.new(0, -0.38, 0.05), beard) -- barba
+	add(Vector3.new(0.62, 0.32, 0.6), CFrame.new(0, -0.7, 0.08), beard)
+	add(Vector3.new(0.5, 0.12, 0.08), CFrame.new(0, -0.18, 0.42), rgb(200, 96, 40)) -- bigodinho
+	add(Vector3.new(0.2, 0.18, 0.12), CFrame.new(0, -0.04, 0.44), rgb(240, 170, 150)) -- nariz
+	for _, sx in { -1, 1 } do
+		add(Vector3.new(0.11, 0.13, 0.05), CFrame.new(sx * 0.19, 0.12, 0.41), EYE) -- olhinho
+		add(Vector3.new(0.13, 0.07, 0.04), CFrame.new(sx * 0.3, -0.06, 0.41), rgb(246, 170, 170)) -- bochecha
+		add(Vector3.new(0.14, 0.24, 0.2), CFrame.new(sx * 0.5, 0.02, 0), skin) -- orelha
+		add(Vector3.new(0.3, 0.22, 0.3), CFrame.new(sx * 0.62, -0.95, 0.45), green) -- mãozinha segurando a janela
+	end
+	add(Vector3.new(1.3, 0.1, 1.15), CFrame.new(0, 0.44, 0), greenDark) -- aba da cartola
+	add(Vector3.new(0.82, 0.75, 0.72), CFrame.new(0, 0.85, 0), green)
+	add(Vector3.new(0.84, 0.16, 0.74), CFrame.new(0, 0.56, 0), rgb(44, 38, 44)) -- fita
+	add(Vector3.new(0.26, 0.2, 0.05), CFrame.new(0, 0.56, 0.38), GOLD) -- fivela
+	local body = rig(cf, ps)
+
+	-- tweens mexem nesses valores; o rig acompanha
+	local up = Instance.new("NumberValue") -- 1 = espiando, 0 = escondido
+	up.Value = 1
+	up.Parent = m
+	local turn = Instance.new("NumberValue") -- inclina a cabecinha (radianos)
+	turn.Parent = m
+	local function pose()
+		moveRig(body, CFrame.new(0, (up.Value - 1) * DOWN, 0) * CFrame.Angles(0, 0, turn.Value))
+	end
+	for _, v in { up, turn } do
+		v.Changed:Connect(function()
+			if not appearing[id] then
+				pose()
+			end
+		end)
+	end
+	local function tween(v: NumberValue, goal: number, time: number, style: Enum.EasingStyle?, dir: Enum.EasingDirection?)
+		TweenService:Create(v, TweenInfo.new(time, style or Enum.EasingStyle.Sine, dir or Enum.EasingDirection.InOut), { Value = goal }):Play()
+		task.wait(time)
+	end
+	local function alive(): boolean
+		return built[id] == m
+	end
+	local hiding = false
+	clickables[head] = function()
+		if hiding or appearing[id] or up.Value < 0.5 then
+			return
+		end
+		hiding = true
+		Sfx.play("CutePop")
+		TweenService:Create(turn, TweenInfo.new(0.15), { Value = 0 }):Play()
+		TweenService:Create(up, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Value = 0 }):Play()
+	end
+	task.spawn(function()
+		local t0 = os.clock()
+		repeat
+			task.wait(0.2)
+		until (built[id] == m and not appearing[id]) or os.clock() - t0 > 30
+		task.wait(1.5)
+		while alive() do
+			if not hiding then
+				tween(up, 0, 0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			end
+			task.wait(3 + math.random() * 3)
+			hiding = false
+			if not alive() then
+				break
+			end
+			-- sobe devagarinho até os olhos, para, e aparece de vez
+			tween(up, 0.8, 0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			task.wait(0.6)
+			if hiding or not alive() then
+				continue
+			end
+			tween(up, 1, 0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+			for _, a in { 0.25, -0.25, 0 } do
+				if hiding or not alive() then
+					break
+				end
+				tween(turn, a, 0.35)
+				task.wait(0.5)
+			end
+			if not hiding and alive() then
+				task.wait(1.2)
+			end
+		end
+	end)
+end
+
+------------------------------------------------ Carnaval
+
+-- Tiara de máscara: tiara dourada com uma maskinha de carnaval e três peninhas em cima
+BUILDERS.CarnivalCatMask = function(m)
+	local S = CAT_S
+	local function at(x: number, y: number, z: number): CFrame
+		return CAT_TOP * CFrame.new(x * S, y * S, z * S)
+	end
+	local ps = {
+		part(m, Vector3.new(0.86, 0.09, 0.16) * S, at(0, 0.42, -0.04), GOLD),
+		part(m, Vector3.new(0.09, 0.26, 0.16) * S, at(-0.44, 0.3, -0.04), GOLD),
+		part(m, Vector3.new(0.09, 0.26, 0.16) * S, at(0.44, 0.3, -0.04), GOLD),
+	}
+	for i, spec in { { -0.16, -20, FESTA[1] }, { 0, 0, FESTA[3] }, { 0.16, 20, FESTA[2] } } do
+		table.insert(ps, part(m, Vector3.new(0.1, 0.55, 0.05) * S, at(spec[1], 0.9 + (if i == 2 then 0.06 else 0), -0.08) * CFrame.Angles(0, 0, math.rad(spec[2])), spec[3]))
+	end
+	for _, p in carnivalMask(m, at(0, 0.66, 0.02), 0.82 * S, FESTA[5], GOLD) do
+		table.insert(ps, p)
+	end
+	followCatHead(ps)
+end
+
+-- confetes deitados em volta de um ponto (balcão ou chão), `n` pedacinhos num raio entre r0 e r1
+local function confetti(m: Model, rng: Random, center: Vector3, r0: number, r1: number, n: number, size: number)
+	for i = 1, n do
+		local a = rng:NextNumber(0, math.pi * 2)
+		local r = rng:NextNumber(r0, r1)
+		local pos = center + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+		local shape = if i % 3 == 0 then CYL else nil
+		if shape then
+			flatDisc(m, pos + Vector3.new(0, 0.015, 0), size, 0.03, FESTA[i % #FESTA + 1], { CastShadow = false, CanQuery = false })
+		else
+			part(m, Vector3.new(size, 0.03, size * 0.6), CFrame.new(pos + Vector3.new(0, 0.015, 0)) * CFrame.Angles(0, rng:NextNumber(0, math.pi), 0), FESTA[i % #FESTA + 1], {
+				CastShadow = false,
+				CanQuery = false,
+			})
+		end
+	end
+end
+
+-- Pandeiro azul clarinho deitado no balcão (um pouco inclinado), com confetes em volta
+BUILDERS.CarnivalTambourine = function(m)
+	local top = Layout.CounterHeight
+	local c = Vector3.new(0.95, top, Layout.CounterZ + 0.45)
+	local cf = CFrame.new(c + Vector3.new(0, 0.2, 0)) * CFrame.Angles(math.rad(10), math.rad(20), 0)
+	local blue, blueDark = rgb(150, 210, 246), rgb(110, 176, 222)
+	part(m, Vector3.new(0.26, 1.0, 1.0), cf * CFrame.Angles(0, 0, math.rad(90)), blue, CYL) -- aro
+	part(m, Vector3.new(0.27, 0.86, 0.86), cf * CFrame.Angles(0, 0, math.rad(90)), rgb(250, 242, 222), CYL) -- couro
+	part(m, Vector3.new(0.28, 0.3, 0.3), cf * CFrame.Angles(0, 0, math.rad(90)), blueDark, CYL) -- estrelinha pintada
+	for _, y in { -0.1, 0.1 } do
+		part(m, Vector3.new(0.03, 1.02, 1.02), cf * CFrame.new(0, y, 0) * CFrame.Angles(0, 0, math.rad(90)), blueDark, CYL) -- frisos
+	end
+	-- platinelas (as chapinhas) em volta do aro
+	for i = 0, 4 do
+		local a = i / 5 * math.pi * 2 + 0.3
+		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+		part(m, Vector3.new(0.04, 0.17, 0.17), cf * CFrame.new(dir * 0.5) * CFrame.Angles(0, -a, 0), rgb(220, 222, 230), CYL)
+	end
+	-- fitinhas coloridas
+	for i, dz in { -0.08, 0.08 } do
+		local p0 = (cf * CFrame.new(0.5, 0, dz)).Position
+		beam(m, p0, Vector3.new(p0.X + 0.55, top + 0.03, p0.Z + dz * 4 + 0.15), 0.05, FESTA[i * 2])
+	end
+	confetti(m, Random.new(7), Vector3.new(c.X, top, c.Z), 0.62, 0.95, 12, 0.13)
+end
+
+-- Confetes espalhados pelo chão do salão (em cima dos tapetes, quando caem neles)
+BUILDERS.CarnivalConfetti = function(m)
+	local rng = Random.new(42)
+	local function y(x: number, z: number): number
+		-- tapete das mesas (Scenery) e o tapete da loja, um pouco mais altos que o chão
+		if (x > -17 and x < -6 and z > -17.5 and z < -4.5) or (x > 9 and x < 16 and z > -14.5 and z < -8.5) then
+			return 0.17
+		end
+		return 0.02
+	end
+	for i = 1, 150 do
+		local x, z
+		if i % 3 == 0 then
+			-- lado do barista (o chão que mais aparece na tela), sem entrar embaixo dos balcões
+			x = rng:NextNumber(-12, 12)
+			z = rng:NextNumber(2.2, 8.5)
+		else
+			x = rng:NextNumber(Layout.Room.MinX + 0.8, Layout.Room.MaxX - 0.8)
+			z = rng:NextNumber(Layout.Room.MinZ + 0.8, Layout.CounterZ - 2)
+		end
+		local pos = Vector3.new(x, y(x, z), z)
+		local color = FESTA[i % #FESTA + 1]
+		if i % 4 == 0 then
+			flatDisc(m, pos + Vector3.new(0, 0.015, 0), 0.3, 0.03, color, { CastShadow = false, CanQuery = false })
+		else
+			part(m, Vector3.new(0.36, 0.03, 0.22), CFrame.new(pos + Vector3.new(0, 0.015, 0)) * CFrame.Angles(0, rng:NextNumber(0, math.pi), 0), color, {
+				CastShadow = false,
+				CanQuery = false,
+			})
+		end
+	end
+	-- pedacinhos de serpentina no chão
+	for i = 1, 8 do
+		local start = Vector3.new(rng:NextNumber(-15, 15), 0, rng:NextNumber(-19, -4))
+		local start2 = Vector3.new(start.X, y(start.X, start.Z) + 0.03, start.Z)
+		local last = start2
+		local a = rng:NextNumber(0, math.pi * 2)
+		for k = 1, 4 do
+			a += 1.4
+			local p = start2 + Vector3.new(math.cos(a) * 0.3 + k * 0.25, 0, math.sin(a) * 0.3)
+			beam(m, last, p, 0.06, FESTA[(i + 2) % #FESTA + 1], { CastShadow = false, CanQuery = false })
+			last = p
+		end
+	end
+end
+
+-- serpentina caindo do teto: uma espiral de pedacinhos; devolve as peças (pivô no teto)
+local function streamer(m: Model, top: Vector3, len: number, color: Color3, phase: number): { BasePart }
+	local ps = {}
+	local n = 9
+	local last = top
+	for k = 1, n do
+		local u = k / n
+		local a = phase + u * math.pi * 4
+		local r = 0.18 + u * 0.12
+		local p = top + Vector3.new(math.cos(a) * r, -u * len, math.sin(a) * r)
+		table.insert(ps, beam(m, last, p, 0.1, color, { CastShadow = false }))
+		last = p
+	end
+	return ps
+end
+
+-- Serpentinas: espirais coloridas caindo do teto entre as vigas, girando devagar
+BUILDERS.CarnivalStreamers = function(m)
+	local spots = {
+		{ -15.5, -12 },
+		{ -12, -16.5 },
+		{ -7, -12.2 },
+		{ -3, -16.8 },
+		{ 1, -12.4 },
+		{ 5.5, -16.5 },
+		{ 9, -12 },
+		{ 13, -16.6 },
+		{ 16, -11.8 },
+		{ -10.5, -6.8 },
+		{ 1.5, -6.5 },
+		{ 11, -7 },
+	}
+	local twirls: { Rig } = {}
+	for i, s in spots do
+		local top = Vector3.new(s[1], Layout.Room.Height, s[2])
+		local len = 1.8 + (i % 3) * 0.6
+		table.insert(twirls, rig(CFrame.new(top), streamer(m, top, len, FESTA[i % #FESTA + 1], i * 1.3)))
+	end
+	addSlowAnimator(30, function(t)
+		for i, r in twirls do
+			moveRig(r, CFrame.Angles(0, math.sin(t * 0.7 + i) * 0.6, math.sin(t * 1.1 + i * 1.7) * 0.05))
+		end
+	end)
+end
+
+-- Máscaras nas janelas: máscaras coloridas de vários tamanhos coladas no vidro, com fitinhas
+BUILDERS.CarnivalWindowMasks = function(m)
+	-- { u (largura), v (altura), tamanho, giro }
+	local layouts = {
+		{ { -0.3, 0.12, 1.5, -12 }, { 0.28, -0.08, 1.0, 15 }, { 0.1, 0.32, 0.8, -5 } },
+		{ { 0.26, 0.15, 1.4, 10 }, { -0.28, -0.05, 1.1, -15 } },
+	}
+	local count = 0
+	for w, id in WINDOW_ORDER do
+		local win = WINDOWS[id]
+		for _, spec in layouts[w % 2 + 1] do
+			count += 1
+			local cf = win.Frame * CFrame.new(spec[1] * win.Width, spec[2] * win.Height, 0.35) * CFrame.Angles(0, 0, math.rad(spec[4]))
+			local color = FESTA[count % #FESTA + 1]
+			carnivalMask(m, cf, spec[3], color, if color == FESTA[2] then FESTA[5] else GOLD)
+			-- fitinhas penduradas nas pontas
+			for k, sx in { -1, 1 } do
+				local p0 = (cf * CFrame.new(sx * 0.55 * spec[3], 0.1 * spec[3], 0)).Position
+				beam(m, p0, p0 + Vector3.new(0, -0.6 * spec[3], 0) + win.Frame.RightVector * sx * 0.1, 0.05, FESTA[(count + k * 2) % #FESTA + 1])
+			end
+		end
+	end
+end
+
+-- sombrinha de frevo pendurada num fio que desce `drop` do teto (`top`); gomos coloridos, inclinada pra câmera ver
+local function frevoUmbrella(m: Model, top: Vector3, drop: number, s: number): { BasePart }
+	local colors = { rgb(232, 64, 72), rgb(250, 204, 60), rgb(70, 170, 90), rgb(70, 140, 230) }
+	local c = top - Vector3.new(0, drop, 0)
+	local ps = { part(m, Vector3.new(0.04, drop, 0.04), top - Vector3.new(0, drop / 2, 0), THREAD) } -- fio
+	local tilt = CFrame.new(c) * CFrame.Angles(math.rad(28), 0, 0)
+	for k = 0, 7 do
+		local a = k / 8 * math.pi * 2
+		local seg = tilt * CFrame.Angles(0, a, 0) * CFrame.new(0, -0.2 * s, -0.48 * s) * CFrame.Angles(math.rad(-26), 0, 0)
+		table.insert(ps, part(m, Vector3.new(0.62 * s, 0.05, 1.0 * s), seg, colors[k % #colors + 1]))
+	end
+	table.insert(ps, part(m, Vector3.new(0.2, 0.2, 0.2) * s, tilt * CFrame.new(0, 0.05 * s, 0), GOLD, BALL)) -- pontinha
+	table.insert(ps, part(m, Vector3.new(0.06, 1.1 * s, 0.06), tilt * CFrame.new(0, -0.55 * s, 0), rgb(240, 236, 230))) -- cabo
+	table.insert(ps, part(m, Vector3.new(0.08, 0.08, 0.3 * s), tilt * CFrame.new(0, -1.1 * s, 0.12 * s), rgb(232, 64, 72))) -- ganchinho
+	return ps
+end
+
+-- Sombrinhas de frevo: penduradas no teto entre as luminárias, girando devagar
+BUILDERS.CarnivalUmbrellas = function(m)
+	-- { x, z, quanto desce, tamanho }
+	local spots = { { -11.5, -7.4, 1.6, 1.1 }, { 5.2, -7.2, 1.7, 1 }, { -4.5, -15.5, 1.5, 1 }, { 12.6, -15.2, 1.5, 1.1 } }
+	local umbrellas: { Rig } = {}
+	for _, s in spots do
+		local top = Vector3.new(s[1], Layout.Room.Height, s[2])
+		table.insert(umbrellas, rig(CFrame.new(top), frevoUmbrella(m, top, s[3], s[4])))
+	end
+	addSlowAnimator(30, function(t)
+		for i, u in umbrellas do
+			moveRig(u, CFrame.Angles(math.sin(t * 0.9 + i) * 0.04, t * 0.5 + i, 0))
+		end
+	end)
+end
+
+------------------------------------------------ Festa Junina
+
+local STRAW, STRAW_DARK = rgb(236, 200, 120), rgb(200, 158, 86)
+local CHITA_RED = rgb(214, 56, 64)
+
+-- Chapéu de palha: aba larga redondinha, fita vermelha com remendo xadrez e fiapos de palha
+BUILDERS.JuninaCatHat = function(m)
+	local S = CAT_S
+	local head = CAT_TOP * CFrame.Angles(math.rad(-6), 0, math.rad(8))
+	local function at(x: number, y: number, z: number): CFrame
+		return head * CFrame.new(x * S, y * S, z * S)
+	end
+	local ps = {
+		part(m, Vector3.new(0.07, 1.4, 1.4) * S, at(0, 0.42, 0) * CFrame.Angles(0, 0, math.rad(90)), STRAW, CYL), -- aba
+		part(m, Vector3.new(0.4, 0.72, 0.72) * S, at(0, 0.62, 0) * CFrame.Angles(0, 0, math.rad(90)), STRAW, CYL), -- copa
+		part(m, Vector3.new(0.1, 0.6, 0.6) * S, at(0, 0.84, 0) * CFrame.Angles(0, 0, math.rad(90)), STRAW_DARK, CYL),
+		part(m, Vector3.new(0.12, 0.74, 0.74) * S, at(0, 0.5, 0) * CFrame.Angles(0, 0, math.rad(90)), rgb(220, 64, 64), CYL), -- fita
+		part(m, Vector3.new(0.18, 0.16, 0.04) * S, at(0.12, 0.62, 0.35), rgb(90, 150, 230)), -- remendo
+		part(m, Vector3.new(0.08, 0.08, 0.045) * S, at(0.08, 0.66, 0.35), rgb(250, 250, 250)),
+		part(m, Vector3.new(0.08, 0.08, 0.045) * S, at(0.16, 0.58, 0.35), rgb(250, 250, 250)),
+	}
+	-- trançado da aba e fiapos
+	for i = 0, 5 do
+		local a = i / 6 * math.pi * 2 + 0.2
+		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+		table.insert(ps, part(m, Vector3.new(0.05, 0.08, 0.3) * S, at(dir.X * 0.52, 0.43, dir.Z * 0.52) * CFrame.Angles(0, -a, 0), STRAW_DARK))
+		if i % 2 == 0 then
+			table.insert(ps, part(m, Vector3.new(0.04, 0.04, 0.16) * S, at(dir.X * 0.74, 0.42, dir.Z * 0.74) * CFrame.Angles(0, -a + 0.3, 0), STRAW_DARK)) -- fiapo
+		end
+	end
+	followCatHead(ps)
+end
+
+-- espiga de milho (deitada ao longo do +Z do frame): grãos amarelos e palha verde
+local function corn(m: Model, cf: CFrame, len: number)
+	part(m, Vector3.new(0.2, 0.2, len), cf, rgb(250, 210, 80))
+	for _, dz in { -0.3, 0, 0.3 } do
+		part(m, Vector3.new(0.21, 0.21, 0.05), cf * CFrame.new(0, 0, dz * len), rgb(226, 176, 52)) -- fileiras de grãos
+	end
+	for _, sx in { -1, 1 } do
+		part(m, Vector3.new(0.08, 0.16, len * 0.7), cf * CFrame.new(sx * 0.12, -0.03, -len * 0.42) * CFrame.Angles(0, sx * 0.3, 0), rgb(130, 186, 96)) -- palha
+	end
+end
+
+-- Cestinha de milho: toalhinha xadrez azul no balcão (perto do caixa) com uma cestinha de espigas em cima
+BUILDERS.JuninaCounterBasket = function(m)
+	local top = Layout.CounterHeight
+	local c = Vector3.new(3.2, top, Layout.CounterZ + 0.25)
+	local cloth = CFrame.new(c) * CFrame.Angles(0, math.rad(8), 0)
+	local W, D, N, M = 1.5, 1.1, 6, 4
+	part(m, Vector3.new(W, 0.02, D), cloth * CFrame.new(0, 0.01, 0), rgb(250, 250, 246))
+	for i = 0, N - 1 do
+		for j = 0, M - 1 do
+			if (i + j) % 2 == 0 then
+				part(m, Vector3.new(W / N, 0.025, D / M), cloth * CFrame.new(-W / 2 + (i + 0.5) * W / N, 0.0125, -D / 2 + (j + 0.5) * D / M), rgb(96, 150, 220))
+			end
+		end
+	end
+	-- cestinha redonda
+	local b = cloth * CFrame.new(0.05, 0.03, 0)
+	part(m, Vector3.new(0.42, 0.85, 0.85), b * CFrame.new(0, 0.21, 0) * CFrame.Angles(0, 0, math.rad(90)), STRAW, CYL)
+	for _, y in { 0.1, 0.26 } do
+		part(m, Vector3.new(0.05, 0.87, 0.87), b * CFrame.new(0, y, 0) * CFrame.Angles(0, 0, math.rad(90)), STRAW_DARK, CYL) -- trançado
+	end
+	part(m, Vector3.new(0.1, 0.92, 0.92), b * CFrame.new(0, 0.44, 0) * CFrame.Angles(0, 0, math.rad(90)), STRAW_DARK, CYL) -- borda
+	local last = (b * CFrame.new(-0.42, 0.44, 0)).Position
+	for k = 1, 6 do
+		local a = k / 6 * math.pi
+		local p = (b * CFrame.new(-math.cos(a) * 0.42, 0.44 + math.sin(a) * 0.55, 0)).Position
+		beam(m, last, p, 0.07, STRAW_DARK) -- alça
+		last = p
+	end
+	-- espigas saindo da cesta
+	corn(m, b * CFrame.new(-0.12, 0.55, 0.05) * CFrame.Angles(math.rad(-25), math.rad(30), 0), 0.6)
+	corn(m, b * CFrame.new(0.14, 0.58, -0.05) * CFrame.Angles(math.rad(-30), math.rad(-40), 0), 0.55)
+	corn(m, b * CFrame.new(0.02, 0.5, 0.18) * CFrame.Angles(math.rad(-10), math.rad(95), 0), 0.5)
+end
+
+-- margarida na parede (frame com +Z pra fora da parede): pétalas brancas e miolo amarelo, `s` = tamanho
+local function daisy(m: Model, cf: CFrame, s: number, stem: boolean)
+	if stem then
+		part(m, Vector3.new(0.08 * s, 1.1 * s, 0.05), cf * CFrame.new(0, -0.65 * s, -0.02), rgb(96, 160, 84))
+		part(m, Vector3.new(0.3 * s, 0.14 * s, 0.05), cf * CFrame.new(0.14 * s, -0.75 * s, -0.02) * CFrame.Angles(0, 0, math.rad(30)), rgb(120, 186, 100)) -- folhinha
+	end
+	for i = 0, 3 do
+		part(m, Vector3.new(1.0 * s, 0.2 * s, 0.05), cf * CFrame.Angles(0, 0, i * math.pi / 4), rgb(252, 252, 248))
+	end
+	disc(m, cf * CFrame.new(0, 0, 0.04), 0.32 * s, 0.06, rgb(250, 200, 60))
+end
+
+-- Margaridas: buquezinhos nas paredes (entre as janelas, em volta dos quadros e perto da porta)
+BUILDERS.JuninaWallDaisies = function(m)
+	local spots: { { any } } = {
+		{ sideWall(-1, 10.2, -8.4), 0.9, true },
+		{ sideWall(-1, 10.9, -7.5), 0.7, false },
+		{ sideWall(-1, 9.6, -7.2), 0.55, false },
+		{ sideWall(-1, 6.0, -19.4), 0.9, true },
+		{ sideWall(-1, 7.0, -18.6), 0.6, false },
+		{ sideWall(1, 9.4, -8.6), 0.8, true },
+		{ sideWall(1, 9.9, -7.4), 0.6, false },
+		{ sideWall(1, 9.2, -19.6), 0.8, true },
+		{ sideWall(1, 10.0, -18.6), 0.55, false },
+		{ CFrame.new(-3, 6.3, WALL_Z + 0.02), 0.75, true },
+		{ CFrame.new(-3.1, 10.1, WALL_Z + 0.02), 0.6, false },
+		{ CFrame.new(6.3, 5.0, WALL_Z + 0.02), 0.8, true },
+		{ CFrame.new(5.6, 9.8, WALL_Z + 0.02), 0.6, false },
+		{ CFrame.new(-15.2, 11.5, WALL_Z + 0.02), 0.7, false },
+		{ CFrame.new(-14.4, 10.9, WALL_Z + 0.02), 0.5, false },
+	}
+	for i, spec in spots do
+		daisy(m, spec[1] * CFrame.Angles(0, 0, math.rad(i * 23)), spec[2] * 1.4, spec[3])
+	end
+end
+
+-- Tapete de chita: florido (vermelho, com flores grandes amarelas, azuis e brancas), no lugar do tapete de lã
+BUILDERS.JuninaRug = function(m)
+	local c = Vector3.new(12.5, 0, -11.5)
+	part(m, Vector3.new(7, 0.1, 5), c + Vector3.new(0, 0.05, 0), rgb(250, 200, 60)) -- debrum amarelo
+	part(m, Vector3.new(6.6, 0.12, 4.6), c + Vector3.new(0, 0.06, 0), CHITA_RED)
+	-- flores grandes: { x, z, tamanho, pétala, miolo }
+	local flowers = {
+		{ -2.2, -1.2, 1.5, rgb(250, 210, 70), rgb(214, 56, 64) },
+		{ 0.3, 0.6, 1.8, rgb(90, 150, 230), rgb(250, 230, 120) },
+		{ 2.3, -1.0, 1.3, rgb(252, 250, 246), rgb(250, 200, 60) },
+		{ -2.4, 1.3, 1.1, rgb(252, 250, 246), rgb(90, 150, 230) },
+		{ 2.5, 1.35, 1.0, rgb(250, 210, 70), rgb(90, 150, 230) },
+		{ 0.0, -1.5, 0.8, rgb(246, 150, 190), rgb(250, 230, 120) },
+	}
+	for i, f in flowers do
+		local p = c + Vector3.new(f[1], 0.13, f[2])
+		-- folhinhas verdes atrás
+		for _, a in { 0.6, 3.6 } do
+			local dir = Vector3.new(math.cos(a + i), 0, math.sin(a + i))
+			part(m, Vector3.new(f[3] * 0.55, 0.12, f[3] * 0.25), CFrame.lookAt(p + dir * f[3] * 0.5, p + dir * 2) * CFrame.Angles(0, math.rad(90), 0), rgb(70, 150, 90))
+		end
+		for k = 0, 4 do
+			local a = k / 5 * math.pi * 2 + i
+			flatDisc(m, p + Vector3.new(math.cos(a) * f[3] * 0.28, 0.02, math.sin(a) * f[3] * 0.28), f[3] * 0.42, 0.12, f[4])
+		end
+		flatDisc(m, p + Vector3.new(0, 0.04, 0), f[3] * 0.3, 0.12, f[5])
+	end
+	-- franjas nas pontas
+	for _, sx in { -1, 1 } do
+		for k = -4, 4 do
+			part(m, Vector3.new(0.5, 0.06, 0.16), c + Vector3.new(sx * 3.7, 0.03, k * 0.5), rgb(252, 246, 230))
+		end
+	end
+end
+
+-- Bandeirinhas: dois varais cruzando o teto em X, com bandeirinhas coloridas (recorte em "V" embaixo)
+BUILDERS.JuninaFlags = function(m)
+	local y = Layout.Room.Height - 1.0
+	local lines = {
+		{ Vector3.new(Layout.Room.MinX + 0.3, y, -3.4), Vector3.new(Layout.Room.MaxX - 0.3, y, -15.6) },
+		{ Vector3.new(Layout.Room.MinX + 0.3, y, -15.6), Vector3.new(Layout.Room.MaxX - 0.3, y, -3.4) },
+	}
+	local flags: { Rig } = {}
+	local count = 0
+	for li, line in lines do
+		local a, b = line[1], line[2]
+		local spans = 4
+		for sIdx = 0, spans - 1 do
+			local p0 = a:Lerp(b, sIdx / spans)
+			local p1 = a:Lerp(b, (sIdx + 1) / spans)
+			local function at(u: number): Vector3
+				return p0:Lerp(p1, u) - Vector3.new(0, 0.7 * math.sin(math.pi * u), 0)
+			end
+			for k = 0, 5 do
+				beam(m, at(k / 6), at((k + 1) / 6), 0.05, THREAD)
+			end
+			if sIdx > 0 then
+				part(m, Vector3.new(0.04, Layout.Room.Height - y, 0.04), p0 + Vector3.new(0, (Layout.Room.Height - y) / 2, 0), THREAD) -- fio até o teto
+			end
+			local dir = (p1 - p0).Unit
+			local n = math.floor((p1 - p0).Magnitude / 0.95)
+			for f = 1, n - 1 do
+				count += 1
+				local p = at(f / n)
+				-- bandeirinha virada pra câmera, de lado pro varal
+				local cf = CFrame.fromMatrix(p, dir, Vector3.yAxis)
+				local color = FESTA[(count + li) % #FESTA + 1]
+				local pieces = {
+					part(m, Vector3.new(0.56, 0.36, 0.04), cf * CFrame.new(0, -0.2, 0), color),
+					part(m, Vector3.new(0.22, 0.24, 0.04), cf * CFrame.new(-0.17, -0.48, 0), color),
+					part(m, Vector3.new(0.22, 0.24, 0.04), cf * CFrame.new(0.17, -0.48, 0), color),
+				}
+				table.insert(flags, rig(CFrame.new(p), pieces))
+			end
+		end
+	end
+	addSlowAnimator(24, function(t)
+		for i, f in flags do
+			moveRig(f, CFrame.Angles(math.sin(t * 1.5 + i * 0.5) * 0.12, 0, 0))
+		end
+	end)
+end
+
+-- balão junino de papel (pendurado a partir de `cf`, pra baixo): gomos coloridos e uma chaminha embaixo
+local function balloon(m: Model, cf: CFrame, len: number, s: number, colors: { Color3 }): ({ BasePart }, BasePart)
+	local ps = { part(m, Vector3.new(0.04, len, 0.04), cf * CFrame.new(0, -len / 2, 0), THREAD) }
+	local c = cf * CFrame.new(0, -len - 0.62 * s, 0) * CFrame.Angles(0, math.rad(45), 0)
+	-- do topo pra baixo: { largura, altura, y }
+	for i, tier in { { 0.32, 0.18, 0.55 }, { 0.62, 0.26, 0.34 }, { 0.82, 0.3, 0.06 }, { 0.6, 0.26, -0.22 }, { 0.3, 0.16, -0.42 } } do
+		table.insert(ps, part(m, Vector3.new(tier[1], tier[2], tier[1]) * s, c * CFrame.new(0, tier[3] * s, 0), colors[(i - 1) % #colors + 1]))
+	end
+	table.insert(ps, part(m, Vector3.new(0.86, 0.06, 0.86) * s, c * CFrame.new(0, 0.2 * s, 0), rgb(252, 250, 246))) -- frisos
+	table.insert(ps, part(m, Vector3.new(0.86, 0.06, 0.86) * s, c * CFrame.new(0, -0.08 * s, 0), rgb(252, 250, 246)))
+	local flame = part(m, Vector3.new(0.14, 0.2, 0.14) * s, c * CFrame.new(0, -0.58 * s, 0), rgb(255, 170, 70), NEON)
+	table.insert(ps, flame)
+	return ps, flame
+end
+
+-- Balões juninos: dois balõezinhos de papel pendurados no alto de cada janela, balançando, com chaminha piscando
+BUILDERS.JuninaWindowBalloons = function(m)
+	local sets = {
+		{ FESTA[1], FESTA[2] },
+		{ FESTA[3], FESTA[2] },
+		{ FESTA[4], FESTA[6] },
+		{ FESTA[5], FESTA[2] },
+	}
+	local charms: { Rig } = {}
+	local flames = {}
+	local count = 0
+	for _, id in WINDOW_ORDER do
+		local win = WINDOWS[id]
+		for _, u in { -0.27, 0.27 } do
+			count += 1
+			local hang = win.Frame * CFrame.new(u * win.Width, win.Height / 2 + 0.05, 0.6)
+			local len = 0.8 + (count % 2) * 0.5
+			local ps, flame = balloon(m, hang, len, 1.1, sets[count % #sets + 1])
+			table.insert(charms, rig(hang, ps))
+			table.insert(flames, flame)
+		end
+	end
+	addSlowAnimator(30, function(t)
+		for i, c in charms do
+			moveRig(c, CFrame.Angles(math.sin(t * 1 + i * 0.9) * 0.05, 0, math.sin(t * 0.8 + i * 1.4) * 0.07))
+		end
+		for i, f in flames do
+			f.Color = rgb(255, 150 + math.floor(math.noise(t * 3, i) * 60), 60)
 		end
 	end)
 end
