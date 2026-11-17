@@ -2360,39 +2360,37 @@ BUILDERS.JuninaCounterBasket = function(m)
 	corn(m, b * CFrame.new(0.02, 0.5, 0.18) * CFrame.Angles(math.rad(-10), math.rad(95), 0), 0.5)
 end
 
--- margarida na parede (frame com +Z pra fora da parede): pétalas brancas e miolo amarelo, `s` = tamanho
-local function daisy(m: Model, cf: CFrame, s: number, stem: boolean)
-	if stem then
-		part(m, Vector3.new(0.08 * s, 1.1 * s, 0.05), cf * CFrame.new(0, -0.65 * s, -0.02), rgb(96, 160, 84))
-		part(m, Vector3.new(0.3 * s, 0.14 * s, 0.05), cf * CFrame.new(0.14 * s, -0.75 * s, -0.02) * CFrame.Angles(0, 0, math.rad(30)), rgb(120, 186, 100)) -- folhinha
-	end
+-- girassol na parede (frame com +Z pra fora da parede): só a flor, sem caule; pétalas amarelas em duas camadas
+-- e miolo marrom. `s` = tamanho (o diâmetro fica perto de 1.1 * s)
+local function sunflower(m: Model, cf: CFrame, s: number)
 	for i = 0, 3 do
-		part(m, Vector3.new(1.0 * s, 0.2 * s, 0.05), cf * CFrame.Angles(0, 0, i * math.pi / 4), rgb(252, 252, 248))
+		part(m, Vector3.new(1.1 * s, 0.26 * s, 0.05), cf * CFrame.Angles(0, 0, i * math.pi / 4), rgb(252, 204, 52))
+		part(m, Vector3.new(0.92 * s, 0.24 * s, 0.05), cf * CFrame.new(0, 0, 0.02) * CFrame.Angles(0, 0, i * math.pi / 4 + math.pi / 8), rgb(242, 168, 40))
 	end
-	disc(m, cf * CFrame.new(0, 0, 0.04), 0.32 * s, 0.06, rgb(250, 200, 60))
+	disc(m, cf * CFrame.new(0, 0, 0.05), 0.5 * s, 0.07, rgb(122, 76, 40))
+	disc(m, cf * CFrame.new(0, 0, 0.08), 0.28 * s, 0.05, rgb(84, 50, 30))
 end
 
--- Margaridas: buquezinhos nas paredes (entre as janelas, em volta dos quadros e perto da porta)
+-- trio em triângulo: grande embaixo à esquerda, médio embaixo à direita, pequeno em cima (posição, tamanho)
+local SUNFLOWER_TRIO = { { -0.5, -0.3, 1.15 }, { 0.55, -0.25, 0.85 }, { 0.05, 0.6, 0.6 } }
+
+-- Girassóis (id antigo JuninaWallDaisies, eram margaridas): um trio em cada ponto das paredes que aparece na tela
+-- (entre as janelas das laterais, no fundo das laterais, entre as janelas do fundo e ao lado da porta, abaixo das
+-- luminárias)
 BUILDERS.JuninaWallDaisies = function(m)
 	local spots: { { any } } = {
-		{ sideWall(-1, 10.2, -8.4), 0.9, true },
-		{ sideWall(-1, 10.9, -7.5), 0.7, false },
-		{ sideWall(-1, 9.6, -7.2), 0.55, false },
-		{ sideWall(-1, 6.0, -19.4), 0.9, true },
-		{ sideWall(-1, 7.0, -18.6), 0.6, false },
-		{ sideWall(1, 9.4, -8.6), 0.8, true },
-		{ sideWall(1, 9.9, -7.4), 0.6, false },
-		{ sideWall(1, 9.2, -19.6), 0.8, true },
-		{ sideWall(1, 10.0, -18.6), 0.55, false },
-		{ CFrame.new(-3, 6.3, WALL_Z + 0.02), 0.75, true },
-		{ CFrame.new(-3.1, 10.1, WALL_Z + 0.02), 0.6, false },
-		{ CFrame.new(6.3, 5.0, WALL_Z + 0.02), 0.8, true },
-		{ CFrame.new(5.6, 9.8, WALL_Z + 0.02), 0.6, false },
-		{ CFrame.new(-15.2, 11.5, WALL_Z + 0.02), 0.7, false },
-		{ CFrame.new(-14.4, 10.9, WALL_Z + 0.02), 0.5, false },
+		{ sideWall(-1, 10.2, -8), 1 },
+		{ sideWall(-1, 10.4, -19.2), 0.9 },
+		{ sideWall(1, 9.7, -8), 0.9 },
+		{ sideWall(1, 10.4, -17.4), 0.8 },
+		{ CFrame.new(-3, 5.9, WALL_Z + 0.02), 0.55 },
+		{ CFrame.new(6.2, 5.6, WALL_Z + 0.02), 0.85 },
 	}
-	for i, spec in spots do
-		daisy(m, spec[1] * CFrame.Angles(0, 0, math.rad(i * 23)), spec[2] * 1.4, spec[3])
+	for _, spot in spots do
+		local k = spot[2]
+		for i, f in SUNFLOWER_TRIO do
+			sunflower(m, spot[1] * CFrame.new(f[1] * k, f[2] * k, i * 0.03) * CFrame.Angles(0, 0, math.rad(i * 17)), f[3] * k)
+		end
 	end
 end
 

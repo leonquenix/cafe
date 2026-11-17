@@ -552,8 +552,8 @@ Catalog.Decor = {
 	},
 	JuninaWallDaisies = {
 		Id = "JuninaWallDaisies",
-		Name = "Margaridas",
-		Description = "Margaridas enfeitando as paredes.",
+		Name = "Girassóis",
+		Description = "Trios de girassóis enfeitando as paredes.",
 		Icon = "JuninaWallDaisies",
 		Cost = 280,
 		Cozy = 1,

@@ -1837,18 +1837,19 @@ Sprites.JuninaCounterBasket = {
 
 Sprites.JuninaWallDaisies = {
 	Rows = {
-		"..W.........",
-		".WYW....W...",
-		"..W....WYW..",
-		"..g.....W...",
-		"..g..W..g...",
-		".gg.WYW.g...",
-		"..g..W..gg..",
-		"..g..g..g...",
-		"kkkkkkkkkkkk",
-		"KKKKKKKKKKKK",
+		".....YYY.....",
+		".....YbY.....",
+		".....YYY.....",
+		".............",
+		"..Y.Y........",
+		".YYYYY...YYY.",
+		"YYBBBYY.YBBBY",
+		".YBbBY..YBbBY",
+		"YYBBBYY.YBBBY",
+		".YYYYY...YYY.",
+		"..Y.Y........",
 	},
-	Palette = { W = rgb(252, 252, 248), Y = rgb(250, 200, 60), g = rgb(96, 160, 84), k = rgb(244, 230, 206), K = rgb(226, 206, 178) },
+	Palette = { Y = rgb(252, 204, 52), B = rgb(122, 76, 40), b = rgb(84, 50, 30) },
 } :: Sprite
 
 Sprites.JuninaRug = {
