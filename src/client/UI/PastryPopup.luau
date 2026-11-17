@@ -9,6 +9,7 @@
 local GuiService = game:GetService("GuiService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TextService = game:GetService("TextService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
@@ -64,6 +65,7 @@ local ovenFrame: Frame
 local tray: Frame
 local trayGrid: UIGridLayout
 local pastryHolder: Frame
+local titleIcon: Frame -- imagem do quitute pedido, ao lado de "Pedido:"
 
 ------------------------------------------------------------------ ponteiro
 
@@ -502,6 +504,22 @@ function PastryPopup.init(playerGui: PlayerGui)
 		return use(status) == "done" and Catalog.isBadPastry(use(quality))
 	end)
 
+	local titleText = scope:Computed(function(use)
+		return if use(pastryId) ~= "" then "Pedido:" else "Forno"
+	end)
+	-- largura do rótulo proporcional à altura, pra imagem do quitute ficar logo depois do texto
+	local titleAspect = scope:Computed(function(use)
+		local size = TextService:GetTextSize(use(titleText), 100, Theme.Font, Vector2.new(10000, 10000))
+		return size.X / size.Y * 1.04
+	end)
+	titleIcon = scope:New("Frame")({
+		Name = "Icon",
+		LayoutOrder = 2,
+		BackgroundTransparency = 1,
+		Size = UDim2.fromScale(1, 1),
+		[Children] = scope:New("UIAspectRatioConstraint")({ AspectRatio = 1, DominantAxis = Enum.DominantAxis.Height }),
+	}) :: Frame
+
 	local ovenArt = PixelArt.draw(Sprites.Oven)
 	pastryHolder = scope:New("Frame")({
 		Name = "Pastry",
@@ -602,19 +620,36 @@ function PastryPopup.init(playerGui: PlayerGui)
 				Size = UDim2.new(1, -16, 1, -16),
 				[Children] = {
 					scope:New("UICorner")({ CornerRadius = UDim.new(0, 10) }),
-					scope:New("TextLabel")({
+					-- "Pedido:" + a imagem do quitute na altura do texto: mais fácil de achar na bandeja
+					scope:New("Frame")({
 						Name = "Title",
 						BackgroundTransparency = 1,
 						Position = UDim2.fromScale(0.04, 0.03),
 						Size = UDim2.fromScale(0.78, 0.11),
-						Font = Theme.Font,
-						TextScaled = true,
-						TextXAlignment = Enum.TextXAlignment.Left,
-						TextColor3 = Theme.Ink,
-						Text = scope:Computed(function(use)
-							local id = use(pastryId)
-							return if id ~= "" then `Pedido: {Catalog.Pastries[id].Name}` else "Forno"
-						end),
+						[Children] = {
+							scope:New("UIListLayout")({
+								FillDirection = Enum.FillDirection.Horizontal,
+								VerticalAlignment = Enum.VerticalAlignment.Center,
+								SortOrder = Enum.SortOrder.LayoutOrder,
+								Padding = UDim.new(0, 6),
+							}),
+							scope:New("TextLabel")({
+								Name = "Label",
+								LayoutOrder = 1,
+								BackgroundTransparency = 1,
+								Size = UDim2.fromScale(1, 1),
+								Font = Theme.Font,
+								TextScaled = true,
+								TextXAlignment = Enum.TextXAlignment.Left,
+								TextColor3 = Theme.Ink,
+								Text = titleText,
+								[Children] = scope:New("UIAspectRatioConstraint")({
+									AspectRatio = titleAspect,
+									DominantAxis = Enum.DominantAxis.Height,
+								}),
+							}),
+							titleIcon,
+						},
 					}),
 					button({
 						Name = "Close",
@@ -786,6 +821,11 @@ function PastryPopup.open(id: string, onFinish: (quality: number) -> (), onRetry
 	retryCallback = onRetry
 	reset()
 	fillTray()
+	local oldIcon = titleIcon:FindFirstChild("Sprite")
+	if oldIcon then
+		oldIcon:Destroy()
+	end
+	PixelArt.draw((Sprites :: any)[Catalog.Pastries[id].Icon]).Parent = titleIcon
 	panel.Rotation = 0
 	visible:set(true)
 end
