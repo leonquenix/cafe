@@ -48,10 +48,11 @@ DaySummary.BadStart = 0.25 -- pula o silêncio do começo
 DaySummary.BadLength = 6
 DaySummary.GoodVolume = 0.292
 DaySummary.BadVolume = 0.4
--- fanfarra de trompetes do nível novo / receitas novas: mais aguda (Speed) e aveludada (agudos abafados)
-DaySummary.LevelUpSound = "rbxassetid://1845399641"
-DaySummary.LevelUpVolume = 0.425
-DaySummary.LevelUpSpeed = 1.15
+-- música do nível novo / receitas novas (aveludada: agudos abafados); a gravação é bem mais baixa que a
+-- fanfarra antiga (1845399641), por isso o volume maior
+DaySummary.LevelUpSound = "rbxassetid://140231021022259"
+DaySummary.LevelUpVolume = 1
+DaySummary.LevelUpSpeed = 1
 -- ambiente noturno com grilos, em loop depois do som do fim do dia
 -- (a gravação é bem mais baixa que as músicas, por isso o volume acima de 1)
 DaySummary.NightSound = "rbxassetid://9112835836" -- grilo solitário, cricrilos espaçados e corujas
