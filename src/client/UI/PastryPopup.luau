@@ -642,17 +642,6 @@ function PastryPopup.init(playerGui: PlayerGui)
 							zone(PERFECT_START, PERFECT_END, Theme.Sage),
 							zone(PERFECT_END, BURN_START, Theme.Mustard),
 							zone(BURN_START, 1, Color3.fromRGB(90, 60, 50)),
-							-- parte já assada: escurece a barra atrás do ponteiro, dá pra ver ela "enchendo"
-							scope:New("Frame")({
-								Name = "Fill",
-								BorderSizePixel = 0,
-								BackgroundColor3 = Theme.Ink,
-								BackgroundTransparency = 0.6,
-								Size = scope:Computed(function(use)
-									return UDim2.fromScale(use(needle), 1)
-								end),
-								ZIndex = 2,
-							}),
 							scope:New("Frame")({
 								Name = "Needle",
 								BorderSizePixel = 0,
