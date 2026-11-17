@@ -939,8 +939,15 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 		end
 	end
 
+	-- O botão aparece assim que o placar entra (antes ele só surgia no fim de toda a animação, ~10 s,
+	-- e se algo travasse a sequência nunca aparecia). Clicar com a animação ainda rodando pula direto
+	-- pro fim: mostra a tela de nível novo (se houver) e, ao fechá-la, começa o dia.
+	local skipping = false
+	local sequenceDone = false
+	local wantContinue = false
+	local levelUpOpen = false
 	local continued = false
-	nextButton.Activated:Connect(function()
+	local function continueDay()
 		if continued then
 			return
 		end
@@ -954,16 +961,46 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 				Fusion.doCleanup(scope)
 			end)
 		end)
+	end
+	local function revealNext()
+		if not peek(continueVisible) then
+			continueVisible:set(true)
+			popIn(nextButton)
+		end
+	end
+	nextButton.Activated:Connect(function()
+		if levelUpOpen then
+			return
+		end
+		if sequenceDone then
+			continueDay()
+		else
+			skipping = true
+			wantContinue = true
+		end
 	end)
 
+	-- espera que some quando o jogador pula a animação (task.wait roda mesmo com a janela sem renderizar)
+	local function pause(t: number)
+		if not skipping then
+			task.wait(t)
+		end
+	end
+
 	-- sequência de animação
-	task.spawn(function()
+	local function sequence()
 		tween(card, 0.6, { Position = UDim2.fromScale(0.5, 0.5) }, Enum.EasingStyle.Back)
 		task.wait(0.6)
+		revealNext()
 
 		-- faturamento: o saldo recebe as vendas e depois as gorjetas
 		local function countUp(from: number, amount: number, text: string, duration: number)
 			gainText:set(text)
+			if skipping then
+				shownMoney:set(from + amount)
+				gainScale.Scale = 1
+				return
+			end
 			if amount > 0 then
 				-- o valor entra no caixa junto com a contagem (abaixo do som de êxito/dia ruim)
 				Sfx.play("CoinsCount")
@@ -972,14 +1009,14 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 			tween(gainScale, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
 			local t0 = os.clock()
 			while true do
-				local a = math.min(1, (os.clock() - t0) / duration)
+				local a = if skipping then 1 else math.min(1, (os.clock() - t0) / duration)
 				shownMoney:set(from + math.floor(amount * (1 - (1 - a) ^ 3)))
 				if a >= 1 then
 					break
 				end
-				RunService.RenderStepped:Wait()
+				task.wait()
 			end
-			task.wait(0.35)
+			pause(0.35)
 		end
 		local sales = summary.earned - summary.tips
 		countUp(moneyBefore, sales, `+${sales} em vendas`, 1.2)
@@ -989,59 +1026,84 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 
 		for i, t in tiles do
 			local s = t:FindFirstChildOfClass("UIScale") :: UIScale
-			task.delay((i - 1) * 0.08, function()
-				tween(s, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
-			end)
+			if skipping then
+				s.Scale = 1
+			else
+				task.delay((i - 1) * 0.08, function()
+					tween(s, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
+				end)
+			end
 		end
-		task.wait(0.3 + #tiles * 0.08)
+		pause(0.3 + #tiles * 0.08)
 
 		for _, r in reviewCards do
 			local s = r:FindFirstChildOfClass("UIScale") :: UIScale
-			tween(s, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
-			task.wait(0.7)
+			if skipping then
+				s.Scale = 1
+			else
+				tween(s, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+				pause(0.7)
+			end
 		end
 
 		-- XP enchendo (pode atravessar vários níveis)
 		xpText:set(`+{summary.xpGained} XP`)
 		local level, xp, remaining = summary.levelBefore, summary.xpBefore, summary.xpGained
-		local leveled = false
-		while remaining > 0 do
+		while remaining > 0 and not skipping do
 			local need = Progression.xpToNext(level)
 			local step = math.min(remaining, need - xp)
 			local from, to = xp / need, (xp + step) / need
 			local dur = 0.4 + 0.8 * (to - from)
 			local s0 = os.clock()
 			while true do
-				local a = math.min(1, (os.clock() - s0) / dur)
+				local a = if skipping then 1 else math.min(1, (os.clock() - s0) / dur)
 				xpFill:set(from + (to - from) * a)
 				if a >= 1 then
 					break
 				end
-				RunService.RenderStepped:Wait()
+				task.wait()
 			end
 			xp += step
 			remaining -= step
 			if xp >= need then
 				level += 1
 				xp = 0
-				leveled = true
 				xpLevel:set(level)
 				xpFill:set(0)
 				levelBadgeScale.Scale = 1.5
 				tween(levelBadgeScale, 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
-				task.wait(0.25)
+				pause(0.25)
 			end
 		end
+		-- valores finais (também cobre o pulo no meio da conta)
+		xpLevel:set(summary.levelAfter)
+		xpFill:set(summary.xpAfter / Progression.xpToNext(summary.levelAfter))
 
-		task.wait(0.4)
-		if leveled then
-			showLevelUp(scope, gui :: any, summary.levelBefore, summary.levelAfter, function()
-				continueVisible:set(true)
-				popIn(nextButton)
-			end)
+		pause(0.4)
+	end
+
+	task.spawn(function()
+		local ok, err = xpcall(sequence, debug.traceback)
+		if not ok then
+			warn("[DaySummary] animação do placar falhou:", err)
+			card.Position = UDim2.fromScale(0.5, 0.5)
+		end
+		sequenceDone = true
+		local function afterLevelUp()
+			levelUpOpen = false
+			revealNext()
+			if wantContinue then
+				continueDay()
+			end
+		end
+		if summary.levelAfter > summary.levelBefore then
+			levelUpOpen = true
+			local shown = pcall(showLevelUp, scope, gui :: any, summary.levelBefore, summary.levelAfter, afterLevelUp)
+			if not shown then
+				afterLevelUp()
+			end
 		else
-			continueVisible:set(true)
-			popIn(nextButton)
+			afterLevelUp()
 		end
 	end)
 end
