@@ -36,6 +36,10 @@ Radio.Tracks = {
 	{ Name = "New Age", Id = "rbxassetid://128130163260275", Color = Color3.fromRGB(150, 200, 220) },
 	{ Name = "Halloween", Id = "rbxassetid://74253488858910", Color = Color3.fromRGB(230, 140, 60) },
 	{ Name = "Natal", Id = "rbxassetid://135242736748021", Color = Color3.fromRGB(200, 80, 80) },
+	{ Name = "Romantica", Id = "rbxassetid://131617443710431", Color = Color3.fromRGB(236, 120, 150) },
+	{ Name = "Celta", Id = "rbxassetid://129210004492507", Color = Color3.fromRGB(96, 170, 100) },
+	{ Name = "Carnaval", Id = "rbxassetid://92200424461952", Color = Color3.fromRGB(170, 112, 220) },
+	{ Name = "Arraiá", Id = "rbxassetid://82572475258061", Color = Color3.fromRGB(230, 170, 60) },
 }
 -- volume do Sound com o controle no máximo
 Radio.MaxVolume = 0.6
@@ -268,7 +272,7 @@ local function build()
 	panel = Instance.new("Frame")
 	panel.Name = "RadioPanel"
 	panel.BackgroundColor3 = Theme.Paper
-	panel.Size = UDim2.fromOffset(300, 313)
+	panel.Size = UDim2.fromOffset(420, 313)
 	panel.Visible = false
 	panel.ZIndex = 21
 	Theme.corner(panel, 0, 16)
@@ -305,7 +309,7 @@ local function build()
 	close.Activated:Connect(Radio.close)
 	close.Parent = panel
 
-	-- estações em duas colunas
+	-- estações em três colunas (12 estações em 4 linhas: o painel não fica alto demais no celular)
 	local grid = Instance.new("Frame")
 	grid.Name = "Stations"
 	grid.BackgroundTransparency = 1
@@ -314,7 +318,7 @@ local function build()
 	grid.ZIndex = 22
 	grid.Parent = panel
 	local layout = Instance.new("UIGridLayout")
-	layout.CellSize = UDim2.new(0.5, -5, 0, 42)
+	layout.CellSize = UDim2.new(1 / 3, -7, 0, 42)
 	layout.CellPadding = UDim2.fromOffset(10, 9)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = grid

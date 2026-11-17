@@ -729,6 +729,10 @@ Catalog.RadioStations = {
 	{ Name = "New Age", Level = 9 },
 	{ Name = "Halloween", Level = 15 },
 	{ Name = "Natal", Level = 22 },
+	{ Name = "Romantica", Level = 31 },
+	{ Name = "Celta", Level = 35 },
+	{ Name = "Carnaval", Level = 39 },
+	{ Name = "Arraiá", Level = 43 },
 } :: { { Name: string, Level: number } }
 Catalog.DefaultRadioTrack = 1
 
