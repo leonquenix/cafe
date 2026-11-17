@@ -1,9 +1,10 @@
 --!strict
 -- Placar do fim do dia: faturamento, bebidas entregues, reviews divertidos,
 -- XP subindo e — se subir de nível — uma tela de "você aprendeu receitas novas!".
--- Ao abrir toca um som de conquista (dia bom) ou um som triste, e depois os grilos da noite
+-- Logo depois do Faturamento somar, toca um som de conquista (dia bom) ou um som triste, e depois os grilos da noite
 -- (até o jogador clicar em "Começar Dia"); subir de nível toca uma fanfarra.
 
+local ContentProvider = game:GetService("ContentProvider")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
@@ -555,6 +556,24 @@ end
 
 function DaySummary.init(gui: PlayerGui)
 	playerGui = gui
+	-- carrega as músicas do placar já na entrada e deixa os Sounds parados no SoundService: sem isso cada
+	-- som novo só começava a baixar/carregar quando o placar abria e a música entrava atrasada
+	local folder = Instance.new("Folder")
+	folder.Name = "DaySummaryPreload"
+	local list = {}
+	for _, id in { DaySummary.GoodSound, DaySummary.BadSound, DaySummary.LevelUpSound, DaySummary.NightSound, Sfx.Sounds.CoinsCount.Id } do
+		local sound = Instance.new("Sound")
+		sound.SoundId = id
+		sound.Volume = 0
+		sound.Parent = folder
+		table.insert(list, sound)
+	end
+	folder.Parent = SoundService
+	task.spawn(function()
+		pcall(function()
+			ContentProvider:PreloadAsync(list)
+		end)
+	end)
 end
 
 function DaySummary.show(summary: Summary, onContinue: () -> ())
@@ -562,25 +581,35 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 
 	local avgStars = DaySummary.rating(summary)
 	local good = avgStars >= DaySummary.GoodDayStars
-	local sting = playSound(if good then DaySummary.GoodSound else DaySummary.BadSound, if good then DaySummary.GoodVolume else DaySummary.BadVolume, 1, true)
-	if not good then
-		sting.TimePosition = DaySummary.BadStart
-		-- corte manual: o Ended não dispara, então os grilos entram depois do fade
-		task.delay(DaySummary.BadLength, function()
-			if sting.Parent then
-				local fade = TweenService:Create(sting, TweenInfo.new(0.6), { Volume = 0 })
-				fade.Completed:Once(function()
-					sting:Destroy()
-					startNight()
-				end)
-				fade:Play()
-			end
-		end)
-	end
-	-- grilos depois do som (ou logo, se o som não carregar)
 	nightWanted = true
-	sting.Ended:Once(startNight)
-	task.delay(9, startNight)
+	-- clique em "Começar Dia" com a animação rodando: pula tudo (inclusive a música)
+	local wantContinue = false
+	-- música do placar (dia bom ou ruim): entra logo depois do som do Faturamento somando
+	local musicStarted = false
+	local function startMusic()
+		if musicStarted or not nightWanted or wantContinue then
+			return
+		end
+		musicStarted = true
+		local sting = playSound(if good then DaySummary.GoodSound else DaySummary.BadSound, if good then DaySummary.GoodVolume else DaySummary.BadVolume, 1, true)
+		if not good then
+			sting.TimePosition = DaySummary.BadStart
+			-- corte manual: o Ended não dispara, então os grilos entram depois do fade
+			task.delay(DaySummary.BadLength, function()
+				if sting.Parent then
+					local fade = TweenService:Create(sting, TweenInfo.new(0.6), { Volume = 0 })
+					fade.Completed:Once(function()
+						sting:Destroy()
+						startNight()
+					end)
+					fade:Play()
+				end
+			end)
+		end
+		-- grilos depois do som (ou logo, se o som não carregar)
+		sting.Ended:Once(startNight)
+		task.delay(9, startNight)
+	end
 
 	-- saldo total: começa no que havia antes do dia e recebe vendas e gorjetas
 	local totalMoney = peek(State.Money) :: number
@@ -944,7 +973,6 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 	-- pro fim: mostra a tela de nível novo (se houver) e, ao fechá-la, começa o dia.
 	local skipping = false
 	local sequenceDone = false
-	local wantContinue = false
 	local levelUpOpen = false
 	local continued = false
 	local function continueDay()
@@ -1023,6 +1051,7 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 		if summary.tips > 0 then
 			countUp(moneyBefore + sales, summary.tips, `+${summary.tips} em gorjetas`, 0.7)
 		end
+		startMusic()
 
 		for i, t in tiles do
 			local s = t:FindFirstChildOfClass("UIScale") :: UIScale
@@ -1088,6 +1117,7 @@ function DaySummary.show(summary: Summary, onContinue: () -> ())
 			warn("[DaySummary] animação do placar falhou:", err)
 			card.Position = UDim2.fromScale(0.5, 0.5)
 		end
+		startMusic()
 		sequenceDone = true
 		local function afterLevelUp()
 			levelUpOpen = false
