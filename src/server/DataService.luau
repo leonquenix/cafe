@@ -36,6 +36,7 @@ export type Data = {
 	WallColor: string, -- cor das paredes de dentro (Catalog.WallColors)
 	IntroSeen: boolean, -- já viu a fala da vovó no começo do primeiro dia
 	PastryTutorialSeen: boolean, -- já viu o tutorial do forno (primeiro dia com um quitute comprado)
+	TestBackup: { Level: number, XP: number }?, -- nível/XP guardados pelo comando de teste unlockAll (fora do template)
 }
 
 local TEMPLATE: Data = {
