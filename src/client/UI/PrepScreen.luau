@@ -40,10 +40,10 @@ local closeCurrent: ((onClosed: () -> ()) -> ())? = nil
 local playerGui: PlayerGui
 
 local TABS = {
-	{ Id = "Upgrades", Name = "Melhorias" },
-	{ Id = "Pastries", Name = "Quitutes" },
 	{ Id = "Decor", Name = "Decoração" },
-	{ Id = "Menu", Name = "Cardápio" },
+	{ Id = "Upgrades", Name = "Melhorias" },
+	{ Id = "Menu", Name = "Cafés" },
+	{ Id = "Pastries", Name = "Quitutes" },
 }
 
 function PrepScreen.init(gui: PlayerGui)
