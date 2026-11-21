@@ -1195,6 +1195,67 @@ Sprites.ChristmasGarland = {
 	Palette = { o = OUTLINE, G = rgb(84, 150, 92), R = rgb(220, 74, 74), r = rgb(250, 160, 150), Y = rgb(240, 196, 90), y = rgb(255, 240, 170) },
 } :: Sprite
 
+Sprites.ChristmasCandles = {
+	Rows = {
+		"...F............",
+		"..fFf...........",
+		"...k....F.......",
+		".ooooo.fFf......",
+		".owWwo..k....F..",
+		".oWWwoooooo.fFf.",
+		".oWWwoowWwo..k..",
+		".oWWwooWWwoooooo",
+		".oWWwooWWwoowWwo",
+		".oWWwooWWwooWWwo",
+		".oWWwooWWwooWWwo",
+		".oWWwooWWwooWWwo",
+		"GgGWPpPWgGoPpPwG",
+		"gGBGgPpGBgRGPpGg",
+		".GgB.g.GgBG.gG..",
+	},
+	Palette = {
+		o = OUTLINE,
+		W = rgb(252, 244, 226),
+		w = rgb(232, 218, 196),
+		F = rgb(255, 206, 96),
+		f = rgb(255, 150, 60),
+		k = rgb(60, 44, 36),
+		G = rgb(84, 150, 92),
+		g = rgb(140, 184, 104),
+		B = rgb(250, 250, 240),
+		R = rgb(214, 64, 64),
+		P = rgb(132, 84, 52),
+		p = rgb(176, 126, 82),
+	},
+} :: Sprite
+
+Sprites.ChristmasRug = {
+	Rows = {
+		"a..a......a..a",
+		"aa.a......a.aa",
+		".aaa......aaa.",
+		"...a......a...",
+		"EE.oooooooo.EE",
+		".EoBBBBBBBBoE.",
+		"..oBKBBBBKBo..",
+		"..oBBBBBBBBo..",
+		"..oBTTTTTTBo..",
+		"..oTTTRRTTTo..",
+		"...oTTRRTTo...",
+		"....oTTTTo....",
+		".....oooo.....",
+	},
+	Palette = {
+		o = OUTLINE,
+		a = rgb(232, 206, 156),
+		E = rgb(112, 70, 44),
+		B = rgb(156, 100, 62),
+		T = rgb(226, 186, 136),
+		K = rgb(44, 32, 30),
+		R = rgb(220, 54, 58),
+	},
+} :: Sprite
+
 Sprites.HalloweenPumpkins = {
 	Rows = {
 		".....oo.....",

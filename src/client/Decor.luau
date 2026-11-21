@@ -43,6 +43,8 @@ Decor.Focus = {
 	ChristmasTree = { Vector3.new(-8, 6.5, -4), Vector3.new(-15.2, 3.8, -12.5) },
 	ChristmasWreath = { Vector3.new(3.2, 8.5, 7), Vector3.new(0, 7.5, -16) },
 	ChristmasGarland = { Vector3.new(2, 8, 2), Vector3.new(0, 12, -9) },
+	ChristmasCandles = { Vector3.new(3, 6.6, 5.5), Vector3.new(2.9, 3.7, 1.1) },
+	ChristmasRug = { Vector3.new(7.5, 7.5, -3), Vector3.new(12.5, 0.5, -11.5) },
 	HalloweenPumpkins = { Vector3.new(10, 4.5, -13), Vector3.new(12.6, 1, -20.5) },
 	HalloweenWall = { Vector3.new(3.2, 8.5, 7), Vector3.new(4, 9.5, -16) },
 	HalloweenWebs = { Vector3.new(3.2, 8.5, 7), Vector3.new(2, 8, -12) },
@@ -1654,6 +1656,151 @@ end
 
 local CAT_TOP = CAT_HEAD -- espaço da cabeça do gato: +X pro lado da carinha, +Z pra câmera
 
+------------------------------------------------ Natal (balcão e tapete)
+
+local XMAS_GREEN, XMAS_GREEN_LIGHT = rgb(84, 150, 92), rgb(140, 184, 104)
+local WAX, WAX_SHADE = rgb(252, 244, 226), rgb(232, 218, 196)
+-- no lado do barista do balcão, na frente da toalhinha junina (entre as cartinhas e o caixa), fora do meio do balcão
+local CANDLES_X, CANDLES_Z = 2.9, 1.12
+
+-- pinha deitada no balcão (+Y do frame = do cabo pra ponta): camadas de escamas giradas, mais finas na ponta
+local function pinecone(m: Model, cf: CFrame, s: number)
+	local browns = { rgb(132, 84, 52), rgb(104, 64, 40) }
+	for i, w in { 0.2, 0.26, 0.26, 0.21, 0.14 } do
+		local y = (i - 3) * 0.075 * s
+		part(m, Vector3.new(w * s, 0.08 * s, w * s), cf * CFrame.new(0, y, 0) * CFrame.Angles(0, math.rad(i * 45), 0), browns[i % 2 + 1])
+		if i <= 4 then
+			-- pontinha clara das escamas
+			part(m, Vector3.new(w * 0.7 * s, 0.03 * s, w * 0.7 * s), cf * CFrame.new(0, y + 0.045 * s, 0) * CFrame.Angles(0, math.rad(i * 45 + 22), 0), rgb(176, 126, 82))
+		end
+	end
+	part(m, Vector3.new(0.04 * s, 0.08 * s, 0.04 * s), cf * CFrame.new(0, -0.22 * s, 0), rgb(90, 60, 40)) -- cabinho
+end
+
+-- raminho de visgo deitado (frame lying: +Y = pra onde o raminho aponta): pares de folhas compridas e um cachinho
+-- de frutinhas (brancas, com uma vermelha de vez em quando)
+local function mistletoe(m: Model, cf: CFrame, s: number, red: boolean)
+	part(m, Vector3.new(0.035 * s, 0.5 * s, 0.035 * s), cf * CFrame.new(0, 0.1 * s, 0.03 * s), rgb(118, 140, 76)) -- galhinho
+	for k, y in { 0.28, 0.0 } do
+		for _, sx in { -1, 1 } do
+			local leaf = cf * CFrame.new(sx * 0.12 * s, y * s, 0.025 * s) * CFrame.Angles(0, 0, math.rad(sx * (52 + k * 8)))
+			part(m, Vector3.new(0.12 * s, 0.32 * s, 0.035 * s), leaf, if (k + sx) % 2 == 0 then XMAS_GREEN else XMAS_GREEN_LIGHT)
+		end
+	end
+	for i, b in { { 0, 0.38 }, { -0.06, 0.32 }, { 0.06, 0.33 } } do
+		local color = if red and i == 1 then rgb(214, 64, 64) else rgb(250, 250, 240)
+		part(m, Vector3.new(0.085, 0.085, 0.085) * s, cf * CFrame.new(b[1] * s, b[2] * s, 0.07 * s), color, BALL)
+	end
+end
+
+-- vela de pé no balcão: corpo de cera, escorridinhos, pavio e chama (a chama volta pra piscar)
+local function candle(m: Model, base: Vector3, d: number, h: number): BasePart
+	part(m, Vector3.new(h, d, d), upright(base + Vector3.new(0, h / 2, 0)), WAX, CYL)
+	part(m, Vector3.new(0.04, d + 0.01, d + 0.01), upright(base + Vector3.new(0, h - 0.02, 0)), WAX_SHADE, CYL) -- borda derretida
+	for _, a in { 0.9, 2.6 } do
+		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+		part(m, Vector3.new(0.05, 0.12, 0.04), CFrame.lookAt(base + dir * d / 2 + Vector3.new(0, h - 0.07, 0), base + dir * 2 + Vector3.new(0, h - 0.07, 0)), WAX) -- escorrido
+	end
+	part(m, Vector3.new(0.025, 0.07, 0.025), base + Vector3.new(0, h + 0.035, 0), rgb(60, 44, 36)) -- pavio
+	local flame = part(m, Vector3.new(0.06, 0.11, 0.06), CFrame.new(base + Vector3.new(0, h + 0.11, 0)) * CFrame.Angles(0, math.rad(45), 0), rgb(255, 206, 96), NEON)
+	return flame
+end
+
+-- Velas de Natal: três velinhas (pequena, média e grande) no balcão, com pinhas e raminhos de visgo em volta da
+-- base; as chamas tremulam e soltam uma luz bem fraquinha
+BUILDERS.ChristmasCandles = function(m)
+	local top = Layout.CounterHeight
+	local c = Vector3.new(CANDLES_X, top, CANDLES_Z)
+	-- { x, z, diâmetro, altura }: grande atrás à esquerda, média atrás à direita, pequena na frente
+	local specs = { { -0.12, -0.06, 0.24, 0.62 }, { 0.14, -0.02, 0.21, 0.44 }, { 0.02, 0.16, 0.18, 0.28 } }
+	local flames = {}
+	for _, sp in specs do
+		table.insert(flames, candle(m, c + Vector3.new(sp[1], 0, sp[2]), sp[3], sp[4]))
+	end
+	-- raminhos de visgo em volta, apontando pra fora
+	for i, a in { -15, 50, 105, 160, 215 } do
+		local r = math.rad(a)
+		local p = c + Vector3.new(math.cos(r) * 0.27, 0, math.sin(r) * 0.24)
+		mistletoe(m, lying(p, -a - 90), 0.62, i % 2 == 1)
+	end
+	-- pinhas deitadas no meio dos raminhos
+	for _, pc in { { -0.3, 0.12, 70 }, { 0.3, 0.16, -40 }, { 0.1, -0.26, 15 } } do
+		pinecone(m, CFrame.new(c + Vector3.new(pc[1], 0.085, pc[2])) * CFrame.Angles(0, math.rad(pc[3]), 0) * CFrame.Angles(0, 0, math.rad(90)), 0.72)
+	end
+	local glow = Instance.new("PointLight")
+	glow.Color = rgb(255, 196, 130)
+	glow.Range = 4
+	glow.Brightness = 0.4
+	glow.Shadows = false
+	glow.Parent = flames[1]
+	local rest = {}
+	for i, f in flames do
+		rest[i] = f.CFrame
+	end
+	addSlowAnimator(15, function(t)
+		for i, f in flames do
+			local n = math.noise(t * 2.5, i * 3.1)
+			f.Size = Vector3.new(0.06, 0.11 + n * 0.03, 0.06)
+			f.CFrame = rest[i] * CFrame.new(0, n * 0.02, 0) * CFrame.Angles(0, 0, math.noise(t * 1.7, i) * 0.15)
+			f.Color = rgb(255, 196 + math.floor(n * 40), 96)
+		end
+		glow.Brightness = 0.35 + math.noise(t * 2, 9) * 0.12
+	end)
+end
+
+-- Tapete de rena: carinha marrom deitada no chão (chifres pro fundo da sala), focinho clarinho e nariz vermelho;
+-- no lugar do tapete de lã (só um tapete fica ligado)
+BUILDERS.ChristmasRug = function(m)
+	local c = Vector3.new(12.5, 0, -11.2)
+	local frame = lying(c) -- +X = direita, +Y = pro fundo (topo da carinha), +Z = pra cima
+	local function at(x: number, y: number, z: number): CFrame
+		return frame * CFrame.new(x, y, z)
+	end
+	local brown, brownDark, tan = rgb(156, 100, 62), rgb(112, 70, 44), rgb(226, 186, 136)
+	local antler = rgb(232, 206, 156)
+	-- retângulo entre dois pontos do plano do tapete
+	local function seg(a: Vector2, b: Vector2, w: number, z: number, color: Color3)
+		local mid = (a + b) / 2
+		local d = b - a
+		part(m, Vector3.new(w, d.Magnitude + w * 0.6, 0.1), at(mid.X, mid.Y, z) * CFrame.Angles(0, 0, math.atan2(-d.X, d.Y)), color)
+	end
+	-- chifres (galhada com três pontas de cada lado), por baixo da cabeça
+	for _, sx in { -1, 1 } do
+		local root = Vector2.new(sx * 0.75, 0.9)
+		local bend = Vector2.new(sx * 1.35, 2.0)
+		local tip = Vector2.new(sx * 1.05, 2.95)
+		seg(root, bend, 0.36, 0.05, antler)
+		seg(bend, tip, 0.3, 0.05, antler)
+		seg(Vector2.new(sx * 1.2, 1.7), Vector2.new(sx * 2.05, 2.25), 0.28, 0.05, antler)
+		seg(Vector2.new(sx * 1.85, 2.1), Vector2.new(sx * 2.1, 2.75), 0.24, 0.05, antler)
+		seg(Vector2.new(sx * 1.3, 2.3), Vector2.new(sx * 0.6, 2.7), 0.24, 0.05, antler)
+		-- orelhas
+		local ear = at(sx * 1.75, 0.55, 0.06) * CFrame.Angles(0, 0, math.rad(sx * 60))
+		part(m, Vector3.new(0.62, 1.15, 0.1), ear, brownDark)
+		part(m, Vector3.new(0.34, 0.72, 0.1), ear * CFrame.new(0, 0.05, 0.03), rgb(236, 160, 150))
+	end
+	-- cabeça: contorno escuro, rosto marrom
+	disc(m, at(0, -0.35, 0.06), 3.75, 0.1, brownDark)
+	disc(m, at(0, -0.35, 0.08), 3.45, 0.12, brown)
+	-- focinho clarinho
+	for _, sx in { -1, 1 } do
+		disc(m, at(sx * 0.4, -1.15, 0.1), 1.55, 0.12, tan)
+	end
+	disc(m, at(0, -0.95, 0.1), 1.3, 0.12, tan)
+	-- olhos com brilhinho
+	for _, sx in { -1, 1 } do
+		disc(m, at(sx * 0.72, 0.15, 0.12), 0.56, 0.12, rgb(44, 32, 30))
+		disc(m, at(sx * 0.72 - 0.1, 0.25, 0.14), 0.17, 0.1, rgb(252, 250, 246))
+		disc(m, at(sx * 1.15, -0.55, 0.1), 0.46, 0.12, rgb(232, 140, 130)) -- bochechas
+	end
+	-- boquinha
+	seg(Vector2.new(-0.28, -1.62), Vector2.new(0, -1.75), 0.08, 0.13, brownDark)
+	seg(Vector2.new(0, -1.75), Vector2.new(0.28, -1.62), 0.08, 0.13, brownDark)
+	-- nariz vermelho (mais alto, fofinho) com brilho
+	disc(m, at(0, -0.72, 0.15), 0.95, 0.18, rgb(220, 54, 58))
+	disc(m, at(-0.16, -0.58, 0.2), 0.24, 0.1, rgb(255, 170, 170))
+end
+
 ------------------------------------------------ Dia do Amor
 
 -- Tiara do gatinho: anteninhas de mola com um coração de babadinho em cada ponta
@@ -2358,6 +2505,10 @@ BUILDERS.JuninaCounterBasket = function(m)
 	corn(m, b * CFrame.new(-0.12, 0.55, 0.05) * CFrame.Angles(math.rad(-25), math.rad(30), 0), 0.6)
 	corn(m, b * CFrame.new(0.14, 0.58, -0.05) * CFrame.Angles(math.rad(-30), math.rad(-40), 0), 0.55)
 	corn(m, b * CFrame.new(0.02, 0.5, 0.18) * CFrame.Angles(math.rad(-10), math.rad(95), 0), 0.5)
+	-- uma espiga deitada do lado de fora, ao lado da cesta (em cima da toalhinha), com a palha aberta embaixo
+	local lyingCorn = cloth * CFrame.new(0.66, 0.125, 0.12) * CFrame.Angles(0, math.rad(-20), 0)
+	corn(m, lyingCorn, 0.62)
+	part(m, Vector3.new(0.2, 0.04, 0.34), lyingCorn * CFrame.new(0.02, -0.08, -0.3) * CFrame.Angles(0, 0.25, 0), rgb(110, 166, 84))
 end
 
 -- girassol na parede (frame com +Z pra fora da parede): só a flor, sem caule; pétalas amarelas em duas camadas
