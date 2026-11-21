@@ -683,7 +683,7 @@ end
 
 function PrepScreen.show(onOpen: () -> (), initialTab: string?)
 	local scope = Fusion.scoped(Fusion)
-	local tab = scope:Value(initialTab or "Upgrades")
+	local tab = scope:Value(initialTab or "Decor")
 	local selection = scope:Value(table.clone(peek(State.Menu) :: { string }))
 
 	local pages = {
